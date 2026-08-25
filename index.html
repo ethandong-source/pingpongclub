@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PingPong.com — Ping Pong Club</title>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent2: #0f172a;
+      --green: #15803d;
+      --red: #b91c1c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* NAVIGATION */
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+
+      border-bottom: 1px solid var(--line);
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 14px 6%;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 21px;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    nav button {
+      background: none;
+      border: 0;
+
+      padding: 9px 12px;
+
+      font-weight: 700;
+      color: #4b5563;
+
+      cursor: pointer;
+      border-radius: 9px;
+    }
+
+    nav button:hover,
+    nav button.active {
+      background: #eef2ff;
+      color: var(--accent);
+    }
+
+    /* HERO */
+
+    .hero {
+      padding: 72px 6% 48px;
+
+      background: linear-gradient(
+        135deg,
+        #0f172a,
+        #1d4ed8
+      );
+
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 68px);
+      line-height: 1;
+      margin: 0 0 18px;
+    }
+
+    .hero p {
+      font-size: 19px;
+      max-width: 650px;
+      color: #dbeafe;
+    }
+
+    .hero .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 25px;
+    }
+
+    /* BUTTONS */
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+
+      padding: 12px 17px;
+
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: white;
+      color: #1d4ed8;
+    }
+
+    .dark {
+      background: #172033;
+      color: white;
+    }
+
+    .outline {
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      color: white;
+    }
+
+    /* MAIN */
+
+    main {
+      max-width: 1180px;
+      margin: auto;
+
+      padding: 36px 6% 70px;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* CARDS */
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card);
+
+      border: 1px solid var(--line);
+      border-radius: 16px;
+
+      padding: 20px;
+
+      box-shadow: 0 5px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .stat {
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    /* TABLES */
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-wrap table {
+      min-width: 620px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 13px 12px;
+
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .rank {
+      font-weight: 900;
+      width: 55px;
+    }
+
+    .elo {
+      font-weight: 900;
+    }
+
+    .positive {
+      color: var(--green);
+    }
+
+    .negative {
+      color: var(--red);
+    }
+
+    /* FORMS */
+
+    form {
+      display: grid;
+      gap: 13px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    input,
+    select {
+      width: 100%;
+
+      padding: 12px;
+
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+
+      background: white;
+
+      font: inherit;
+    }
+
+    /* NOTICE */
+
+    .notice {
+      padding: 13px 15px;
+
+      background: #eff6ff;
+
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+
+      color: #1e40af;
+
+      margin-bottom: 18px;
+    }
+
+    /* MATCH HISTORY */
+
+    .match {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 15px;
+
+      padding: 14px 0;
+
+      border-bottom: 1px solid var(--line);
+    }
+
+    .badge {
+      padding: 5px 9px;
+
+      border-radius: 99px;
+
+      background: #eef2ff;
+      color: #3730a3;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* FOOTER */
+
+    footer {
+      text-align: center;
+
+      color: var(--muted);
+
+      padding: 25px;
+
+      border-top: 1px solid var(--line);
+    }
+
+    /* MOBILE */
+
+    @media (max-width: 750px) {
+
+      .grid,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      nav .links {
+        display: flex;
+        overflow: auto;
+        width: 100%;
+      }
+
+      .hero {
+        padding-top: 48px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- =========================================
+     NAVIGATION
+========================================= -->
+
+<nav>
+
+  <div class="brand">
+    Rally<span>Rank</span>
+  </div>
+
+  <div class="links">
+
+    <button
+      class="active"
+      data-section="home">
+      Home
+    </button>
+
+    <button data-section="leaderboard">
+      Leaderboard
+    </button>
+
+    <button data-section="matches">
+      Matches
+    </button>
+
+    <button data-section="players">
+      Players
+    </button>
+
+    <button data-section="rules">
+      Rules
+    </button>
+
+  </div>
+
+</nav>
+
+
+<!-- =========================================
+     HERO
+========================================= -->
+
+<section class="hero">
+
+  <h1>
+    Play. Compete. Climb.
+  </h1>
+
+  <p>
+    A structured ping pong club with an ELO-based
+    ranking system. Every official match matters.
+  </p>
+
+  <div class="actions">
+
+    <button
+      class="btn primary"
+      onclick="showSection('matches')">
+
+      Report a Match
+
+    </button>
+
+    <button
+      class="btn outline"
+      onclick="showSection('leaderboard')">
+
+      View Rankings
+
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
+
+<main>
+
+
+<!-- =========================================
+     HOME
+========================================= -->
+
+<section
+  id="home"
+  class="section active">
+
+  <div class="grid">
+
+    <div class="card">
+
+      <div class="muted">
+        Players
+      </div>
+
+      <div
+        class="stat"
+        id="statPlayers">
+        0
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="muted">
+        Official Matches
+      </div>
+
+      <div
+        class="stat"
+        id="statMatches">
+        0
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="muted">
+        Average ELO
+      </div>
+
+      <div
+        class="stat"
+        id="statElo">
+        1000
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div
+    class="card"
+    style="margin-top:18px">
+
+    <h2>
+      How the club works
+    </h2>
+
+    <p>
+      Players start at 1000 ELO.
+      After every official match, the winner
+      gains rating points and the loser loses
+      the same amount.
+    </p>
+
+    <p>
+      Beating a higher-rated player is worth more.
+    </p>
+
+    <p class="muted">
+
+      This demo stores data in your browser.
+
+      For a real club website, the next step
+      would be connecting it to a database and
+      adding organizer/admin accounts.
+
+    </p>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+     LEADERBOARD
+========================================= -->
+
+<section
+  id="leaderboard"
+  class="section">
+
+  <div class="card">
+
+    <h2>
+      Club Leaderboard
+    </h2>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>#</th>
+
+            <th>
+              Player
+            </th>
+
+            <th>
+              ELO
+            </th>
+
+            <th>
+              Matches
+            </th>
+
+            <th>
+              Record
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody
+          id="leaderboardBody">
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+     MATCHES
+========================================= -->
+
+<section
+  id="matches"
+  class="section">
+
+
+  <div class="grid">
+
+
+    <!-- REPORT MATCH -->
+
+    <div class="card">
+
+      <h2>
+        Report Match
+      </h2>
+
+      <div class="notice">
+
+        For this prototype, match results
+        are entered directly.
+
+        A production version can require
+        both players to confirm the result.
+
+      </div>
+
+
+      <form id="matchForm">
+
+
+        <div class="form-grid">
+
+
+          <div>
+
+            <label>
+              Winner
+            </label>
+
+            <select
+              id="winner"
+              required>
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label>
+              Loser
+            </label>
+
+            <select
+              id="loser"
+              required>
+            </select>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="form-grid">
+
+
+          <div>
+
+            <label>
+              Winner score
+            </label>
+
+            <input
+              id="winnerScore"
+              type="number"
+              min="0"
+              max="99"
+              placeholder="11">
+
+          </div>
+
+
+          <div>
+
+            <label>
+              Loser score
+            </label>
+
+            <input
+              id="loserScore"
+              type="number"
+              min="0"
+              max="99"
+              placeholder="7">
+
+          </div>
+
+
+        </div>
+
+
+        <button
+          class="btn dark"
+          type="submit">
+
+          Submit Official Result
+
+        </button>
+
+      </form>
+
+    </div>
+
+
+    <!-- ADD PLAYER -->
+
+    <div class="card">
+
+      <h2>
+        Add Player
+      </h2>
+
+      <form id="playerForm">
+
+
+        <div>
+
+          <label>
+            Player name
+          </label>
+
+          <input
+            id="playerName"
+            required
+            placeholder="e.g. Alex Chen">
+
+        </div>
+
+
+        <button
+          class="btn dark"
+          type="submit">
+
+          Add to Club
+
+        </button>
+
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- RECENT MATCHES -->
+
+  <div
+    class="card"
+    style="margin-top:18px">
+
+    <h2>
+      Recent Matches
+    </h2>
+
+    <div
+      id="recentMatches">
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+     PLAYERS
+========================================= -->
+
+<section
+  id="players"
+  class="section">
+
+  <div class="card">
+
+    <h2>
+      Players
+    </h2>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Player
+            </th>
+
+            <th>
+              ELO
+            </th>
+
+            <th>
+              Wins
+            </th>
+
+            <th>
+              Losses
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody
+          id="playersBody">
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================
+     RULES
+========================================= -->
+
+<section
+  id="rules"
+  class="section">
+
+  <div class="card">
+
+    <h2>
+      Club Format
+    </h2>
+
+
+    <ol>
+
+      <li>
+        Every registered player begins at
+        <strong>1000 ELO</strong>.
+      </li>
+
+      <li>
+        Official matches are best-of-3 games
+        unless the club announces otherwise.
+      </li>
+
+      <li>
+        Report the result immediately after
+        the match.
+      </li>
+
+      <li>
+        The ELO change depends on the ratings
+        entering the match.
+      </li>
+
+      <li>
+        Higher-rated players are expected to win;
+        an upset creates a larger rating swing.
+      </li>
+
+      <li>
+        Rankings update automatically after
+        an official result is recorded.
+      </li>
+
+    </ol>
+
+
+    <h2>
+      ELO Formula
+    </h2>
+
+
+    <p>
+
+      <strong>
+        Expected score:
+      </strong>
+
+      1 / (1 + 10<sup>
+      (opponent ELO − player ELO) / 400
+      </sup>)
+
+    </p>
+
+
+    <p>
+
+      <strong>
+        New ELO:
+      </strong>
+
+      old ELO + K ×
+      (actual score − expected score)
+
+    </p>
+
+
+    <p class="muted">
+
+      This prototype uses K = 32.
+
+    </p>
+
+  </div>
+
+</section>
+
+
+</main>
+
+
+<!-- =========================================
+     FOOTER
+========================================= -->
+
+<footer>
+
+  RallyRank Ping Pong Club • Prototype
+
+</footer>
+
+
+<script>
+
+/* =========================================
+   DATABASE
+========================================= */
+
+const KEY = "rallyrank-data-v1";
+
+
+let data =
+  JSON.parse(localStorage.getItem(KEY))
+  ||
+  {
+
+    players: [
+
+      {
+        id: 1,
+        name: "Alex Chen",
+        elo: 1200,
+        wins: 0,
+        losses: 0
+      },
+
+      {
+        id: 2,
+        name: "Jordan Lee",
+        elo: 1100,
+        wins: 0,
+        losses: 0
+      },
+
+      {
+        id: 3,
+        name: "Sam Patel",
+        elo: 1000,
+        wins: 0,
+        losses: 0
+      },
+
+      {
+        id: 4,
+        name: "Taylor Kim",
+        elo: 900,
+        wins: 0,
+        losses: 0
+      }
+
+    ],
+
+    matches: []
+
+  };
+
+
+/* =========================================
+   SAVE DATABASE
+========================================= */
+
+function save() {
+
+  localStorage.setItem(
+    KEY,
+    JSON.stringify(data)
+  );
+
+}
+
+
+/* =========================================
+   PAGE NAVIGATION
+========================================= */
+
+function showSection(id) {
+
+  document
+    .querySelectorAll(".section")
+    .forEach(x =>
+      x.classList.remove("active")
+    );
+
+
+  document
+    .getElementById(id)
+    .classList.add("active");
+
+
+  document
+    .querySelectorAll("nav button")
+    .forEach(x =>
+      x.classList.toggle(
+        "active",
+        x.dataset.section === id
+      )
+    );
+
+
+  render();
+
+
+  window.scrollTo({
+    top:
+      document.querySelector("main")
+      .offsetTop - 70,
+
+    behavior: "smooth"
+  });
+
+}
+
+
+document
+  .querySelectorAll("nav button")
+  .forEach(button => {
+
+    button.onclick =
+      () => showSection(
+        button.dataset.section
+      );
+
+  });
+
+
+/* =========================================
+   RENDER WEBSITE
+========================================= */
+
+function render() {
+
+
+  /*
+    Sort players by ELO
+  */
+
+  const sorted =
+    [...data.players]
+      .sort(
+        (a, b) =>
+          b.elo - a.elo
+      );
+
+
+  /*
+    HOME STATISTICS
+  */
+
+  document
+    .getElementById("statPlayers")
+    .textContent =
+      data.players.length;
+
+
+  document
+    .getElementById("statMatches")
+    .textContent =
+      data.matches.length;
+
+
+  const averageElo =
+    data.players.length
+
+      ?
+
+      Math.round(
+        data.players.reduce(
+          (sum, player) =>
+            sum + player.elo,
+          0
+        )
+        /
+        data.players.length
+      )
+
+      :
+
+      1000;
+
+
+  document
+    .getElementById("statElo")
+    .textContent =
+      averageElo;
+
+
+  /*
+    LEADERBOARD
+  */
+
+  document
+    .getElementById("leaderboardBody")
+    .innerHTML =
+
+      sorted.map(
+        (player, index) => `
+
+          <tr>
+
+            <td class="rank">
+              ${index + 1}
+            </td>
+
+            <td>
+              <strong>
+                ${esc(player.name)}
+              </strong>
+            </td>
+
+            <td class="elo">
+              ${Math.round(player.elo)}
+            </td>
+
+            <td>
+              ${player.wins + player.losses}
+            </td>
+
+            <td>
+              ${player.wins}-${player.losses}
+            </td>
+
+          </tr>
+
+        `
+      ).join("");
+
+
+  /*
+    PLAYER TABLE
+  */
+
+  document
+    .getElementById("playersBody")
+    .innerHTML =
+
+      sorted.map(
+        player => `
+
+          <tr>
+
+            <td>
+              ${esc(player.name)}
+            </td>
+
+            <td class="elo">
+              ${Math.round(player.elo)}
+            </td>
+
+            <td>
+              ${player.wins}
+            </td>
+
+            <td>
+              ${player.losses}
+            </td>
+
+          </tr>
+
+        `
+      ).join("");
+
+
+  /*
+    PLAYER DROPDOWNS
+  */
+
+  const options =
+
+    data.players
+      .map(
+        player => `
+
+          <option value="${player.id}">
+
+            ${esc(player.name)}
+            (${Math.round(player.elo)})
+
+          </option>
+
+        `
+      )
+      .join("");
+
+
+  document
+    .getElementById("winner")
+    .innerHTML = options;
+
+
+  document
+    .getElementById("loser")
+    .innerHTML = options;
+
+
+  /*
+    RECENT MATCHES
+  */
+
+  document
+    .getElementById("recentMatches")
+    .innerHTML =
+
+      data.matches.length
+
+      ?
+
+      data.matches
+        .slice()
+        .reverse()
+        .slice(0, 12)
+        .map(
+          match => `
+
+            <div class="match">
+
+              <div>
+
+                <strong>
+                  ${esc(match.winnerName)}
+                </strong>
+
+                defeated
+
+                <strong>
+                  ${esc(match.loserName)}
+                </strong>
+
+                <br>
+
+                <span class="muted">
+
+                  ${match.score}
+
+                  •
+
+                  ${new Date(
+                    match.date
+                  ).toLocaleString()}
+
+                </span>
+
+              </div>
+
+
+              <span class="badge">
+
+                +${match.winnerChange}
+                /
+                -${match.loserChange}
+
+              </span>
+
+            </div>
+
+          `
+        )
+        .join("")
+
+      :
+
+      `
+        <p class="muted">
+          No official matches yet.
+        </p>
+      `;
+
+}
+
+
+/* =========================================
+   SECURITY
+========================================= */
+
+function esc(string) {
+
+  return String(string)
+    .replace(
+      /[&<>"']/g,
+
+      character => ({
+
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+
+      }[character])
+
+    );
+
+}
+
+
+/* =========================================
+   ELO CALCULATIONS
+========================================= */
+
+function expected(
+  playerElo,
+  opponentElo
+) {
+
+  return (
+
+    1 /
+    (
+      1 +
+      Math.pow(
+        10,
+        (opponentElo - playerElo) / 400
+      )
+    )
+
+  );
+
+}
+
+
+function eloChange(
+  winnerElo,
+  loserElo
+) {
+
+  return Math.round(
+
+    32 *
+    (
+      1 -
+      expected(
+        winnerElo,
+        loserElo
+      )
+    )
+
+  );
+
+}
+
+
+/* =========================================
+   ADD PLAYER
+========================================= */
+
+document
+  .getElementById("playerForm")
+  .onsubmit = event => {
+
+    event.preventDefault();
+
+
+    const name =
+      document
+        .getElementById("playerName")
+        .value
+        .trim();
+
+
+    if (!name)
+      return;
+
+
+    data.players.push({
+
+      id: Date.now(),
+
+      name: name,
+
+      elo: 1000,
+
+      wins: 0,
+
+      losses: 0
+
+    });
+
+
+    save();
+
+
+    event.target.reset();
+
+
+    render();
+
+
+    alert(
+      `${name} joined the club at 1000 ELO.`
+    );
+
+  };
+
+
+/* =========================================
+   REPORT MATCH
+========================================= */
+
+document
+  .getElementById("matchForm")
+  .onsubmit = event => {
+
+    event.preventDefault();
+
+
+    const winnerId =
+      +document
+        .getElementById("winner")
+        .value;
+
+
+    const loserId =
+      +document
+        .getElementById("loser")
+        .value;
+
+
+    /*
+      Prevent player from playing
+      against themselves
+    */
+
+    if (winnerId === loserId) {
+
+      alert(
+        "Winner and loser must be different players."
+      );
+
+      return;
+
+    }
+
+
+    const winner =
+      data.players.find(
+        player =>
+          player.id === winnerId
+      );
+
+
+    const loser =
+      data.players.find(
+        player =>
+          player.id === loserId
+      );
+
+
+    /*
+      Calculate ELO change
+    */
+
+    const change =
+      eloChange(
+        winner.elo,
+        loser.elo
+      );
+
+
+    /*
+      Update ratings
+    */
+
+    winner.elo += change;
+
+    loser.elo -= change;
+
+
+    /*
+      Update records
+    */
+
+    winner.wins++;
+
+    loser.losses++;
+
+
+    /*
+      Get scores
+    */
+
+    const winnerScore =
+      document
+        .getElementById("winnerScore")
+        .value;
+
+
+    const loserScore =
+      document
+        .getElementById("loserScore")
+        .value;
+
+
+    const score =
+      winnerScore && loserScore
+
+        ?
+
+        `${winnerScore}-${loserScore}`
+
+        :
+
+        "Score not recorded";
+
+
+    /*
+      Store match
+    */
+
+    data.matches.push({
+
+      winnerName:
+        winner.name,
+
+      loserName:
+        loser.name,
+
+      winnerChange:
+        change,
+
+      loserChange:
+        change,
+
+      score:
+        score,
+
+      date:
+        new Date().toISOString()
+
+    });
+
+
+    /*
+      Save everything
+    */
+
+    save();
+
+
+    /*
+      Reset form
+    */
+
+    event.target.reset();
+
+
+    /*
+      Update website
+    */
+
+    render();
+
+
+    /*
+      Tell organizer what happened
+    */
+
+    alert(
+
+      `Result recorded.\n\n` +
+
+      `${winner.name} +${change} ELO\n` +
+
+      `${loser.name} -${change} ELO`
+
+    );
+
+  };
+
+
+/* =========================================
+   INITIAL PAGE LOAD
+========================================= */
+
+render();
+
+</script>
+
+</body>
+</html>
