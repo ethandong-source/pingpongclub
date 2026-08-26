@@ -306,6 +306,42 @@
       font-weight: 800;
     }
 
+    .pending-badge {
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+    }
+
+    .confirmed-badge {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .confirm-btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .confirm-btn.confirmed {
+      background: #dcfce7;
+      color: #166534;
+      cursor: default;
+    }
+
     /* FOOTER */
 
     footer {
@@ -342,6 +378,53 @@
         padding-top: 48px;
       }
     }
+
+    .hidden { display: none !important; }
+    .auth-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .user-pill { display:inline-flex; gap:8px; align-items:center; background:#eef2ff; color:#3730a3; padding:7px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+    .danger { background:#fee2e2; color:#991b1b; }
+    .small-btn { border:0; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:800; cursor:pointer; }
+    .confirm-status { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .confirm-chip { padding:5px 8px; border-radius:999px; background:#f1f5f9; color:#475569; font-size:11px; font-weight:800; }
+    .confirm-chip.done { background:#dcfce7; color:#166534; }
+    .account-card { border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px; }
+
+    .admin-player-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:12px 0;
+      border-bottom:1px solid var(--line);
+    }
+    .admin-player-row:last-child { border-bottom:0; }
+    .admin-title {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .admin-note {
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+    .admin-panel {
+      margin-top:18px;
+      padding-top:18px;
+      border-top:1px solid var(--line);
+    }
+    .admin-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .admin-header h3 {
+      margin:0;
+      font-size:18px;
+    }
   </style>
 </head>
 
@@ -354,7 +437,7 @@
 <nav>
 
   <div class="brand">
-    Rally<span>Rank</span>
+    Ping<span>Pong</span>
   </div>
 
   <div class="links">
@@ -393,12 +476,11 @@
 <section class="hero">
 
   <h1>
-    Play. Compete. Climb.
+    Swing. Serve. Strike.
   </h1>
 
   <p>
-    A structured ping pong club with an ELO-based
-    ranking system. Every official match matters.
+    Enter your results from matches on this website. Every match will alter your elo depending on the match result.
   </p>
 
   <div class="actions">
@@ -509,11 +591,7 @@
 
     <p class="muted">
 
-      This demo stores data in your browser.
-
-      For a real club website, the next step
-      would be connecting it to a database and
-      adding organizer/admin accounts.
+      Founders: Ethan Mugilan, Liang Sun, and Ethan Dong
 
     </p>
 
@@ -601,11 +679,11 @@
 
       <div class="notice">
 
-        For this prototype, match results
-        are entered directly.
+        Submit the score first. ELO will NOT change
+        until both players confirm the result.
 
-        A production version can require
-        both players to confirm the result.
+        After submission, each player can confirm
+        their side of the result in Match History.
 
       </div>
 
@@ -698,41 +776,80 @@
     </div>
 
 
-    <!-- ADD PLAYER -->
+    <!-- ACCOUNT / LOGIN -->
 
     <div class="card">
 
       <h2>
-        Add Player
+        Player Account
       </h2>
 
-      <form id="playerForm">
-
-
-        <div>
-
-          <label>
-            Player name
-          </label>
-
-          <input
-            id="playerName"
-            required
-            placeholder="e.g. Alex Chen">
-
+      <div id="accountLoggedOut">
+        <div class="notice">
+          Create an account or log in. Your account is required to confirm your side of a match.
         </div>
 
+        <form id="signupForm">
+          <div>
+            <label>
+              Player name
+            </label>
+            <input id="signupName" required placeholder="e.g. Alex Chen">
+          </div>
 
-        <button
-          class="btn dark"
-          type="submit">
+          <div>
+            <label>
+              Username
+            </label>
+            <input id="signupUsername" required placeholder="e.g. alexchen">
+          </div>
 
-          Add to Club
+          <div>
+            <label>
+              Password
+            </label>
+            <input id="signupPassword" type="password" minlength="4" required placeholder="Create a password">
+          </div>
 
-        </button>
+          <button class="btn dark" type="submit">Create Account</button>
+        </form>
 
+        <div class="account-card">
+          <strong>Already have an account?</strong>
+          <form id="loginForm" style="margin-top:10px">
+            <div>
+              <label>Username</label>
+              <input id="loginUsername" required>
+            </div>
+            <div>
+              <label>Password</label>
+              <input id="loginPassword" type="password" required>
+            </div>
+            <button class="btn dark" type="submit">Log In</button>
+          </form>
+        </div>
+      </div>
 
-      </form>
+      <div id="accountLoggedIn" class="hidden">
+        <div class="user-pill">Logged in as<span id="currentUserName"></span></div>
+        <div id="adminBadge" class="hidden" style="margin-top:8px;">
+          <span class="user-pill" style="background:#dcfce7;color:#166534;">Club Administrator</span>
+        </div>
+        <p class="muted">You can confirm matches for your own account only.</p>
+        <button id="logoutBtn" class="small-btn danger">Log Out</button>
+      </div>
+
+      <div id="adminPanel" class="admin-panel hidden">
+        <div class="admin-header">
+          <h3>Admin Controls</h3>
+          <span class="user-pill" style="background:#dcfce7;color:#166534;">Ethan only</span>
+        </div>
+        <div class="notice danger" style="color:#991b1b;">
+          Only Ethan Mugilan can remove players from the active club roster.
+          Previous matches remain in Match History.
+        </div>
+        <div id="adminPlayersList"></div>
+      </div>
 
     </div>
 
@@ -836,11 +953,6 @@
       </li>
 
       <li>
-        Official matches are best-of-3 games
-        unless the club announces otherwise.
-      </li>
-
-      <li>
         Report the result immediately after
         the match.
       </li>
@@ -856,8 +968,13 @@
       </li>
 
       <li>
+        Both players must confirm the reported result
+        before the match becomes official and changes ELO.
+      </li>
+
+      <li>
         Rankings update automatically after
-        an official result is recorded.
+        both confirmations are recorded.
       </li>
 
     </ol>
@@ -913,7 +1030,7 @@
 
 <footer>
 
-  RallyRank Ping Pong Club • Prototype
+  Ping Pong Club • Prototype
 
 </footer>
 
@@ -1217,71 +1334,49 @@ function render() {
   document
     .getElementById("recentMatches")
     .innerHTML =
-
       data.matches.length
+      ? data.matches
+          .slice()
+          .reverse()
+          .slice(0, 12)
+          .map(match => {
+            const user = getCurrentUser();
+            const winnerConfirmed = !!(match.confirmations && match.confirmations[match.winnerId]);
+            const loserConfirmed = !!(match.confirmations && match.confirmations[match.loserId]);
+            const isInvolved = user && (user.id === match.winnerId || user.id === match.loserId);
+            const hasConfirmed = user && match.confirmations && !!match.confirmations[user.id];
 
-      ?
+            let action = "";
+            if (match.eloApplied) {
+              action = `<span class="badge">Official • +${match.winnerChange} / -${match.loserChange}</span>`;
+            } else if (isInvolved && !hasConfirmed) {
+              action = `<button class="small-btn" onclick="confirmMatch(${match.id})">Confirm Result</button>`;
+            } else {
+              action = `<span class="badge">Awaiting confirmation</span>`;
+            }
 
-      data.matches
-        .slice()
-        .reverse()
-        .slice(0, 12)
-        .map(
-          match => `
-
-            <div class="match">
-
-              <div>
-
-                <strong>
-                  ${esc(match.winnerName)}
-                </strong>
-
-                defeated
-
-                <strong>
-                  ${esc(match.loserName)}
-                </strong>
-
-                <br>
-
-                <span class="muted">
-
-                  ${match.score}
-
-                  •
-
-                  ${new Date(
-                    match.date
-                  ).toLocaleString()}
-
-                </span>
-
+            return `
+              <div class="match">
+                <div>
+                  <strong>${esc(match.winnerName)}</strong>
+                  defeated
+                  <strong>${esc(match.loserName)}</strong>
+                  <br>
+                  <span class="muted">${match.score} • ${new Date(match.date).toLocaleString()}</span>
+                  <div class="confirm-status">
+                    <span class="confirm-chip ${winnerConfirmed ? "done" : ""}">
+                      ${winnerConfirmed ? "✓" : "○"} ${esc(match.winnerName)}
+                    </span>
+                    <span class="confirm-chip ${loserConfirmed ? "done" : ""}">
+                      ${loserConfirmed ? "✓" : "○"} ${esc(match.loserName)}
+                    </span>
+                  </div>
+                </div>
+                ${action}
               </div>
-
-
-              <span class="badge">
-
-                +${match.winnerChange}
-                /
-                -${match.loserChange}
-
-              </span>
-
-            </div>
-
-          `
-        )
-        .join("")
-
-      :
-
-      `
-        <p class="muted">
-          No official matches yet.
-        </p>
-      `;
-
+            `;
+          }).join("")
+      : `<p class="muted">No matches yet.</p>`;
 }
 
 
@@ -1357,238 +1452,360 @@ function eloChange(
 
 
 /* =========================================
-   ADD PLAYER
+   ACCOUNT SYSTEM — PROTOTYPE
 ========================================= */
 
-document
-  .getElementById("playerForm")
-  .onsubmit = event => {
+const ACCOUNT_KEY = "rallyrank-accounts-v1";
+const SESSION_KEY = "rallyrank-session-v1";
+const ADMIN_NAME = "Ethan Mugilan";
+const ADMIN_USERNAME = "ethanmugilan";
 
-    event.preventDefault();
+function isCurrentAdmin(user = getCurrentUser()) {
+  return !!user &&
+    String(user.name || "").trim().toLowerCase() === ADMIN_NAME.toLowerCase() &&
+    String(user.username || "").trim().toLowerCase() === ADMIN_USERNAME.toLowerCase();
+}
 
-
-    const name =
-      document
-        .getElementById("playerName")
-        .value
-        .trim();
-
-
-    if (!name)
-      return;
-
-
-    data.players.push({
-
-      id: Date.now(),
-
-      name: name,
-
-      elo: 1000,
-
-      wins: 0,
-
-      losses: 0
-
-    });
+let accounts = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "[]");
+let currentUserId = localStorage.getItem(SESSION_KEY);
+// Migrate the original placeholder players into demo accounts once.
+if (accounts.length === 0 && data.players.length > 0) {
+  accounts = data.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    username: p.name.toLowerCase().replace(/[^a-z0-9]+/g, ""),
+    password: "pingpong",
+  }));
+  saveAccounts();
+  data.players.forEach(p => p.accountId = p.id);
+  save();
+}
 
 
-    save();
+function saveAccounts() {
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(accounts));
+}
 
+function getCurrentUser() {
+  return accounts.find(a => String(a.id) === String(currentUserId)) || null;
+}
 
-    event.target.reset();
+function syncSessionUI() {
+  const user = getCurrentUser();
+  const loggedIn = !!user;
+  const isAdmin = isCurrentAdmin(user);
 
+  document.getElementById("accountLoggedOut").classList.toggle("hidden", loggedIn);
+  document.getElementById("accountLoggedIn").classList.toggle("hidden", !loggedIn);
 
-    render();
+  document.getElementById("currentUserName").textContent = user ? user.name : "";
+  document.getElementById("adminBadge").classList.toggle("hidden", !isAdmin);
+  document.getElementById("adminPanel").classList.toggle("hidden", !isAdmin);
 
+  if (isAdmin) renderAdminPanel();
+  render();
+}
 
-    alert(
-      `${name} joined the club at 1000 ELO.`
-    );
+function renderAdminPanel() {
+  const list = document.getElementById("adminPlayersList");
+  const user = getCurrentUser();
 
+  if (!isCurrentAdmin(user)) {
+    list.innerHTML = "";
+    return;
+  }
+
+  list.innerHTML = data.players.map(player => {
+    const isSelf = String(player.id) === String(user.id);
+
+    return `
+      <div class="admin-player-row">
+        <div>
+          <strong>${esc(player.name)}</strong>
+          <div class="admin-note">
+            ${Math.round(player.elo)} ELO • ${player.wins}-${player.losses}
+          </div>
+        </div>
+        ${
+          isSelf
+            ? '<span class="user-pill">You</span>'
+            : `<button class="small-btn danger" onclick="deletePlayer(${player.id})">Delete Player</button>`
+        }
+      </div>
+    `;
+  }).join("");
+}
+
+function deletePlayer(playerId) {
+  const user = getCurrentUser();
+
+  if (!isCurrentAdmin(user)) {
+    alert("You are not authorized to delete players.");
+    return;
+  }
+
+  if (String(playerId) === String(user.id)) {
+    alert("The administrator account cannot be deleted.");
+    return;
+  }
+
+  const player = data.players.find(p => String(p.id) === String(playerId));
+  if (!player) return;
+
+  const confirmed = confirm(
+    `Remove ${player.name} from the active club roster?\n\n` +
+    `Their previous matches will remain in Match History, ` +
+    `but they will no longer appear as an active player.`
+  );
+
+  if (!confirmed) return;
+
+  data.players = data.players.filter(p => String(p.id) !== String(playerId));
+  accounts = accounts.filter(a => String(a.id) !== String(playerId));
+
+  save();
+  saveAccounts();
+  renderAdminPanel();
+  render();
+
+  alert(`${player.name} has been removed from the club.`);
+}
+
+document.getElementById("signupForm").onsubmit = event => {
+  event.preventDefault();
+
+  const name = document.getElementById("signupName").value.trim();
+  const username = document.getElementById("signupUsername").value.trim().toLowerCase();
+  const password = document.getElementById("signupPassword").value;
+
+  if (!name || !username || !password) return;
+
+  if (name.trim().toLowerCase() === ADMIN_NAME.toLowerCase()) {
+    alert("That name is reserved for the club administrator.");
+    return;
+  }
+
+  if (accounts.some(a => a.username === username)) {
+    alert("That username is already taken.");
+    return;
+  }
+
+  const player = {
+    id: Date.now(),
+    name,
+    username,
+    password,
+    elo: 1000,
+    wins: 0,
+    losses: 0
   };
 
+  accounts.push(player);
+  saveAccounts();
+
+  // The account itself is also the player record.
+  data.players.push({
+    id: player.id,
+    accountId: player.id,
+    name: player.name,
+    elo: player.elo,
+    wins: 0,
+    losses: 0
+  });
+
+  save();
+
+  currentUserId = player.id;
+  localStorage.setItem(SESSION_KEY, String(player.id));
+
+  event.target.reset();
+  syncSessionUI();
+
+  alert(`${name} created an account and joined the club at 1000 ELO.`);
+};
+
+document.getElementById("loginForm").onsubmit = event => {
+  event.preventDefault();
+
+  const username = document.getElementById("loginUsername").value.trim().toLowerCase();
+  const password = document.getElementById("loginPassword").value;
+
+  const account = accounts.find(
+    a => a.username === username && a.password === password
+  );
+
+  if (!account) {
+    alert("Incorrect username or password.");
+    return;
+  }
+
+  currentUserId = account.id;
+  localStorage.setItem(SESSION_KEY, String(account.id));
+
+  event.target.reset();
+  syncSessionUI();
+
+  alert(`Welcome back, ${account.name}.`);
+};
+
+document.getElementById("logoutBtn").onclick = () => {
+  const user = getCurrentUser();
+
+  // End the browser session without deleting the account or any match data.
+  currentUserId = null;
+  localStorage.removeItem(SESSION_KEY);
+
+  // Clear any login fields so the next player starts with a clean form.
+  document.getElementById("loginUsername").value = "";
+  document.getElementById("loginPassword").value = "";
+
+  // Explicitly clear the displayed logged-in name as well.
+  document.getElementById("currentUserName").textContent = "";
+
+  // Refresh the account UI and match confirmation buttons.
+  syncSessionUI();
+
+  if (user) {
+    alert(`You have been logged out, ${user.name}.`);
+  }
+};
 
 /* =========================================
-   REPORT MATCH
+   REPORT MATCH — TWO LOGIN CONFIRMATIONS
 ========================================= */
 
-document
-  .getElementById("matchForm")
-  .onsubmit = event => {
+document.getElementById("matchForm").onsubmit = event => {
+  event.preventDefault();
 
-    event.preventDefault();
+  const currentUser = getCurrentUser();
 
+  if (!currentUser) {
+    alert("You must log in before submitting a result.");
+    return;
+  }
 
-    const winnerId =
-      +document
-        .getElementById("winner")
-        .value;
+  const winnerId = +document.getElementById("winner").value;
+  const loserId = +document.getElementById("loser").value;
 
+  if (winnerId === loserId) {
+    alert("Winner and loser must be different players.");
+    return;
+  }
 
-    const loserId =
-      +document
-        .getElementById("loser")
-        .value;
+  const winner = data.players.find(player => player.id === winnerId);
+  const loser = data.players.find(player => player.id === loserId);
 
+  if (!winner || !loser) return;
 
-    /*
-      Prevent player from playing
-      against themselves
-    */
+  // Only a player involved in the match can submit the result.
+  if (currentUser.id !== winner.id && currentUser.id !== loser.id) {
+    alert("Only one of the two players can submit this match.");
+    return;
+  }
 
-    if (winnerId === loserId) {
+  const winnerScore = document.getElementById("winnerScore").value;
+  const loserScore = document.getElementById("loserScore").value;
 
-      alert(
-        "Winner and loser must be different players."
-      );
+  const score = winnerScore && loserScore
+    ? `${winnerScore}-${loserScore}`
+    : "Score not recorded";
 
-      return;
+  data.matches.push({
+    id: Date.now(),
+    winnerName: winner.name,
+    loserName: loser.name,
+    winnerId: winner.id,
+    loserId: loser.id,
+    winnerChange: null,
+    loserChange: null,
+    score,
+    date: new Date().toISOString(),
+    confirmations: {
+      [winner.id]: currentUser.id === winner.id,
+      [loser.id]: currentUser.id === loser.id
+    },
+    eloApplied: false
+  });
 
+  save();
+  event.target.reset();
+  render();
+
+  alert(
+    `Match submitted. ${currentUser.name} has confirmed their side.\n\n` +
+    `The other player must log into their account and confirm before ELO changes.`
+  );
+};
+
+function confirmMatch(matchId) {
+  const currentUser = getCurrentUser();
+
+  if (!currentUser) {
+    alert("You must be logged in to confirm a match.");
+    return;
+  }
+
+  const match = data.matches.find(m => m.id === matchId);
+  if (!match) return;
+
+  const involved =
+    currentUser.id === match.winnerId ||
+    currentUser.id === match.loserId;
+
+  if (!involved) {
+    alert("Only the two players in this match can confirm it.");
+    return;
+  }
+
+  if (match.eloApplied) {
+    alert("This match has already been finalized.");
+    return;
+  }
+
+  if (match.confirmations[currentUser.id]) {
+    alert("You have already confirmed this result.");
+    return;
+  }
+
+  match.confirmations[currentUser.id] = true;
+
+  const winnerConfirmed = !!match.confirmations[match.winnerId];
+  const loserConfirmed = !!match.confirmations[match.loserId];
+
+  if (winnerConfirmed && loserConfirmed) {
+    const winner = data.players.find(p => p.id === match.winnerId);
+    const loser = data.players.find(p => p.id === match.loserId);
+
+    if (winner && loser) {
+      const change = eloChange(winner.elo, loser.elo);
+
+      winner.elo += change;
+      loser.elo -= change;
+
+      winner.wins++;
+      loser.losses++;
+
+      match.winnerChange = change;
+      match.loserChange = change;
+      match.eloApplied = true;
     }
+  }
 
+  save();
+  render();
 
-    const winner =
-      data.players.find(
-        player =>
-          player.id === winnerId
-      );
-
-
-    const loser =
-      data.players.find(
-        player =>
-          player.id === loserId
-      );
-
-
-    /*
-      Calculate ELO change
-    */
-
-    const change =
-      eloChange(
-        winner.elo,
-        loser.elo
-      );
-
-
-    /*
-      Update ratings
-    */
-
-    winner.elo += change;
-
-    loser.elo -= change;
-
-
-    /*
-      Update records
-    */
-
-    winner.wins++;
-
-    loser.losses++;
-
-
-    /*
-      Get scores
-    */
-
-    const winnerScore =
-      document
-        .getElementById("winnerScore")
-        .value;
-
-
-    const loserScore =
-      document
-        .getElementById("loserScore")
-        .value;
-
-
-    const score =
-      winnerScore && loserScore
-
-        ?
-
-        `${winnerScore}-${loserScore}`
-
-        :
-
-        "Score not recorded";
-
-
-    /*
-      Store match
-    */
-
-    data.matches.push({
-
-      winnerName:
-        winner.name,
-
-      loserName:
-        loser.name,
-
-      winnerChange:
-        change,
-
-      loserChange:
-        change,
-
-      score:
-        score,
-
-      date:
-        new Date().toISOString()
-
-    });
-
-
-    /*
-      Save everything
-    */
-
-    save();
-
-
-    /*
-      Reset form
-    */
-
-    event.target.reset();
-
-
-    /*
-      Update website
-    */
-
-    render();
-
-
-    /*
-      Tell organizer what happened
-    */
-
-    alert(
-
-      `Result recorded.\n\n` +
-
-      `${winner.name} +${change} ELO\n` +
-
-      `${loser.name} -${change} ELO`
-
-    );
-
-  };
-
+  if (match.eloApplied) {
+    alert("Both players confirmed. The match is official and ELO has been updated.");
+  } else {
+    alert("Your confirmation was recorded. Waiting for the other player to log in and confirm.");
+  }
+}
 
 /* =========================================
    INITIAL PAGE LOAD
 ========================================= */
 
-render();
+syncSessionUI();
 
 </script>
 
