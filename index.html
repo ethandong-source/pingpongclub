@@ -105,12 +105,6 @@
       color: var(--accent);
     }
 
-    .nav-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
     /* HERO */
     .hero {
       padding: 64px 6% 48px;
@@ -124,7 +118,7 @@
       margin: 0 auto;
     }
 
-    .hero-badge {
+    .hero-tag {
       display: inline-block;
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.25);
@@ -611,17 +605,6 @@
       font-weight: 800;
     }
 
-    .admin-tag {
-      background: #dcfce7;
-      color: #166534;
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
     .account-card {
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
@@ -646,7 +629,7 @@
       margin-top: 8px;
     }
 
-    /* ADMIN PANEL */
+    /* ROSTER MANAGEMENT */
     .admin-panel {
       margin-top: 18px;
       padding-top: 18px;
@@ -777,7 +760,7 @@
 ========================================= -->
 <section class="hero">
   <div class="hero-container">
-    <div class="hero-badge">Carroll High School Ping Pong Club</div>
+    <div class="hero-tag">Carroll High School Ping Pong Club</div>
     <h1>Official Elo & Match Tracker</h1>
     <p>
       Report competitive match results, verify match outcomes with two-player confirmation,
@@ -806,7 +789,7 @@
     <div class="grid">
       <div class="stat-card">
         <div class="stat-title">Active Players</div>
-        <div class="stat-value" id="statPlayers">0</div>
+        <div class="stat-value" id="statPlayers">1</div>
         <div class="stat-sub">Registered club members</div>
       </div>
 
@@ -850,7 +833,7 @@
         </p>
         <hr style="border:0; border-top:1px solid var(--line); margin: 16px 0;">
         <p class="muted" style="font-size:13px; margin:0;">
-          <strong>Club Founders:</strong> Ethan Mugilan, Liang Sun, Ethan Dong, and Cody Li.
+          <strong>Club Founder:</strong> Ethan Mugilan
         </p>
       </div>
     </div>
@@ -1008,14 +991,11 @@
             <button class="btn accent" type="submit">Join Club (1000 Elo)</button>
           </form>
 
-          <!-- DEMO / FOUNDER QUICK LOGIN -->
+          <!-- QUICK LOGIN / DEFAULT ACCOUNT -->
           <div class="demo-accounts">
-            <strong>Quick Demo Logins (Password: <code>pingpong</code>):</strong>
+            <strong>Default Account (Password: <code>pingpong</code>):</strong>
             <div class="demo-btns">
-              <button type="button" class="small-btn secondary" onclick="quickLogin('ethanmugilan')">👑 Ethan M. (Admin)</button>
-              <button type="button" class="small-btn secondary" onclick="quickLogin('liangsun')">Liang Sun</button>
-              <button type="button" class="small-btn secondary" onclick="quickLogin('ethandong')">Ethan Dong</button>
-              <button type="button" class="small-btn secondary" onclick="quickLogin('codyli')">Cody Li</button>
+              <button type="button" class="small-btn secondary" onclick="quickLogin('ethanmugilan')">👤 Ethan Mugilan</button>
             </div>
           </div>
         </div>
@@ -1025,7 +1005,6 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div class="user-pill">
               👤 <span id="currentUserName"></span>
-              <span id="adminTag" class="admin-tag hidden">Club Admin</span>
             </div>
             <button id="logoutBtn" class="small-btn danger">Log Out</button>
           </div>
@@ -1051,18 +1030,17 @@
             🔔 <strong>Action Needed:</strong> You have match results awaiting your confirmation below!
           </div>
 
-          <!-- ADMIN CONTROLS PANEL -->
+          <!-- ROSTER MANAGEMENT PANEL -->
           <div id="adminPanel" class="admin-panel hidden">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h3 style="margin:0; font-size:16px;">👑 Administrator Controls</h3>
-              <span class="admin-tag">Ethan Mugilan</span>
+              <h3 style="margin:0; font-size:16px;">Roster Management</h3>
             </div>
             <div class="notice" style="margin-bottom:10px; font-size:12px; padding: 8px 12px;">
-              Admin can manage players, void erroneous matches, or reset test data.
+              Manage active players or reset club records.
             </div>
             <div id="adminPlayersList" style="max-height: 220px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:6px 12px; background:white;"></div>
             <div style="margin-top: 10px; display:flex; justify-content:flex-end;">
-              <button class="small-btn secondary" onclick="resetClubDataPrompt()">Reset Data to Club Defaults</button>
+              <button class="small-btn secondary" onclick="resetClubDataPrompt()">Reset Data to Defaults</button>
             </div>
           </div>
         </div>
@@ -1174,7 +1152,7 @@
 ========================================= -->
 <footer>
   <strong>Carroll High School — Ping Pong Club</strong><br>
-  <span class="muted">Founded by Ethan Mugilan, Liang Sun, Ethan Dong, and Cody Li</span>
+  <span class="muted">Founded by Ethan Mugilan</span>
 </footer>
 
 <!-- =========================================
@@ -1184,70 +1162,30 @@
 /* =========================================
    DATABASE KEYS & CONSTANTS
 ========================================= */
-const STORAGE_KEY_DATA = "carroll_pingpong_data_v2";
-const STORAGE_KEY_ACCOUNTS = "carroll_pingpong_accounts_v2";
-const STORAGE_KEY_SESSION = "carroll_pingpong_session_v2";
+const STORAGE_KEY_DATA = "carroll_pingpong_data_v4";
+const STORAGE_KEY_ACCOUNTS = "carroll_pingpong_accounts_v4";
+const STORAGE_KEY_SESSION = "carroll_pingpong_session_v4";
 
-const ADMIN_NAME = "Ethan Mugilan";
-const ADMIN_USERNAME = "ethanmugilan";
 const K_FACTOR = 32;
 
 /* =========================================
-   DEFAULT SEED DATA (Founders & Accounts)
+   DEFAULT SEED DATA (Only Ethan Mugilan, 0 matches, 0-0 record, 1000 Elo)
 ========================================= */
-const DEFAULT_FOUNDERS = [
-  { id: 101, name: "Ethan Mugilan", username: "ethanmugilan", password: "pingpong", elo: 1120, wins: 5, losses: 1 },
-  { id: 102, name: "Liang Sun", username: "liangsun", password: "pingpong", elo: 1080, wins: 4, losses: 2 },
-  { id: 103, name: "Ethan Dong", username: "ethandong", password: "pingpong", elo: 1040, wins: 3, losses: 3 },
-  { id: 104, name: "Cody Li", username: "codyli", password: "pingpong", elo: 960, wins: 1, losses: 4 }
+const DEFAULT_INITIAL_PLAYERS = [
+  { id: 101, name: "Ethan Mugilan", username: "ethanmugilan", password: "pingpong", elo: 1000, wins: 0, losses: 0 }
 ];
 
-const DEFAULT_MATCHES = [
-  {
-    id: 1724800001,
-    winnerId: 101,
-    loserId: 102,
-    winnerName: "Ethan Mugilan",
-    loserName: "Liang Sun",
-    score: "11-8",
-    date: new Date(Date.now() - 86400000 * 2).toISOString(),
-    winnerChange: 15,
-    loserChange: 15,
-    confirmations: { 101: true, 102: true },
-    eloApplied: true
-  },
-  {
-    id: 1724800002,
-    winnerId: 103,
-    loserId: 104,
-    loserName: "Cody Li",
-    winnerName: "Ethan Dong",
-    score: "11-9",
-    date: new Date(Date.now() - 86400000).toISOString(),
-    winnerChange: 16,
-    loserChange: 16,
-    confirmations: { 103: true, 104: true },
-    eloApplied: true
-  }
-];
+const DEFAULT_INITIAL_MATCHES = [];
 
 /* =========================================
-   INITIAL DATA LOAD & MIGRATION
+   INITIAL DATA LOAD
 ========================================= */
 function loadInitialAccounts() {
   const saved = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
   if (saved) {
     try { return JSON.parse(saved); } catch (e) { /* fallback */ }
   }
-  // If old key exists, check it
-  const oldAccounts = localStorage.getItem("rallyrank-accounts-v1");
-  if (oldAccounts) {
-    try {
-      const parsed = JSON.parse(oldAccounts);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch (e) {}
-  }
-  return DEFAULT_FOUNDERS.map(f => ({
+  return DEFAULT_INITIAL_PLAYERS.map(f => ({
     id: f.id,
     name: f.name,
     username: f.username,
@@ -1260,20 +1198,8 @@ function loadInitialData() {
   if (saved) {
     try { return JSON.parse(saved); } catch (e) { /* fallback */ }
   }
-  const oldData = localStorage.getItem("rallyrank-data-v1");
-  if (oldData) {
-    try {
-      const parsed = JSON.parse(oldData);
-      // If old data had only test accounts, upgrade to founders
-      if (parsed.players && parsed.players.some(p => p.name.includes("Test"))) {
-        // Upgrade
-      } else if (parsed.players && parsed.players.length > 0) {
-        return parsed;
-      }
-    } catch (e) {}
-  }
   return {
-    players: DEFAULT_FOUNDERS.map(f => ({
+    players: DEFAULT_INITIAL_PLAYERS.map(f => ({
       id: f.id,
       accountId: f.id,
       name: f.name,
@@ -1282,13 +1208,13 @@ function loadInitialData() {
       wins: f.wins,
       losses: f.losses
     })),
-    matches: DEFAULT_MATCHES
+    matches: []
   };
 }
 
 let accounts = loadInitialAccounts();
 let data = loadInitialData();
-let currentUserId = localStorage.getItem(STORAGE_KEY_SESSION) || localStorage.getItem("rallyrank-session-v1");
+let currentUserId = localStorage.getItem(STORAGE_KEY_SESSION);
 let activeMatchFilter = "all";
 
 function saveData() {
@@ -1300,29 +1226,29 @@ function saveAccounts() {
 }
 
 function resetClubDataPrompt() {
-  if (!confirm("Are you sure you want to reset all players and match data back to club defaults?")) return;
-  accounts = DEFAULT_FOUNDERS.map(f => ({
+  if (!confirm("Are you sure you want to reset all players and match data back to brand new defaults?")) return;
+  accounts = DEFAULT_INITIAL_PLAYERS.map(f => ({
     id: f.id,
     name: f.name,
     username: f.username,
     password: f.password
   }));
   data = {
-    players: DEFAULT_FOUNDERS.map(f => ({
+    players: DEFAULT_INITIAL_PLAYERS.map(f => ({
       id: f.id,
       accountId: f.id,
       name: f.name,
       username: f.username,
-      elo: f.elo,
-      wins: f.wins,
-      losses: f.losses
+      elo: 1000,
+      wins: 0,
+      losses: 0
     })),
-    matches: DEFAULT_MATCHES.slice()
+    matches: []
   };
   saveAccounts();
   saveData();
   syncSessionUI();
-  alert("Data reset to Carroll Ping Pong Club defaults.");
+  alert("Data reset: All matches cleared, record set to 0, and Ethan Mugilan at 1000 Elo.");
 }
 
 /* =========================================
@@ -1343,12 +1269,9 @@ function getCurrentUser() {
   return accounts.find(a => String(a.id) === String(currentUserId)) || null;
 }
 
-function isCurrentAdmin(user = getCurrentUser()) {
+function isCurrentManager(user = getCurrentUser()) {
   if (!user) return false;
-  return (
-    String(user.username || "").trim().toLowerCase() === ADMIN_USERNAME.toLowerCase() ||
-    String(user.name || "").trim().toLowerCase() === ADMIN_NAME.toLowerCase()
-  );
+  return String(user.username || "").trim().toLowerCase() === "ethanmugilan";
 }
 
 /* =========================================
@@ -1393,7 +1316,7 @@ function switchAuthTab(tab) {
   document.getElementById("tabBtnLogin").classList.toggle("active", isLogin);
   document.getElementById("tabBtnSignup").classList.toggle("active", !isLogin);
   document.getElementById("loginForm").classList.toggle("hidden", !isLogin);
-  document.getElementById("signupForm").classList.toggle("hidden", isLogin);
+  document.getElementById("signupForm").classList.toggle("hidden", !isLogin);
 }
 
 function setMatchFilter(filter) {
@@ -1483,7 +1406,6 @@ document.getElementById("logoutBtn").onclick = () => {
   const user = getCurrentUser();
   currentUserId = null;
   localStorage.removeItem(STORAGE_KEY_SESSION);
-  localStorage.removeItem("rallyrank-session-v1");
   syncSessionUI();
   if (user) alert(`Logged out successfully.`);
 };
@@ -1491,7 +1413,7 @@ document.getElementById("logoutBtn").onclick = () => {
 function syncSessionUI() {
   const user = getCurrentUser();
   const loggedIn = !!user;
-  const isAdmin = isCurrentAdmin(user);
+  const isManager = isCurrentManager(user);
 
   document.getElementById("accountLoggedOut").classList.toggle("hidden", loggedIn);
   document.getElementById("accountLoggedIn").classList.toggle("hidden", !loggedIn);
@@ -1502,13 +1424,12 @@ function syncSessionUI() {
 
   if (loggedIn) {
     document.getElementById("currentUserName").textContent = user.name;
-    document.getElementById("adminTag").classList.toggle("hidden", !isAdmin);
-    document.getElementById("adminPanel").classList.toggle("hidden", !isAdmin);
+    document.getElementById("adminPanel").classList.toggle("hidden", !isManager);
 
     const player = data.players.find(p => String(p.id) === String(user.id));
     if (player) {
       document.getElementById("userEloDisplay").textContent = Math.round(player.elo);
-      document.getElementById("userRecordDisplay").textContent = `${player.wins}-${player.losses}`;
+      document.getElementById("userRecordDisplay").textContent = `${player.wins || 0}-${player.losses || 0}`;
 
       const sorted = [...data.players].sort((a, b) => b.elo - a.elo);
       const rankIdx = sorted.findIndex(p => String(p.id) === String(user.id));
@@ -1526,7 +1447,7 @@ function syncSessionUI() {
     document.getElementById("userPendingAlert").classList.toggle("hidden", pendingForUser.length === 0);
   }
 
-  if (isAdmin) {
+  if (isManager) {
     renderAdminPanel();
   }
 
@@ -1534,12 +1455,12 @@ function syncSessionUI() {
 }
 
 /* =========================================
-   ADMIN PANEL
+   ROSTER MANAGEMENT
 ========================================= */
 function renderAdminPanel() {
   const list = document.getElementById("adminPlayersList");
   const user = getCurrentUser();
-  if (!isCurrentAdmin(user)) {
+  if (!isCurrentManager(user)) {
     list.innerHTML = "";
     return;
   }
@@ -1552,13 +1473,13 @@ function renderAdminPanel() {
           <strong>${esc(player.name)}</strong>
           <span class="muted" style="font-size:12px;">(@${esc(player.username || "player")})</span>
           <div style="font-size:12px; color:var(--muted);">
-            ${Math.round(player.elo)} Elo • ${player.wins}W - ${player.losses}L
+            ${Math.round(player.elo)} Elo • ${player.wins || 0}W - ${player.losses || 0}L
           </div>
         </div>
         ${
           isSelf
-            ? '<span class="admin-tag">Admin</span>'
-            : `<button class="small-btn danger" onclick="adminDeletePlayer(${player.id})">Delete</button>`
+            ? '<span class="muted" style="font-size:12px; font-weight:700;">(You)</span>'
+            : `<button class="small-btn danger" onclick="adminDeletePlayer(${player.id})">Remove</button>`
         }
       </div>
     `;
@@ -1567,8 +1488,8 @@ function renderAdminPanel() {
 
 function adminDeletePlayer(playerId) {
   const user = getCurrentUser();
-  if (!isCurrentAdmin(user)) {
-    alert("Unauthorized: Administrator access required.");
+  if (!isCurrentManager(user)) {
+    alert("Unauthorized access.");
     return;
   }
 
@@ -1576,17 +1497,15 @@ function adminDeletePlayer(playerId) {
   if (!player) return;
 
   if (String(playerId) === String(user.id)) {
-    alert("You cannot delete the active administrator account.");
+    alert("You cannot remove your own active account.");
     return;
   }
 
-  if (!confirm(`Are you sure you want to remove "${player.name}" from the active roster?`)) return;
+  if (!confirm(`Remove "${player.name}" from the active roster?`)) return;
 
-  // Clean up player
   data.players = data.players.filter(p => String(p.id) !== String(playerId));
   accounts = accounts.filter(a => String(a.id) !== String(playerId));
 
-  // Also cancel pending unconfirmed matches involving this player
   data.matches = data.matches.filter(m => {
     if (!m.eloApplied && (String(m.winnerId) === String(playerId) || String(m.loserId) === String(playerId))) {
       return false;
@@ -1597,7 +1516,7 @@ function adminDeletePlayer(playerId) {
   saveData();
   saveAccounts();
   syncSessionUI();
-  alert(`${player.name} was removed from the club roster.`);
+  alert(`${player.name} was removed.`);
 }
 
 /* =========================================
@@ -1698,8 +1617,8 @@ document.getElementById("matchForm").onsubmit = event => {
   const isUserWinner = String(currentUser.id) === String(winner.id);
   const isUserLoser = String(currentUser.id) === String(loser.id);
 
-  if (!isUserWinner && !isUserLoser && !isCurrentAdmin(currentUser)) {
-    alert("Only players involved in the match (or the club administrator) can submit this result.");
+  if (!isUserWinner && !isUserLoser) {
+    alert("Only players involved in the match can submit this result.");
     return;
   }
 
@@ -1720,7 +1639,6 @@ document.getElementById("matchForm").onsubmit = event => {
     : "Score unrecorded";
 
   const matchId = Date.now();
-  const isReporterAdmin = isCurrentAdmin(currentUser) && !isUserWinner && !isUserLoser;
 
   const match = {
     id: matchId,
@@ -1733,8 +1651,8 @@ document.getElementById("matchForm").onsubmit = event => {
     winnerChange: null,
     loserChange: null,
     confirmations: {
-      [winner.id]: isUserWinner || isReporterAdmin,
-      [loser.id]: isUserLoser || isReporterAdmin
+      [winner.id]: isUserWinner,
+      [loser.id]: isUserLoser
     },
     eloApplied: false
   };
@@ -1765,9 +1683,8 @@ function confirmMatch(matchId) {
 
   const isWinner = String(user.id) === String(match.winnerId);
   const isLoser = String(user.id) === String(match.loserId);
-  const isAdmin = isCurrentAdmin(user);
 
-  if (!isWinner && !isLoser && !isAdmin) {
+  if (!isWinner && !isLoser) {
     alert("Only the players involved in this match can confirm it.");
     return;
   }
@@ -1777,19 +1694,14 @@ function confirmMatch(matchId) {
     return;
   }
 
-  if (match.confirmations && match.confirmations[user.id] && !isAdmin) {
+  if (match.confirmations && match.confirmations[user.id]) {
     alert("You have already confirmed this match.");
     return;
   }
 
-  // Record confirmation
   if (!match.confirmations) match.confirmations = {};
   if (isWinner) match.confirmations[match.winnerId] = true;
   if (isLoser) match.confirmations[match.loserId] = true;
-  if (isAdmin && !isWinner && !isLoser) {
-    match.confirmations[match.winnerId] = true;
-    match.confirmations[match.loserId] = true;
-  }
 
   const winnerConfirmed = !!match.confirmations[match.winnerId];
   const loserConfirmed = !!match.confirmations[match.loserId];
@@ -1834,9 +1746,9 @@ function rejectOrCancelMatch(matchId) {
 
   const isWinner = String(user.id) === String(match.winnerId);
   const isLoser = String(user.id) === String(match.loserId);
-  const isAdmin = isCurrentAdmin(user);
+  const isManager = isCurrentManager(user);
 
-  if (!isWinner && !isLoser && !isAdmin) {
+  if (!isWinner && !isLoser && !isManager) {
     alert("Unauthorized: You cannot cancel or reject this match.");
     return;
   }
@@ -1848,7 +1760,6 @@ function rejectOrCancelMatch(matchId) {
   if (!confirm(promptMsg)) return;
 
   if (match.eloApplied) {
-    // Roll back Elo
     const winner = data.players.find(p => String(p.id) === String(match.winnerId));
     const loser = data.players.find(p => String(p.id) === String(match.loserId));
     if (winner && match.winnerChange) {
@@ -1916,7 +1827,7 @@ function renderLeaderboard() {
   tbody.innerHTML = filtered.map((player, idx) => {
     const isCurrent = currentUser && String(currentUser.id) === String(player.id);
     const totalMatches = (player.wins || 0) + (player.losses || 0);
-    const winRate = totalMatches > 0 ? Math.round((player.wins / totalMatches) * 100) : 0;
+    const winRate = totalMatches > 0 ? Math.round(((player.wins || 0) / totalMatches) * 100) : 0;
 
     let rankClass = "rank";
     let rankBadge = `${idx + 1}`;
@@ -1930,7 +1841,6 @@ function renderLeaderboard() {
         <td>
           <strong>${esc(player.name)}</strong>
           ${isCurrent ? '<span class="confirm-chip done" style="margin-left:6px;">You</span>' : ''}
-          ${isCurrentAdmin(player) ? '<span class="admin-tag" style="margin-left:4px;">Admin</span>' : ''}
         </td>
         <td><span class="elo-pill">${Math.round(player.elo)}</span></td>
         <td>${totalMatches}</td>
@@ -1994,7 +1904,6 @@ function renderDropdowns() {
 function renderRecentMatches() {
   const container = document.getElementById("recentMatches");
   const user = getCurrentUser();
-  const isAdmin = isCurrentAdmin(user);
 
   let list = data.matches.slice().reverse();
 
@@ -2005,7 +1914,7 @@ function renderRecentMatches() {
   }
 
   if (list.length === 0) {
-    container.innerHTML = `<div class="muted" style="text-align:center; padding:24px;">No matches found.</div>`;
+    container.innerHTML = `<div class="muted" style="text-align:center; padding:24px;">No matches recorded yet. Report a match to get started!</div>`;
     return;
   }
 
@@ -2023,10 +1932,8 @@ function renderRecentMatches() {
     if (match.eloApplied) {
       actionButtons = `
         <span class="badge badge-official">Official • +${match.winnerChange} / -${match.loserChange} Elo</span>
-        ${isAdmin ? `<button class="small-btn danger" title="Void Official Match" onclick="rejectOrCancelMatch(${match.id})">Void</button>` : ""}
       `;
     } else {
-      // Pending match
       if (isInvolved && !hasUserConfirmed) {
         actionButtons = `
           <button class="small-btn success" onclick="confirmMatch(${match.id})">✓ Confirm</button>
@@ -2036,11 +1943,6 @@ function renderRecentMatches() {
         actionButtons = `
           <span class="badge badge-pending">Waiting for opponent</span>
           <button class="small-btn danger" title="Cancel your submission" onclick="rejectOrCancelMatch(${match.id})">Cancel</button>
-        `;
-      } else if (isAdmin) {
-        actionButtons = `
-          <button class="small-btn success" title="Admin Force Confirm" onclick="confirmMatch(${match.id})">Force Confirm</button>
-          <button class="small-btn danger" onclick="rejectOrCancelMatch(${match.id})">Delete</button>
         `;
       } else {
         actionButtons = `<span class="badge badge-pending">Awaiting confirmation</span>`;
