@@ -1,0 +1,9 @@
+{
+  "name": "carroll-pingpong-club",
+  "version": "1.0.0",
+  "description": "Carroll Ping Pong Club — Elo & Match Tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
