@@ -15,6 +15,7 @@ const INITIAL_DB = {
   matches: []
 };
 
+// Elo Math
 function expectedProbability(playerElo, opponentElo) {
   return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
 }
@@ -25,7 +26,9 @@ function calculateEloGain(winnerElo, loserElo) {
   return Math.max(1, change);
 }
 
+// Storage Helpers (Supports Vercel KV / Upstash Redis, or local/tmp filesystem fallback)
 async function getDatabase() {
+  // 1. Check Vercel KV / Upstash Redis
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -44,11 +47,16 @@ async function getDatabase() {
     }
   }
 
+  // 2. Fallback to filesystem
   if (fs.existsSync(LOCAL_DB_FILE)) {
-    try { return JSON.parse(fs.readFileSync(LOCAL_DB_FILE, "utf8")); } catch (e) {}
+    try {
+      return JSON.parse(fs.readFileSync(LOCAL_DB_FILE, "utf8"));
+    } catch (e) {}
   }
   if (fs.existsSync(TMP_DB_FILE)) {
-    try { return JSON.parse(fs.readFileSync(TMP_DB_FILE, "utf8")); } catch (e) {}
+    try {
+      return JSON.parse(fs.readFileSync(TMP_DB_FILE, "utf8"));
+    } catch (e) {}
   }
 
   return JSON.parse(JSON.stringify(INITIAL_DB));
@@ -74,15 +82,25 @@ async function saveDatabase(db) {
     }
   }
 
+  // Fallback to /tmp filesystem for serverless
   if (!fs.existsSync(DATA_DIR)) {
     try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
   }
-  try { fs.writeFileSync(TMP_DB_FILE, JSON.stringify(db, null, 2), "utf8"); } catch (e) {}
-  try { fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(db, null, 2), "utf8"); } catch (e) {}
+  try {
+    fs.writeFileSync(TMP_DB_FILE, JSON.stringify(db, null, 2), "utf8");
+  } catch (e) {}
+
+  // Also write to local if writable
+  try {
+    fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(db, null, 2), "utf8");
+  } catch (e) {}
 }
 
+// Request body helper
 function parseBody(req) {
-  if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
+  if (req.body && typeof req.body === "object") {
+    return Promise.resolve(req.body);
+  }
   if (typeof req.body === "string" && req.body) {
     try { return Promise.resolve(JSON.parse(req.body)); } catch (e) {}
   }
@@ -108,6 +126,7 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+// Vercel Serverless Function Handler
 module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
@@ -137,6 +156,7 @@ module.exports = async function handler(req, res) {
       success: true,
       players: publicPlayers,
       matches: db.matches || [],
+      storageType: (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL) ? "vercel_kv" : "filesystem",
       serverTime: new Date().toISOString()
     });
   }
@@ -152,6 +172,7 @@ module.exports = async function handler(req, res) {
       if (!name || !username || !password) {
         return sendJson(res, 400, { error: "Name, username, and password are required." });
       }
+
       if (password.length < 4) {
         return sendJson(res, 400, { error: "Password must be at least 4 characters." });
       }
@@ -162,8 +183,23 @@ module.exports = async function handler(req, res) {
       }
 
       const playerId = Date.now();
-      const newAccount = { id: playerId, name, username, password, createdAt: new Date().toISOString() };
-      const newPlayer = { id: playerId, accountId: playerId, name, username, elo: 1000, wins: 0, losses: 0 };
+      const newAccount = {
+        id: playerId,
+        name,
+        username,
+        password,
+        createdAt: new Date().toISOString()
+      };
+
+      const newPlayer = {
+        id: playerId,
+        accountId: playerId,
+        name,
+        username,
+        elo: 1000,
+        wins: 0,
+        losses: 0
+      };
 
       if (!db.accounts) db.accounts = [];
       if (!db.players) db.players = [];
@@ -174,7 +210,14 @@ module.exports = async function handler(req, res) {
 
       return sendJson(res, 201, {
         success: true,
-        user: { id: newPlayer.id, name: newPlayer.name, username: newPlayer.username, elo: newPlayer.elo, wins: 0, losses: 0 }
+        user: {
+          id: newPlayer.id,
+          name: newPlayer.name,
+          username: newPlayer.username,
+          elo: newPlayer.elo,
+          wins: 0,
+          losses: 0
+        }
       });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
@@ -194,12 +237,24 @@ module.exports = async function handler(req, res) {
       }
 
       const player = (db.players || []).find(p => String(p.id) === String(account.id)) || {
-        id: account.id, name: account.name, username: account.username, elo: 1000, wins: 0, losses: 0
+        id: account.id,
+        name: account.name,
+        username: account.username,
+        elo: 1000,
+        wins: 0,
+        losses: 0
       };
 
       return sendJson(res, 200, {
         success: true,
-        user: { id: player.id, name: player.name, username: player.username, elo: player.elo, wins: player.wins || 0, losses: player.losses || 0 }
+        user: {
+          id: player.id,
+          name: player.name,
+          username: player.username,
+          elo: player.elo,
+          wins: player.wins || 0,
+          losses: player.losses || 0
+        }
       });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
@@ -212,7 +267,9 @@ module.exports = async function handler(req, res) {
       const body = await parseBody(req);
       const userId = body.userId;
 
-      if (!userId) return sendJson(res, 400, { error: "User ID is required." });
+      if (!userId) {
+        return sendJson(res, 400, { error: "User ID is required." });
+      }
 
       const accIdx = (db.accounts || []).findIndex(a => String(a.id) === String(userId));
       const playerIdx = (db.players || []).findIndex(p => String(p.id) === String(userId));
@@ -227,12 +284,18 @@ module.exports = async function handler(req, res) {
       if (playerIdx !== -1) db.players.splice(playerIdx, 1);
 
       db.matches = (db.matches || []).filter(m => {
-        if (!m.eloApplied && (String(m.winnerId) === String(userId) || String(m.loserId) === String(userId))) return false;
+        if (!m.eloApplied && (String(m.winnerId) === String(userId) || String(m.loserId) === String(userId))) {
+          return false;
+        }
         return true;
       });
 
       await saveDatabase(db);
-      return sendJson(res, 200, { success: true, message: `Account for ${playerName} was permanently deleted.` });
+
+      return sendJson(res, 200, {
+        success: true,
+        message: `Account for ${playerName} was permanently deleted.`
+      });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
     }
@@ -247,23 +310,31 @@ module.exports = async function handler(req, res) {
       const reporterId = body.reporterId;
       const score = (body.score || "").trim() || "Score unrecorded";
 
-      if (!winnerId || !loserId) return sendJson(res, 400, { error: "Winner and loser are required." });
-      if (String(winnerId) === String(loserId)) return sendJson(res, 400, { error: "Winner and loser must be different." });
+      if (!winnerId || !loserId) {
+        return sendJson(res, 400, { error: "Winner and loser are required." });
+      }
+
+      if (String(winnerId) === String(loserId)) {
+        return sendJson(res, 400, { error: "Winner and loser must be different players." });
+      }
 
       const winner = (db.players || []).find(p => String(p.id) === String(winnerId));
       const loser = (db.players || []).find(p => String(p.id) === String(loserId));
 
-      if (!winner || !loser) return sendJson(res, 404, { error: "Player records not found." });
+      if (!winner || !loser) {
+        return sendJson(res, 404, { error: "Player records not found." });
+      }
 
       const isReporterWinner = String(reporterId) === String(winner.id);
       const isReporterLoser = String(reporterId) === String(loser.id);
 
       if (!isReporterWinner && !isReporterLoser) {
-        return sendJson(res, 403, { error: "Only participants can submit results." });
+        return sendJson(res, 403, { error: "Only a participant can submit match results." });
       }
 
+      const matchId = Date.now();
       const newMatch = {
-        id: Date.now(),
+        id: matchId,
         winnerId: winner.id,
         loserId: loser.id,
         winnerName: winner.name,
@@ -272,7 +343,10 @@ module.exports = async function handler(req, res) {
         date: new Date().toISOString(),
         winnerChange: null,
         loserChange: null,
-        confirmations: { [winner.id]: isReporterWinner, [loser.id]: isReporterLoser },
+        confirmations: {
+          [winner.id]: isReporterWinner,
+          [loser.id]: isReporterLoser
+        },
         eloApplied: false
       };
 
@@ -300,8 +374,13 @@ module.exports = async function handler(req, res) {
       const isWinner = String(userId) === String(match.winnerId);
       const isLoser = String(userId) === String(match.loserId);
 
-      if (!isWinner && !isLoser) return sendJson(res, 403, { error: "Only participants can confirm." });
-      if (match.eloApplied) return sendJson(res, 400, { error: "Match already finalized." });
+      if (!isWinner && !isLoser) {
+        return sendJson(res, 403, { error: "Only participants can confirm this match." });
+      }
+
+      if (match.eloApplied) {
+        return sendJson(res, 400, { error: "Match is already finalized." });
+      }
 
       if (!match.confirmations) match.confirmations = {};
       if (isWinner) match.confirmations[match.winnerId] = true;
@@ -309,6 +388,7 @@ module.exports = async function handler(req, res) {
 
       const winnerConfirmed = !!match.confirmations[match.winnerId];
       const loserConfirmed = !!match.confirmations[match.loserId];
+
       let eloApplied = false;
 
       if (winnerConfirmed && loserConfirmed) {
@@ -351,7 +431,9 @@ module.exports = async function handler(req, res) {
       const isWinner = String(userId) === String(match.winnerId);
       const isLoser = String(userId) === String(match.loserId);
 
-      if (!isWinner && !isLoser) return sendJson(res, 403, { error: "Unauthorized." });
+      if (!isWinner && !isLoser) {
+        return sendJson(res, 403, { error: "Unauthorized: You cannot reject this match." });
+      }
 
       if (match.eloApplied) {
         const winner = (db.players || []).find(p => String(p.id) === String(match.winnerId));
@@ -369,10 +451,18 @@ module.exports = async function handler(req, res) {
 
       db.matches.splice(matchIdx, 1);
       await saveDatabase(db);
+
       return sendJson(res, 200, { success: true });
     } catch (err) {
       return sendJson(res, 500, { error: err.message });
     }
+  }
+
+  // 8. POST /api/reset
+  if (req.method === "POST" && (pathname === "/api/reset" || pathname === "/reset")) {
+    db = JSON.parse(JSON.stringify(INITIAL_DB));
+    await saveDatabase(db);
+    return sendJson(res, 200, { success: true, message: "Database wiped to clean slate." });
   }
 
   return sendJson(res, 404, { error: "Endpoint not found" });

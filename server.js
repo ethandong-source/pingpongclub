@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// Render assigns process.env.PORT automatically
+// Render assigns process.env.PORT automatically (usually 10000 or similar)
 const PORT = process.env.PORT || 8000;
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -16,7 +16,7 @@ if (!fs.existsSync(DATA_DIR)) {
   }
 }
 
-// Initial clean database: 0 accounts, 0 players, 0 matches
+// Initial clean database state: 0 accounts, 0 players, 0 matches
 const INITIAL_DB = {
   version: 1,
   accounts: [],
@@ -24,7 +24,7 @@ const INITIAL_DB = {
   matches: []
 };
 
-// Database loader
+// Database loader with fallback
 function loadDb() {
   if (!fs.existsSync(DB_FILE)) {
     saveDb(INITIAL_DB);
@@ -34,18 +34,20 @@ function loadDb() {
     const raw = fs.readFileSync(DB_FILE, "utf8");
     return JSON.parse(raw);
   } catch (err) {
+    console.error("Error reading db.json, re-initializing:", err);
     saveDb(INITIAL_DB);
     return JSON.parse(JSON.stringify(INITIAL_DB));
   }
 }
 
-// Atomic file write
+// Atomic file write to prevent corruption
 function saveDb(data) {
   try {
     const tempFile = DB_FILE + ".tmp";
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), "utf8");
     fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
+    // Fallback direct write
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
     } catch (e) {
@@ -66,7 +68,7 @@ function expectedProbability(playerElo, opponentElo) {
 function calculateEloGain(winnerElo, loserElo) {
   const prob = expectedProbability(winnerElo, loserElo);
   const change = Math.round(K_FACTOR * (1 - prob));
-  return Math.max(1, change);
+  return Math.max(1, change); // Minimum 1 point change
 }
 
 // Helper: Parse JSON body
@@ -135,7 +137,7 @@ const server = http.createServer(async (req, res) => {
   // API ENDPOINTS
   // ==========================================
 
-  // 1. GET /api/data
+  // 1. GET /api/data -> Shared club data
   if (req.method === "GET" && pathname === "/api/data") {
     const publicPlayers = (db.players || []).map(p => ({
       id: p.id,
@@ -154,7 +156,7 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // 2. POST /api/auth/signup
+  // 2. POST /api/auth/signup -> Register new player
   if (req.method === "POST" && pathname === "/api/auth/signup") {
     try {
       const body = await parseJsonBody(req);
@@ -219,7 +221,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 3. POST /api/auth/login
+  // 3. POST /api/auth/login -> Sign in
   if (req.method === "POST" && pathname === "/api/auth/login") {
     try {
       const body = await parseJsonBody(req);
@@ -258,7 +260,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 4. POST /api/auth/delete-account
+  // 4. POST /api/auth/delete-account -> Delete account
   if (req.method === "POST" && pathname === "/api/auth/delete-account") {
     try {
       const body = await parseJsonBody(req);
@@ -299,7 +301,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 5. POST /api/matches
+  // 5. POST /api/matches -> Report match
   if (req.method === "POST" && pathname === "/api/matches") {
     try {
       const body = await parseJsonBody(req);
@@ -363,7 +365,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 6. POST /api/matches/:id/confirm
+  // 6. POST /api/matches/:id/confirm -> Confirm match
   const matchConfirmRegex = /^\/api\/matches\/(\d+)\/confirm$/;
   if (req.method === "POST" && matchConfirmRegex.test(pathname)) {
     try {
@@ -428,7 +430,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 7. POST /api/matches/:id/reject
+  // 7. POST /api/matches/:id/reject -> Reject / cancel match
   const matchRejectRegex = /^\/api\/matches\/(\d+)\/reject$/;
   if (req.method === "POST" && matchRejectRegex.test(pathname)) {
     try {
@@ -474,7 +476,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 8. POST /api/reset
+  // 8. POST /api/reset -> Clean reset
   if (req.method === "POST" && pathname === "/api/reset") {
     db = JSON.parse(JSON.stringify(INITIAL_DB));
     saveDb(db);
@@ -501,6 +503,7 @@ const server = http.createServer(async (req, res) => {
     return fs.createReadStream(filePath).pipe(res);
   }
 
+  // Fallback to index.html for SPA
   const indexPath = path.join(__dirname, "index.html");
   if (fs.existsSync(indexPath)) {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });

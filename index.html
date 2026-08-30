@@ -32,7 +32,9 @@
       --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -67,8 +69,13 @@
       user-select: none;
     }
 
-    .brand-icon { font-size: 22px; }
-    .brand span { color: #2e7d32; }
+    .brand-icon {
+      font-size: 22px;
+    }
+
+    .brand span {
+      color: #2e7d32;
+    }
 
     nav .links {
       display: flex;
@@ -88,10 +95,21 @@
       transition: all 0.15s ease;
     }
 
-    nav button:hover { background: #f1f5f9; color: var(--accent2); }
-    nav button.active { background: #eef2ff; color: var(--accent); }
+    nav button:hover {
+      background: #f1f5f9;
+      color: var(--accent2);
+    }
 
-    .nav-actions { display: flex; align-items: center; gap: 8px; }
+    nav button.active {
+      background: #eef2ff;
+      color: var(--accent);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
     .live-dot {
       display: inline-flex;
@@ -130,7 +148,10 @@
       position: relative;
     }
 
-    .hero-container { max-width: 1180px; margin: 0 auto; }
+    .hero-container {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
 
     .hero-tag {
       display: inline-flex;
@@ -161,7 +182,11 @@
       margin: 0 0 24px;
     }
 
-    .hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
     /* BUTTONS */
     .btn {
@@ -179,15 +204,52 @@
       text-decoration: none;
     }
 
-    .btn:hover { transform: translateY(-1px); }
-    .btn.primary { background: white; color: #14532d; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
-    .btn.primary:hover { background: #f0fdf4; }
-    .btn.dark { background: #172033; color: white; }
-    .btn.dark:hover { background: #0f172a; }
-    .btn.accent { background: var(--accent); color: white; }
-    .btn.accent:hover { background: var(--accent-hover); }
-    .btn.outline { background: transparent; border: 1px solid rgba(255, 255, 255, 0.6); color: white; }
-    .btn.outline:hover { background: rgba(255, 255, 255, 0.15); border-color: white; }
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.primary {
+      background: white;
+      color: #14532d;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn.primary:hover {
+      background: #f0fdf4;
+    }
+
+    .btn.dark {
+      background: #172033;
+      color: white;
+    }
+
+    .btn.dark:hover {
+      background: #0f172a;
+    }
+
+    .btn.accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn.accent:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn.outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      color: white;
+    }
+
+    .btn.outline:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: white;
+    }
 
     .small-btn {
       border: 0;
@@ -199,16 +261,55 @@
       transition: all 0.12s ease;
     }
 
-    .small-btn.primary { background: #2563eb; color: white; }
-    .small-btn.success { background: #16a34a; color: white; }
-    .small-btn.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-    .small-btn.danger:hover { background: #fecaca; }
-    .small-btn.secondary { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+    .small-btn.primary {
+      background: #2563eb;
+      color: white;
+    }
+    .small-btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    .small-btn.success {
+      background: #16a34a;
+      color: white;
+    }
+    .small-btn.success:hover {
+      background: #15803d;
+    }
+
+    .small-btn.danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .small-btn.danger:hover {
+      background: #fecaca;
+    }
+
+    .small-btn.secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+    }
+    .small-btn.secondary:hover {
+      background: #e2e8f0;
+    }
 
     /* MAIN CONTAINER */
-    main { max-width: 1180px; margin: auto; padding: 32px 6% 70px; }
-    .section { display: none; animation: fadeIn 0.2s ease-in-out; }
-    .section.active { display: block; }
+    main {
+      max-width: 1180px;
+      margin: auto;
+      padding: 32px 6% 70px;
+    }
+
+    .section {
+      display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .section.active {
+      display: block;
+    }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
@@ -216,8 +317,17 @@
     }
 
     /* CARDS & GRID */
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .grid-2 { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+    }
 
     .card {
       background: var(--card);
@@ -236,7 +346,11 @@
       flex-wrap: wrap;
     }
 
-    .card-header h2 { margin: 0; font-size: 20px; font-weight: 800; }
+    .card-header h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
 
     .stat-card {
       background: var(--card);
@@ -258,9 +372,22 @@
       margin-bottom: 8px;
     }
 
-    .stat-value { font-size: 32px; font-weight: 900; color: var(--text); line-height: 1; }
-    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-    .muted { color: var(--muted); }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
 
     /* TABLES */
     .table-wrap {
@@ -270,10 +397,22 @@
       background: white;
     }
 
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    .table-wrap table { min-width: 580px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
 
-    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .table-wrap table {
+      min-width: 580px;
+    }
+
+    th, td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
     th {
       background: #f8fafc;
       font-size: 12px;
@@ -283,10 +422,20 @@
       color: var(--muted);
     }
 
-    tr:last-child td { border-bottom: 0; }
-    tr.highlight-row { background: #f0fdf4; }
+    tr:last-child td {
+      border-bottom: 0;
+    }
 
-    .rank { font-weight: 900; width: 50px; color: var(--muted); }
+    tr.highlight-row {
+      background: #f0fdf4;
+    }
+
+    .rank {
+      font-weight: 900;
+      width: 50px;
+      color: var(--muted);
+    }
+
     .rank-1 { color: #d97706; font-weight: 900; }
     .rank-2 { color: #64748b; font-weight: 900; }
     .rank-3 { color: #b45309; font-weight: 900; }
@@ -301,10 +450,28 @@
     }
 
     /* FORMS */
-    form { display: grid; gap: 14px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    label { font-size: 13px; font-weight: 700; color: #374151; }
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
 
     input, select {
       width: 100%;
@@ -335,12 +502,30 @@
       line-height: 1.45;
     }
 
-    .notice.warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-    .notice.danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-    .notice.success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+    .notice.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
+    .notice.danger {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+
+    .notice.success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
 
     /* MATCH HISTORY */
-    .match-list { display: flex; flex-direction: column; gap: 10px; }
+    .match-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .match-item {
       display: flex;
@@ -354,10 +539,22 @@
       transition: box-shadow 0.12s ease;
     }
 
-    .match-item:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); }
-    .match-item.is-pending { border-left: 4px solid #f59e0b; background: #fffdfa; }
-    .match-item.is-official { border-left: 4px solid #16a34a; }
-    .match-main { flex: 1; }
+    .match-item:hover {
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .match-item.is-pending {
+      border-left: 4px solid #f59e0b;
+      background: #fffdfa;
+    }
+
+    .match-item.is-official {
+      border-left: 4px solid #16a34a;
+    }
+
+    .match-main {
+      flex: 1;
+    }
 
     .match-headline {
       font-size: 15px;
@@ -378,7 +575,12 @@
       flex-wrap: wrap;
     }
 
-    .match-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .match-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
     .badge {
       display: inline-flex;
@@ -391,10 +593,24 @@
       white-space: nowrap;
     }
 
-    .badge-official { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-official {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
 
-    .confirm-status { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .badge-pending {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .confirm-status {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
 
     .confirm-chip {
       display: inline-flex;
@@ -408,7 +624,10 @@
       font-weight: 700;
     }
 
-    .confirm-chip.done { background: #dcfce7; color: #166534; }
+    .confirm-chip.done {
+      background: #dcfce7;
+      color: #166534;
+    }
 
     /* ACCOUNT PANEL */
     .user-pill {
@@ -431,6 +650,7 @@
       background: #fafafa;
     }
 
+    /* AUTH SWITCH BUTTONS */
     .auth-toggle-group {
       display: flex;
       background: #f1f5f9;
@@ -480,9 +700,16 @@
       border-radius: var(--radius-sm);
     }
 
-    .tab-btn.active { background: #eef2ff; color: var(--accent); }
-    .hidden { display: none !important; }
+    .tab-btn.active {
+      background: #eef2ff;
+      color: var(--accent);
+    }
 
+    .hidden {
+      display: none !important;
+    }
+
+    /* PREVIEW ELO BOX */
     .elo-preview-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -495,6 +722,7 @@
       align-items: center;
     }
 
+    /* FOOTER */
     footer {
       text-align: center;
       color: var(--muted);
@@ -504,21 +732,45 @@
       background: white;
     }
 
+    /* RESPONSIVE */
     @media (max-width: 860px) {
-      .grid { grid-template-columns: 1fr; }
-      .grid-2 { grid-template-columns: 1fr; }
-      .form-grid { grid-template-columns: 1fr; }
-      nav { flex-direction: column; align-items: stretch; padding: 10px 4%; }
-      nav .links { overflow-x: auto; padding-bottom: 4px; width: 100%; }
-      .match-item { flex-direction: column; align-items: flex-start; }
-      .match-actions { width: 100%; justify-content: flex-end; margin-top: 8px; }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      nav {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px 4%;
+      }
+      nav .links {
+        overflow-x: auto;
+        padding-bottom: 4px;
+        width: 100%;
+      }
+      .match-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .match-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<!-- NAVIGATION -->
+<!-- =========================================
+     NAVIGATION
+========================================= -->
 <nav>
   <div class="brand" onclick="showSection('home')">
     <span class="brand-icon">🏓</span>
@@ -538,14 +790,16 @@
   </div>
 </nav>
 
-<!-- HERO -->
+<!-- =========================================
+     HERO
+========================================= -->
 <section class="hero">
   <div class="hero-container">
     <div class="hero-tag">
       <span>🏓</span>
       <span>Carroll High School Ping Pong Club</span>
     </div>
-    <h1>Ping Pong Club Website</h1>
+    <h1>Official Elo & Match Tracker</h1>
     <p>
       Create an account to join the club, report match scores, and verify outcomes with
       two-player confirmations. All player ratings and match records sync across all devices.
@@ -561,10 +815,14 @@
   </div>
 </section>
 
-<!-- MAIN CONTENT -->
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
 <main>
 
-  <!-- HOME SECTION -->
+  <!-- =========================================
+       HOME SECTION
+  ========================================= -->
   <section id="home" class="section active">
     <div class="grid">
       <div class="stat-card">
@@ -620,7 +878,9 @@
     </div>
   </section>
 
-  <!-- LEADERBOARD SECTION -->
+  <!-- =========================================
+       LEADERBOARD SECTION
+  ========================================= -->
   <section id="leaderboard" class="section">
     <div class="card">
       <div class="card-header">
@@ -657,7 +917,9 @@
     </div>
   </section>
 
-  <!-- MATCHES & ACCOUNT SECTION -->
+  <!-- =========================================
+       MATCHES & ACCOUNT SECTION
+  ========================================= -->
   <section id="matches" class="section">
     <div class="grid-2">
 
@@ -737,6 +999,7 @@
 
         <!-- LOGGED OUT VIEW -->
         <div id="accountLoggedOut">
+          <!-- Clear Toggle Between Create Account and Log In -->
           <div class="auth-toggle-group">
             <button id="authTabSignup" class="auth-toggle-btn active" onclick="switchAuthView('signup')">
               📝 Create New Account
@@ -746,7 +1009,7 @@
             </button>
           </div>
 
-          <!-- SIGNUP FORM -->
+          <!-- SIGNUP FORM (DEDICATED) -->
           <div id="signupView">
             <div class="muted" style="font-size:13px; margin-bottom: 12px;">
               Join the club to get your starting <strong>1000 Elo</strong> rating and start tracking matches.
@@ -781,7 +1044,7 @@
             </div>
           </div>
 
-          <!-- LOGIN FORM -->
+          <!-- LOGIN FORM (DEDICATED) -->
           <div id="loginView" class="hidden">
             <div class="muted" style="font-size:13px; margin-bottom: 12px;">
               Sign in to report match scores or confirm results reported by other players.
@@ -869,7 +1132,9 @@
     </div>
   </section>
 
-  <!-- PLAYERS ROSTER SECTION -->
+  <!-- =========================================
+       PLAYERS ROSTER SECTION
+  ========================================= -->
   <section id="players" class="section">
     <div class="card">
       <div class="card-header">
@@ -906,7 +1171,9 @@
     </div>
   </section>
 
-  <!-- RULES SECTION -->
+  <!-- =========================================
+       RULES & ELO CALCULATOR SECTION
+  ========================================= -->
   <section id="rules" class="section">
     <div class="grid-2">
       <div class="card">
@@ -923,13 +1190,17 @@
 
       <div class="card">
         <h2>Elo Rating Formula</h2>
-        <p>Ratings are calculated using the standard Elo formula with <strong>K = 32</strong>:</p>
+        <p>
+          Ratings are calculated using the standard Elo rating formula with a <strong>K-Factor of 32</strong>:
+        </p>
+
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; font-family:monospace; font-size:13px;">
           <strong>1. Expected Win Probability:</strong><br>
           E<sub>Winner</sub> = 1 / (1 + 10 <sup>(Loser Elo − Winner Elo) / 400</sup>)<br><br>
           <strong>2. Rating Change:</strong><br>
           Δ Elo = Round( 32 × (1 − E<sub>Winner</sub>) )
         </div>
+
         <div class="notice">
           <strong>Interactive Test:</strong>
           If a 1000 Elo player defeats a 1100 Elo player, expected score is ~36%, resulting in a <strong>+20 Elo</strong> gain!
@@ -940,28 +1211,45 @@
 
 </main>
 
-<!-- FOOTER -->
+<!-- =========================================
+     FOOTER
+========================================= -->
 <footer>
   <strong>Carroll High School — Ping Pong Club</strong><br>
-  <span class="muted">Founders: Ethan Mugilan, Liang Sun, Ethan Dong, Cody Li</span>
+  <span class="muted">Live Match & Elo Tracking System</span>
 </footer>
 
-<!-- JAVASCRIPT LOGIC -->
+<!-- =========================================
+     JAVASCRIPT CLIENT & SYNC
+========================================= -->
 <script>
+/* =========================================
+   GLOBAL STATE & API CLIENT
+========================================= */
 const API_BASE = "";
 const SESSION_STORAGE_KEY = "carroll_pingpong_user_session_v5";
 
-let clubState = { players: [], matches: [] };
+let clubState = {
+  players: [],
+  matches: []
+};
+
 let currentUser = null;
 let activeMatchFilter = "all";
 
+// Load user session from local device storage
 try {
   const savedUser = localStorage.getItem(SESSION_STORAGE_KEY);
-  if (savedUser) currentUser = JSON.parse(savedUser);
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+  }
 } catch (e) {
   currentUser = null;
 }
 
+/* =========================================
+   BACKEND SYNC API
+========================================= */
 async function fetchClubData() {
   try {
     const res = await fetch(`${API_BASE}/api/data`);
@@ -971,6 +1259,7 @@ async function fetchClubData() {
       clubState.players = json.players || [];
       clubState.matches = json.matches || [];
 
+      // If logged in, update current user's latest stats
       if (currentUser) {
         const matchingPlayer = clubState.players.find(p => String(p.id) === String(currentUser.id));
         if (matchingPlayer) {
@@ -980,6 +1269,7 @@ async function fetchClubData() {
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
         }
       }
+
       render();
     }
   } catch (err) {
@@ -987,9 +1277,13 @@ async function fetchClubData() {
   }
 }
 
+// Start real-time sync polling (every 3 seconds)
 setInterval(fetchClubData, 3000);
 window.addEventListener("focus", fetchClubData);
 
+/* =========================================
+   NAVIGATION & UI SWITCHING
+========================================= */
 function showSection(id) {
   document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
   const target = document.getElementById(id);
@@ -1000,6 +1294,7 @@ function showSection(id) {
   });
 
   render();
+
   window.scrollTo({
     top: document.querySelector("main").offsetTop - 70,
     behavior: "smooth"
@@ -1026,6 +1321,9 @@ function setMatchFilter(filter) {
   renderRecentMatches();
 }
 
+/* =========================================
+   SECURITY & STRING HELPERS
+========================================= */
 function esc(str) {
   if (str === null || str === undefined) return "";
   return String(str)
@@ -1036,6 +1334,9 @@ function esc(str) {
     .replace(/'/g, "&#039;");
 }
 
+/* =========================================
+   AUTHENTICATION (SIGNUP & LOGIN)
+========================================= */
 document.getElementById("signupForm").onsubmit = async event => {
   event.preventDefault();
   const name = document.getElementById("signupName").value.trim();
@@ -1108,6 +1409,7 @@ document.getElementById("loginForm").onsubmit = async event => {
 };
 
 document.getElementById("logoutBtn").onclick = () => {
+  const name = currentUser ? currentUser.name : "Player";
   currentUser = null;
   localStorage.removeItem(SESSION_STORAGE_KEY);
   syncSessionUI();
@@ -1172,6 +1474,7 @@ function syncSessionUI() {
     const rankIdx = sorted.findIndex(p => String(p.id) === String(currentUser.id));
     document.getElementById("userRankDisplay").textContent = rankIdx >= 0 ? `#${rankIdx + 1}` : "#1";
 
+    // Check if user has pending match confirmations waiting for them
     const pendingForUser = clubState.matches.filter(m => {
       if (m.eloApplied) return false;
       const isInvolved = String(m.winnerId) === String(currentUser.id) || String(m.loserId) === String(currentUser.id);
@@ -1185,6 +1488,9 @@ function syncSessionUI() {
   render();
 }
 
+/* =========================================
+   MATCH REPORTING & CONFIRMATION
+========================================= */
 function setReporterRole(role) {
   if (!currentUser) return;
 
@@ -1193,10 +1499,14 @@ function setReporterRole(role) {
 
   if (role === "winner") {
     winnerSelect.value = currentUser.id;
-    if (loserSelect.value === String(currentUser.id)) winnerSelect.value = "";
+    if (loserSelect.value === String(currentUser.id)) {
+      loserSelect.value = "";
+    }
   } else {
     loserSelect.value = currentUser.id;
-    if (winnerSelect.value === String(currentUser.id)) winnerSelect.value = "";
+    if (winnerSelect.value === String(currentUser.id)) {
+      winnerSelect.value = "";
+    }
   }
   updateEloPreview();
 }
@@ -1276,7 +1586,9 @@ document.getElementById("matchForm").onsubmit = async event => {
     }
   }
 
-  const scoreText = (wScoreRaw !== "" && lScoreRaw !== "") ? `${wScoreRaw}-${lScoreRaw}` : "Score unrecorded";
+  const scoreText = (wScoreRaw !== "" && lScoreRaw !== "")
+    ? `${wScoreRaw}-${lScoreRaw}`
+    : "Score unrecorded";
 
   try {
     const res = await fetch(`${API_BASE}/api/matches`, {
@@ -1301,7 +1613,11 @@ document.getElementById("matchForm").onsubmit = async event => {
     document.getElementById("scoreWarning").classList.add("hidden");
 
     await fetchClubData();
-    alert(`Match submitted! ${currentUser.name} confirmed their side.\n\nThe opponent can now log in on any device to confirm.`);
+
+    alert(
+      `Match submitted! ${currentUser.name} confirmed their side.\n\n` +
+      `The opponent can now log in on any device to confirm the result.`
+    );
   } catch (err) {
     alert("Connection error while submitting match.");
   }
@@ -1327,8 +1643,9 @@ async function confirmMatch(matchId) {
     }
 
     await fetchClubData();
+
     if (json.eloApplied) {
-      alert(`Both players confirmed! The match is official and Elo ratings have updated across all devices.`);
+      alert(`Both players confirmed! The match is official and Elo ratings have been updated across all devices.`);
     } else {
       alert("Your confirmation has been saved. Awaiting confirmation from opponent.");
     }
@@ -1372,6 +1689,9 @@ async function rejectOrCancelMatch(matchId) {
   }
 }
 
+/* =========================================
+   RENDERING FUNCTIONS
+========================================= */
 function render() {
   renderHomeStats();
   renderLeaderboard();
@@ -1460,7 +1780,13 @@ function renderPlayersTable() {
 
   const tbody = document.getElementById("playersBody");
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">No registered players yet.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">
+          No registered players yet.
+        </td>
+      </tr>
+    `;
     return;
   }
 
@@ -1484,6 +1810,7 @@ function renderDropdowns() {
   const winnerSelect = document.getElementById("winner");
   const loserSelect = document.getElementById("loser");
   const needPlayersNotice = document.getElementById("reportNoticeNeedPlayers");
+  const submitBtn = document.getElementById("submitMatchBtn");
 
   const currentWinnerVal = winnerSelect.value;
   const currentLoserVal = loserSelect.value;
@@ -1510,13 +1837,21 @@ function renderDropdowns() {
 
 function renderRecentMatches() {
   const container = document.getElementById("recentMatches");
+
   let list = clubState.matches.slice().reverse();
 
-  if (activeMatchFilter === "pending") list = list.filter(m => !m.eloApplied);
-  else if (activeMatchFilter === "official") list = list.filter(m => m.eloApplied);
+  if (activeMatchFilter === "pending") {
+    list = list.filter(m => !m.eloApplied);
+  } else if (activeMatchFilter === "official") {
+    list = list.filter(m => m.eloApplied);
+  }
 
   if (list.length === 0) {
-    container.innerHTML = `<div class="muted" style="text-align:center; padding:28px 16px;">No matches recorded yet. Report a match to get started!</div>`;
+    container.innerHTML = `
+      <div class="muted" style="text-align:center; padding:28px 16px;">
+        No matches recorded yet. Report a match to get started!
+      </div>
+    `;
     return;
   }
 
@@ -1530,8 +1865,11 @@ function renderRecentMatches() {
     const hasUserConfirmed = currentUser && match.confirmations && !!match.confirmations[currentUser.id];
 
     let actionButtons = "";
+
     if (match.eloApplied) {
-      actionButtons = `<span class="badge badge-official">Official • +${match.winnerChange} / -${match.loserChange} Elo</span>`;
+      actionButtons = `
+        <span class="badge badge-official">Official • +${match.winnerChange} / -${match.loserChange} Elo</span>
+      `;
     } else {
       if (isInvolved && !hasUserConfirmed) {
         actionButtons = `
@@ -1566,16 +1904,25 @@ function renderRecentMatches() {
             <span>${formattedDate}</span>
           </div>
           <div class="confirm-status">
-            <span class="confirm-chip ${winnerConfirmed ? 'done' : ''}">${winnerConfirmed ? '✓' : '○'} ${esc(match.winnerName)}</span>
-            <span class="confirm-chip ${loserConfirmed ? 'done' : ''}">${loserConfirmed ? '✓' : '○'} ${esc(match.loserName)}</span>
+            <span class="confirm-chip ${winnerConfirmed ? 'done' : ''}">
+              ${winnerConfirmed ? '✓' : '○'} ${esc(match.winnerName)}
+            </span>
+            <span class="confirm-chip ${loserConfirmed ? 'done' : ''}">
+              ${loserConfirmed ? '✓' : '○'} ${esc(match.loserName)}
+            </span>
           </div>
         </div>
-        <div class="match-actions">${actionButtons}</div>
+        <div class="match-actions">
+          ${actionButtons}
+        </div>
       </div>
     `;
   }).join("");
 }
 
+/* =========================================
+   INITIALIZATION
+========================================= */
 syncSessionUI();
 fetchClubData();
 </script>
