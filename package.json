@@ -6,7 +6,15 @@
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["pingpong", "elo", "club", "table-tennis"],
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "keywords": [
+    "pingpong",
+    "elo",
+    "club",
+    "table-tennis"
+  ],
   "author": "Carroll Ping Pong Club",
   "license": "ISC"
 }
