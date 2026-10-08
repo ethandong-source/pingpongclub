@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// Render assigns process.env.PORT automatically (usually 10000 or similar)
+// Render assigns process.env.PORT automatically
 const PORT = process.env.PORT || 8000;
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
@@ -24,39 +24,181 @@ const INITIAL_DB = {
   matches: []
 };
 
-// Database loader with fallback
-function loadDb() {
-  if (!fs.existsSync(DB_FILE)) {
-    saveDb(INITIAL_DB);
-    return JSON.parse(JSON.stringify(INITIAL_DB));
-  }
+// Global in-memory DB copy
+let db = { ...INITIAL_DB, accounts: [], players: [], matches: [] };
+let storageType = "local-file";
+let pgPool = null;
+
+// Initialize PostgreSQL connection with auto-negotiation (handles internal and external URLs seamlessly)
+async function initPgPool() {
+  if (!process.env.DATABASE_URL) return null;
+  const rawUrl = process.env.DATABASE_URL.trim();
+  if (!rawUrl) return null;
+
+  const { Pool } = require("pg");
+
+  // Attempt 1: Try without SSL (Render Internal Network URL default)
   try {
-    const raw = fs.readFileSync(DB_FILE, "utf8");
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error("Error reading db.json, re-initializing:", err);
-    saveDb(INITIAL_DB);
-    return JSON.parse(JSON.stringify(INITIAL_DB));
+    const poolInternal = new Pool({
+      connectionString: rawUrl,
+      ssl: false,
+      connectionTimeoutMillis: 4000
+    });
+    const client = await poolInternal.connect();
+    client.release();
+    console.log("[STORAGE] Connected to PostgreSQL via Render Internal Network (SSL off).");
+    return poolInternal;
+  } catch (err1) {
+    console.log("[STORAGE] Internal network direct connect failed, trying with SSL (External URL)...");
+  }
+
+  // Attempt 2: Try with SSL (Render External URL or Supabase/Neon)
+  try {
+    const poolExternal = new Pool({
+      connectionString: rawUrl,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 4000
+    });
+    const client = await poolExternal.connect();
+    client.release();
+    console.log("[STORAGE] Connected to PostgreSQL via External SSL.");
+    return poolExternal;
+  } catch (err2) {
+    console.error("[STORAGE] Could not connect to PostgreSQL with SSL or direct connection:", err2.message);
+    return null;
   }
 }
 
-// Atomic file write to prevent corruption
+// Helper: Load database from PostgreSQL, KV, or local file
+async function loadDb() {
+  pgPool = await initPgPool();
+
+  // 1. Try PostgreSQL if pool is available
+  if (pgPool) {
+    storageType = "postgresql";
+    try {
+      const client = await pgPool.connect();
+      try {
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS club_state (
+            id VARCHAR(32) PRIMARY KEY,
+            data JSONB NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+        `);
+        const res = await client.query(`SELECT data FROM club_state WHERE id = 'main' LIMIT 1;`);
+        if (res.rows.length > 0 && res.rows[0].data) {
+          db = res.rows[0].data;
+          if (!Array.isArray(db.accounts)) db.accounts = [];
+          if (!Array.isArray(db.players)) db.players = [];
+          if (!Array.isArray(db.matches)) db.matches = [];
+          console.log(`[STORAGE] Loaded ${db.players.length} players, ${db.accounts.length} accounts, ${db.matches.length} matches from PostgreSQL.`);
+          return;
+        } else {
+          // Initialize table with default db
+          await client.query(
+            `INSERT INTO club_state (id, data, updated_at) VALUES ('main', $1, NOW()) ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = NOW();`,
+            [JSON.stringify(INITIAL_DB)]
+          );
+          db = JSON.parse(JSON.stringify(INITIAL_DB));
+          console.log("[STORAGE] Initialized fresh table in PostgreSQL.");
+          return;
+        }
+      } finally {
+        client.release();
+      }
+    } catch (err) {
+      console.error("[STORAGE] PostgreSQL query failed, falling back to file/memory:", err.message);
+    }
+  }
+
+  // 2. Try Upstash / Vercel KV if configured
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (kvUrl && kvToken) {
+    try {
+      storageType = "upstash-kv";
+      const res = await fetch(`${kvUrl}/get/carroll_pingpong_db`, {
+        headers: { Authorization: `Bearer ${kvToken}` }
+      });
+      const data = await res.json();
+      if (data && data.result) {
+        const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+        if (parsed) {
+          db = parsed;
+          if (!Array.isArray(db.accounts)) db.accounts = [];
+          if (!Array.isArray(db.players)) db.players = [];
+          if (!Array.isArray(db.matches)) db.matches = [];
+          console.log(`[STORAGE] Loaded from KV storage: ${db.players.length} players`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("[STORAGE] KV fetch error:", err.message);
+    }
+  }
+
+  // 3. Fallback: local file
+  storageType = "local-file";
+  if (fs.existsSync(DB_FILE)) {
+    try {
+      const raw = fs.readFileSync(DB_FILE, "utf8");
+      db = JSON.parse(raw);
+      if (!Array.isArray(db.accounts)) db.accounts = [];
+      if (!Array.isArray(db.players)) db.players = [];
+      if (!Array.isArray(db.matches)) db.matches = [];
+      console.log(`[STORAGE] Loaded from local file ${DB_FILE}: ${db.players.length} players`);
+      return;
+    } catch (err) {
+      console.error("[STORAGE] Error reading local db.json:", err.message);
+    }
+  }
+
+  db = JSON.parse(JSON.stringify(INITIAL_DB));
+  saveDb(db);
+}
+
+// Atomic / Persistent save
 function saveDb(data) {
+  // Always write to local file as immediate snapshot
   try {
     const tempFile = DB_FILE + ".tmp";
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), "utf8");
     fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
-    // Fallback direct write
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
     } catch (e) {
-      console.error("Error saving database:", e);
+      console.error("[STORAGE] Error saving db to file:", e.message);
     }
   }
-}
 
-let db = loadDb();
+  // Persist to PostgreSQL if connected
+  if (pgPool) {
+    pgPool.query(
+      `INSERT INTO club_state (id, data, updated_at) VALUES ('main', $1, NOW()) ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = NOW();`,
+      [JSON.stringify(data)]
+    ).catch(err => {
+      console.error("[STORAGE] Error writing to PostgreSQL:", err.message);
+    });
+  }
+
+  // Persist to Upstash / Vercel KV if connected
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (kvUrl && kvToken) {
+    fetch(`${kvUrl}/set/carroll_pingpong_db`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${kvToken}`,
+        "Content-Type": "text/plain"
+      },
+      body: JSON.stringify(data)
+    }).catch(err => {
+      console.error("[STORAGE] Error writing to KV:", err.message);
+    });
+  }
+}
 
 // Elo Calculation Engine
 const K_FACTOR = 32;
@@ -68,7 +210,7 @@ function expectedProbability(playerElo, opponentElo) {
 function calculateEloGain(winnerElo, loserElo) {
   const prob = expectedProbability(winnerElo, loserElo);
   const change = Math.round(K_FACTOR * (1 - prob));
-  return Math.max(1, change); // Minimum 1 point change
+  return Math.max(1, change);
 }
 
 // Helper: Parse JSON body
@@ -77,7 +219,7 @@ function parseJsonBody(req) {
     let body = "";
     req.on("data", chunk => {
       body += chunk;
-      if (body.length > 1e6) {
+      if (body.length > 2e6) { // 2MB limit
         req.destroy();
         resolve({});
       }
@@ -137,6 +279,21 @@ const server = http.createServer(async (req, res) => {
   // API ENDPOINTS
   // ==========================================
 
+  // Status / Health check
+  if (req.method === "GET" && pathname === "/api/status") {
+    return sendJson(res, 200, {
+      status: "online",
+      storage: storageType,
+      persistent: storageType === "postgresql" || storageType === "upstash-kv",
+      counts: {
+        players: (db.players || []).length,
+        accounts: (db.accounts || []).length,
+        matches: (db.matches || []).length
+      },
+      time: new Date().toISOString()
+    });
+  }
+
   // 1. GET /api/data -> Shared club data
   if (req.method === "GET" && pathname === "/api/data") {
     const publicPlayers = (db.players || []).map(p => ({
@@ -150,13 +307,78 @@ const server = http.createServer(async (req, res) => {
 
     return sendJson(res, 200, {
       success: true,
+      storage: storageType,
       players: publicPlayers,
       matches: db.matches || [],
       serverTime: new Date().toISOString()
     });
   }
 
-  // 2. POST /api/auth/signup -> Register new player
+  // 2. POST /api/sync -> Auto-sync & backup rehydration
+  if (req.method === "POST" && pathname === "/api/sync") {
+    try {
+      const body = await parseJsonBody(req);
+      const clientPlayers = body.players || [];
+      const clientMatches = body.matches || [];
+      const clientUser = body.user || null;
+
+      let changed = false;
+
+      // Merge players
+      if (Array.isArray(clientPlayers)) {
+        for (const cp of clientPlayers) {
+          if (!cp.id) continue;
+          const existing = db.players.find(p => String(p.id) === String(cp.id));
+          if (!existing) {
+            db.players.push(cp);
+            changed = true;
+          }
+        }
+      }
+
+      // Merge user/account
+      if (clientUser && clientUser.id && clientUser.username) {
+        const existingAcc = db.accounts.find(a => String(a.id) === String(clientUser.id) || a.username === clientUser.username);
+        if (!existingAcc) {
+          db.accounts.push({
+            id: clientUser.id,
+            name: clientUser.name,
+            username: clientUser.username,
+            password: clientUser.password || "pingpong123",
+            createdAt: new Date().toISOString()
+          });
+          changed = true;
+        }
+      }
+
+      // Merge matches
+      if (Array.isArray(clientMatches)) {
+        for (const cm of clientMatches) {
+          if (!cm.id) continue;
+          const existingMatch = db.matches.find(m => String(m.id) === String(cm.id));
+          if (!existingMatch) {
+            db.matches.push(cm);
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        saveDb(db);
+        console.log(`[SYNC] Synced client data: ${db.players.length} players, ${db.matches.length} matches`);
+      }
+
+      return sendJson(res, 200, {
+        success: true,
+        players: db.players,
+        matches: db.matches
+      });
+    } catch (err) {
+      return sendJson(res, 500, { error: err.message });
+    }
+  }
+
+  // 3. POST /api/auth/signup -> Register new player
   if (req.method === "POST" && pathname === "/api/auth/signup") {
     try {
       const body = await parseJsonBody(req);
@@ -177,7 +399,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 409, { error: `Username "${username}" is already taken.` });
       }
 
-      const playerId = Date.now();
+      const playerId = String(Date.now());
       const newAccount = {
         id: playerId,
         name,
@@ -221,7 +443,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 3. POST /api/auth/login -> Sign in
+  // 4. POST /api/auth/login -> Sign in
   if (req.method === "POST" && pathname === "/api/auth/login") {
     try {
       const body = await parseJsonBody(req);
@@ -260,7 +482,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 4. POST /api/auth/delete-account -> Delete account
+  // 5. POST /api/auth/delete-account -> Delete account
   if (req.method === "POST" && pathname === "/api/auth/delete-account") {
     try {
       const body = await parseJsonBody(req);
@@ -301,7 +523,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 5. POST /api/matches -> Report match
+  // 6. POST /api/matches -> Report match
   if (req.method === "POST" && pathname === "/api/matches") {
     try {
       const body = await parseJsonBody(req);
@@ -365,7 +587,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 6. POST /api/matches/:id/confirm -> Confirm match
+  // 7. POST /api/matches/:id/confirm -> Confirm match
   const matchConfirmRegex = /^\/api\/matches\/(\d+)\/confirm$/;
   if (req.method === "POST" && matchConfirmRegex.test(pathname)) {
     try {
@@ -430,7 +652,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 7. POST /api/matches/:id/reject -> Reject / cancel match
+  // 8. POST /api/matches/:id/reject -> Reject / cancel match
   const matchRejectRegex = /^\/api\/matches\/(\d+)\/reject$/;
   if (req.method === "POST" && matchRejectRegex.test(pathname)) {
     try {
@@ -476,7 +698,50 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 8. POST /api/reset -> Clean reset
+  // 9. GET /api/backup -> Download / Export full club database
+  if (req.method === "GET" && pathname === "/api/backup") {
+    return sendJson(res, 200, {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: db
+    });
+  }
+
+  // 10. POST /api/restore -> Import / Restore club database
+  if (req.method === "POST" && pathname === "/api/restore") {
+    try {
+      const body = await parseJsonBody(req);
+      const backupData = body.data || body;
+
+      if (!backupData || !Array.isArray(backupData.players)) {
+        return sendJson(res, 400, { error: "Invalid backup format. Must contain a players array." });
+      }
+
+      db = {
+        version: backupData.version || 1,
+        accounts: Array.isArray(backupData.accounts) ? backupData.accounts : [],
+        players: Array.isArray(backupData.players) ? backupData.players : [],
+        matches: Array.isArray(backupData.matches) ? backupData.matches : []
+      };
+
+      saveDb(db);
+      console.log(`[RESTORE] Successfully restored database: ${db.players.length} players, ${db.accounts.length} accounts, ${db.matches.length} matches.`);
+
+      return sendJson(res, 200, {
+        success: true,
+        message: `Restored ${db.players.length} players and ${db.matches.length} matches successfully.`,
+        counts: {
+          players: db.players.length,
+          accounts: db.accounts.length,
+          matches: db.matches.length
+        }
+      });
+    } catch (err) {
+      return sendJson(res, 500, { error: "Failed to restore backup: " + err.message });
+    }
+  }
+
+  // 11. POST /api/reset -> Clean reset
   if (req.method === "POST" && pathname === "/api/reset") {
     db = JSON.parse(JSON.stringify(INITIAL_DB));
     saveDb(db);
@@ -514,9 +779,16 @@ const server = http.createServer(async (req, res) => {
   res.end("Not Found");
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`===================================================`);
-  console.log(`🏓 Carroll Ping Pong Club Server Running`);
-  console.log(`📡 URL: http://0.0.0.0:${PORT}`);
-  console.log(`===================================================`);
+// Start DB loader and server
+loadDb().then(() => {
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`===================================================`);
+    console.log(`🏓 Carroll Ping Pong Club Server Running`);
+    console.log(`📡 URL: http://0.0.0.0:${PORT}`);
+    console.log(`💾 Storage Engine: ${storageType.toUpperCase()}`);
+    console.log(`===================================================`);
+  });
+}).catch(err => {
+  console.error("Startup error:", err);
+  server.listen(PORT, "0.0.0.0");
 });
