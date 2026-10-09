@@ -426,27 +426,10 @@
       border-bottom: 0;
     }
 
-    tr.highlight-row {
-      background: #f0fdf4;
-    }
-
     .rank {
       font-weight: 900;
       width: 50px;
       color: var(--muted);
-    }
-
-    .rank-1 { color: #d97706; font-weight: 900; }
-    .rank-2 { color: #64748b; font-weight: 900; }
-    .rank-3 { color: #b45309; font-weight: 900; }
-
-    .elo-pill {
-      display: inline-block;
-      font-weight: 800;
-      background: #f1f5f9;
-      color: #1e293b;
-      padding: 3px 8px;
-      border-radius: 6px;
     }
 
     /* FORMS */
@@ -543,43 +526,8 @@
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
 
-    .match-item.is-pending {
-      border-left: 4px solid #f59e0b;
-      background: #fffdfa;
-    }
-
     .match-item.is-official {
       border-left: 4px solid #16a34a;
-    }
-
-    .match-main {
-      flex: 1;
-    }
-
-    .match-headline {
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .match-meta {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 4px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .match-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-wrap: wrap;
     }
 
     .badge {
@@ -597,107 +545,6 @@
       background: #dcfce7;
       color: #166534;
       border: 1px solid #bbf7d0;
-    }
-
-    .badge-pending {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
-    }
-
-    .confirm-status {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 6px;
-    }
-
-    .confirm-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #f1f5f9;
-      color: #475569;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .confirm-chip.done {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    /* ACCOUNT PANEL */
-    .user-pill {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      background: #eef2ff;
-      color: #3730a3;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .account-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      margin-top: 14px;
-      background: #fafafa;
-    }
-
-    /* AUTH SWITCH BUTTONS */
-    .auth-toggle-group {
-      display: flex;
-      background: #f1f5f9;
-      padding: 4px;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      gap: 4px;
-    }
-
-    .auth-toggle-btn {
-      flex: 1;
-      border: 0;
-      background: transparent;
-      padding: 9px 12px;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--muted);
-      cursor: pointer;
-      border-radius: 7px;
-      transition: all 0.15s ease;
-      text-align: center;
-    }
-
-    .auth-toggle-btn.active {
-      background: white;
-      color: var(--text);
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-    }
-
-    /* TABS */
-    .tabs {
-      display: flex;
-      gap: 6px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 16px;
-      padding-bottom: 6px;
-    }
-
-    .tab-btn {
-      background: none;
-      border: 0;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--muted);
-      cursor: pointer;
-      border-radius: var(--radius-sm);
     }
 
     .tab-btn.active {
@@ -757,11 +604,6 @@
         flex-direction: column;
         align-items: flex-start;
       }
-      .match-actions {
-        width: 100%;
-        justify-content: flex-end;
-        margin-top: 8px;
-      }
     }
   </style>
 </head>
@@ -786,7 +628,7 @@
   </div>
 
   <div class="nav-actions">
-    <span class="live-dot" title="Real-time shared sync across all devices">Sync Active</span>
+    <span id="syncStatus" class="live-dot" title="Real-time shared sync across all devices">Connecting…</span>
   </div>
 </nav>
 
@@ -801,12 +643,12 @@
     </div>
     <h1>Ping Pong Club Website</h1>
     <p>
-      Create an account to join the club, report match scores, and verify outcomes with
-      two-player confirmations. All player ratings and match records sync across all devices.
+      Follow club rankings and match results from any device.
+      The club admin manages the roster and records each match; players do not need accounts.
     </p>
     <div class="actions">
       <button class="btn primary" onclick="showSection('matches')">
-        🏓 Report / Join Club
+        🏓 View Matches
       </button>
       <button class="btn outline" onclick="showSection('leaderboard')">
         🏆 View Leaderboard
@@ -819,6 +661,7 @@
      MAIN CONTENT
 ========================================= -->
 <main>
+  <div id="appMessage" role="status" aria-live="polite" class="notice hidden" style="margin-bottom:16px;"></div>
 
   <!-- =========================================
        HOME SECTION
@@ -828,13 +671,13 @@
       <div class="stat-card">
         <div class="stat-title">Active Players</div>
         <div class="stat-value" id="statPlayers">0</div>
-        <div class="stat-sub">Registered club members</div>
+        <div class="stat-sub">Players on the club roster</div>
       </div>
 
       <div class="stat-card">
         <div class="stat-title">Official Matches</div>
         <div class="stat-value" id="statMatches">0</div>
-        <div class="stat-sub" id="statPendingSub">0 pending confirmation</div>
+        <div class="stat-sub" id="statMatchSub">Recorded by the club admin</div>
       </div>
 
       <div class="stat-card">
@@ -848,16 +691,16 @@
       <div class="card">
         <h2>How the Club Rating Works</h2>
         <p>
-          Every registered player begins at a baseline of <strong>1000 ELO</strong>.
-          After every competitive match, the winner gains rating points and the loser loses the exact same amount.
+          Every new player begins at a baseline of <strong>1000 ELO</strong>.
+          After the admin records a competitive match, the winner gains rating points and the loser loses points, with a minimum rating of 100.
         </p>
         <p>
           Our rating system uses the standard Elo algorithm (K = 32): beating a higher-rated player yields a larger rating surge,
           while winning against a lower-rated player rewards fewer points.
         </p>
         <div class="notice">
-          <strong>Dual-Confirmation Integrity:</strong> When a match is reported, ratings do not change immediately.
-          Both players must confirm the reported score from their accounts before it becomes official.
+          <strong>Admin-recorded results:</strong> The admin enters the winner, loser, and score.
+          Ratings update immediately when the result is saved.
         </div>
       </div>
 
@@ -872,7 +715,7 @@
         </p>
         <hr style="border:0; border-top:1px solid var(--line); margin: 16px 0;">
         <p class="muted" style="font-size:13px; margin:0;">
-          Create an account on any device to join the club roster.
+          Ask the club admin to add your name to the roster. No player login is needed.
         </p>
       </div>
     </div>
@@ -887,7 +730,7 @@
         <div>
           <h2>Club Leaderboard</h2>
           <div class="muted" style="font-size:13px; margin-top:3px;">
-            Rankings update automatically when both players confirm match scores.
+            Rankings update when the admin records a match.
           </div>
         </div>
         <input
@@ -918,230 +761,69 @@
   </section>
 
   <!-- =========================================
-       MATCHES & ACCOUNT SECTION
+       MATCHES & ADMIN SECTION
   ========================================= -->
   <section id="matches" class="section">
     <div class="grid-2">
-
-      <!-- REPORT MATCH CARD -->
       <div class="card">
-        <div class="card-header">
-          <h2>Report Match Result</h2>
-        </div>
-
-        <div id="reportNoticeLoggedOut" class="notice warning" style="margin-bottom: 14px;">
-          ⚠️ <strong>Login Required:</strong> Please log in or create an account on the right to submit a match.
-        </div>
-
-        <div id="reportNoticeLoggedIn" class="notice hidden" style="margin-bottom: 14px;">
-          Submit your match result. <strong>ELO will update once both players confirm</strong> in Match History below.
-        </div>
-
-        <div id="reportNoticeNeedPlayers" class="notice danger hidden" style="margin-bottom: 14px;">
-          👥 At least two players must register before a match can be reported.
-        </div>
-
+        <h2>Record match result</h2>
+        <p id="reportNoticeLoggedOut" class="notice">The club admin can log in to record a result. Anyone can view match history below.</p>
+        <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save.</p>
+        <p id="reportNoticeNeedPlayers" class="notice warning hidden">Add at least two active players before recording a match.</p>
         <form id="matchForm">
-          <div id="quickRoleSelect" class="hidden" style="display:flex; gap:8px; align-items:center; margin-bottom: 4px;">
-            <span style="font-size:13px; font-weight:700;">I was the:</span>
-            <button type="button" class="small-btn primary" onclick="setReporterRole('winner')">🏆 Winner</button>
-            <button type="button" class="small-btn secondary" onclick="setReporterRole('loser')">🥈 Loser</button>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="winner">Winner</label>
-              <select id="winner" required onchange="updateEloPreview()">
-                <option value="" disabled selected>Select winner...</option>
-              </select>
+          <fieldset id="matchFields" disabled style="border:0;padding:0;margin:0;min-width:0;">
+            <div class="form-grid">
+              <div class="form-group"><label for="winner">Winner</label><select id="winner" required onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="loser">Loser</label><select id="loser" required onchange="updateEloPreview()"></select></div>
             </div>
-
-            <div class="form-group">
-              <label for="loser">Loser</label>
-              <select id="loser" required onchange="updateEloPreview()">
-                <option value="" disabled selected>Select loser...</option>
-              </select>
+            <div class="form-grid">
+              <div class="form-group"><label for="winnerScore">Winner score (points or sets)</label><input id="winnerScore" type="number" min="1" max="99" step="1" required oninput="validateScoreInputs()"></div>
+              <div class="form-group"><label for="loserScore">Loser score (points or sets)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
             </div>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="winnerScore">Winner Score (Points/Sets)</label>
-              <input id="winnerScore" type="number" min="0" max="99" placeholder="e.g. 11" oninput="validateScoreInputs()">
-            </div>
-
-            <div class="form-group">
-              <label for="loserScore">Loser Score (Points/Sets)</label>
-              <input id="loserScore" type="number" min="0" max="99" placeholder="e.g. 7" oninput="validateScoreInputs()">
-            </div>
-          </div>
-
-          <div id="scoreWarning" class="notice danger hidden" style="padding: 8px 12px; font-size: 12px;">
-            Winner score must be greater than loser score.
-          </div>
-
-          <div id="eloPreview" class="elo-preview-box hidden">
-            <span>Projected Elo Change:</span>
-            <strong id="eloPreviewText" style="color:var(--green);">+16 / -16</strong>
-          </div>
-
-          <button id="submitMatchBtn" class="btn dark" type="submit">
-            Submit Match for Confirmation
-          </button>
+            <p id="scoreWarning" class="notice danger hidden">The winner's score must be higher than the loser's score.</p>
+            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected Elo change:</span><strong id="eloPreviewText"></strong></div>
+            <button class="btn dark" type="submit">Save match result</button>
+          </fieldset>
         </form>
       </div>
-
-      <!-- PLAYER ACCOUNT CARD -->
       <div class="card">
-        <div class="card-header">
-          <h2 id="accountCardTitle">Player Account</h2>
+        <h2>Club admin</h2>
+        <div id="adminLoggedOut">
+          <p class="muted">Players do not need accounts. The admin manages names and match results.</p>
+          <form id="loginForm">
+            <div class="form-group"><label for="loginUsername">Admin username</label><input id="loginUsername" value="admin" required autocomplete="username"></div>
+            <div class="form-group"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div>
+            <button class="btn dark" type="submit">Log in as admin</button>
+          </form>
         </div>
-
-        <!-- LOGGED OUT VIEW -->
-        <div id="accountLoggedOut">
-          <!-- Clear Toggle Between Create Account and Log In -->
-          <div class="auth-toggle-group">
-            <button id="authTabSignup" class="auth-toggle-btn active" onclick="switchAuthView('signup')">
-              📝 Create New Account
-            </button>
-            <button id="authTabLogin" class="auth-toggle-btn" onclick="switchAuthView('login')">
-              🔑 Log In
-            </button>
-          </div>
-
-          <!-- SIGNUP FORM (DEDICATED) -->
-          <div id="signupView">
-            <div class="muted" style="font-size:13px; margin-bottom: 12px;">
-              Join the club to get your starting <strong>1000 Elo</strong> rating and start tracking matches.
-            </div>
-
-            <form id="signupForm">
-              <div class="form-group">
-                <label for="signupName">Full Player Name</label>
-                <input id="signupName" placeholder="e.g. Alex Smith" required autocomplete="name">
-              </div>
-
-              <div class="form-group">
-                <label for="signupUsername">Username</label>
-                <input id="signupUsername" placeholder="e.g. alexsmith" required autocomplete="username">
-              </div>
-
-              <div class="form-group">
-                <label for="signupPassword">Password</label>
-                <input id="signupPassword" type="password" minlength="4" placeholder="At least 4 characters" required autocomplete="new-password">
-              </div>
-
-              <button class="btn accent" type="submit" style="width: 100%; margin-top: 4px;">
-                Create Account & Join Roster
-              </button>
-            </form>
-
-            <div style="text-align: center; margin-top: 14px; font-size: 13px;">
-              <span class="muted">Already registered?</span>
-              <a href="javascript:void(0)" onclick="switchAuthView('login')" style="color: var(--accent); font-weight: 700; margin-left: 4px; text-decoration: none;">
-                Log in here
-              </a>
-            </div>
-          </div>
-
-          <!-- LOGIN FORM (DEDICATED) -->
-          <div id="loginView" class="hidden">
-            <div class="muted" style="font-size:13px; margin-bottom: 12px;">
-              Sign in to report match scores or confirm results reported by other players.
-            </div>
-
-            <form id="loginForm">
-              <div class="form-group">
-                <label for="loginUsername">Username</label>
-                <input id="loginUsername" placeholder="e.g. alexsmith" required autocomplete="username">
-              </div>
-
-              <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <input id="loginPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
-              </div>
-
-              <button class="btn dark" type="submit" style="width: 100%; margin-top: 4px;">
-                Log In to Account
-              </button>
-            </form>
-
-            <div style="text-align: center; margin-top: 14px; font-size: 13px;">
-              <span class="muted">Need an account?</span>
-              <a href="javascript:void(0)" onclick="switchAuthView('signup')" style="color: var(--accent); font-weight: 700; margin-left: 4px; text-decoration: none;">
-                Create an account here
-              </a>
-            </div>
+        <div id="adminLoggedIn" class="hidden">
+          <p>Signed in as <strong id="adminName"></strong>.</p>
+          <form id="playerForm">
+            <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
+            <button class="btn primary" type="submit">Add player</button>
+          </form>
+          <p class="muted">New players start at 1000 Elo. Manage names and active status in Players.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+            <button id="backupBtn" type="button" class="small-btn secondary">Download data backup</button>
+            <button id="logoutBtn" type="button" class="small-btn secondary">Log out</button>
           </div>
         </div>
-
-        <!-- LOGGED IN VIEW -->
-        <div id="accountLoggedIn" class="hidden">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div class="user-pill">
-              👤 <span id="currentUserName"></span>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-              <button id="logoutBtn" class="small-btn secondary">Log Out</button>
-              <button id="deleteAccountBtn" class="small-btn danger">Delete Account</button>
-            </div>
-          </div>
-
-          <div class="account-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <div class="muted" style="font-size:12px;">Your Rating</div>
-                <div style="font-size:24px; font-weight:900;" id="userEloDisplay">1000</div>
-              </div>
-              <div>
-                <div class="muted" style="font-size:12px;">Your Record</div>
-                <div style="font-size:18px; font-weight:800;" id="userRecordDisplay">0-0</div>
-              </div>
-              <div>
-                <div class="muted" style="font-size:12px;">Club Rank</div>
-                <div style="font-size:18px; font-weight:800;" id="userRankDisplay">#1</div>
-              </div>
-            </div>
-          </div>
-
-          <div id="userPendingAlert" class="notice warning hidden" style="margin-top: 12px; font-size: 13px;">
-            🔔 <strong>Action Needed:</strong> You have match results awaiting your confirmation below!
-          </div>
-        </div>
-
       </div>
     </div>
-
-    <!-- RECENT MATCHES SECTION -->
-    <div class="card" style="margin-top: 20px;">
-      <div class="card-header">
-        <div>
-          <h2>Match History & Verification</h2>
-          <div class="muted" style="font-size:13px; margin-top:2px;">
-            Matches require dual player confirmation to become official.
-          </div>
-        </div>
-        <div class="tabs" style="margin:0; border:0; padding:0;">
-          <button class="tab-btn active" id="filterMatchesAll" onclick="setMatchFilter('all')">All Matches</button>
-          <button class="tab-btn" id="filterMatchesPending" onclick="setMatchFilter('pending')">Pending</button>
-          <button class="tab-btn" id="filterMatchesOfficial" onclick="setMatchFilter('official')">Official</button>
-        </div>
-      </div>
-
+    <div class="card" style="margin-top:20px;">
+      <h2>Match history</h2>
+      <p class="muted">Results recorded by the admin. To correct a result, the admin can undo the latest match and enter it again.</p>
       <div id="recentMatches" class="match-list"></div>
     </div>
   </section>
 
-  <!-- =========================================
-       PLAYERS ROSTER SECTION
-  ========================================= -->
   <section id="players" class="section">
     <div class="card">
       <div class="card-header">
         <div>
           <h2>Active Club Roster</h2>
           <div class="muted" style="font-size:13px; margin-top:3px;">
-            All registered members of Carroll Ping Pong Club.
+            Players on the club roster. No usernames or passwords are required.
           </div>
         </div>
         <input
@@ -1158,11 +840,11 @@
           <thead>
             <tr>
               <th>Player Name</th>
-              <th>Username</th>
+              <th>Status</th>
               <th>Current ELO</th>
               <th>Wins</th>
               <th>Losses</th>
-              <th>Win %</th>
+              <th>Win %</th><th class="admin-column hidden">Admin actions</th>
             </tr>
           </thead>
           <tbody id="playersBody"></tbody>
@@ -1181,10 +863,10 @@
         <ol style="padding-left: 20px; line-height: 1.8; margin: 0 0 16px;">
           <li><strong>Baseline:</strong> Every registered club player starts at <strong>1000 ELO</strong>.</li>
           <li><strong>Match Length:</strong> Standard matches are played to 11 points (must win by at least 2 points).</li>
-          <li><strong>Match Reporting:</strong> Either participant may report the match result immediately following play.</li>
-          <li><strong>Two-Player Confirmation:</strong> ELO ratings do not change until <em>both</em> the winner and the loser log in and confirm the result.</li>
-          <li><strong>Dispute / Rejection:</strong> If a match was reported mistakenly or with incorrect score, either player can reject/cancel the pending report.</li>
-          <li><strong>Rating Conservation:</strong> Rating points gained by the winner equal the exact points deducted from the loser.</li>
+          <li><strong>Match reporting:</strong> Tell the admin the winner, loser, and score after the match.</li>
+          <li><strong>Ratings:</strong> Elo and win/loss records update immediately when the admin saves the result.</li>
+          <li><strong>Corrections:</strong> Ask the admin to correct a result. New matches can be undone in reverse entry order.</li>
+          <li><strong>Minimum rating:</strong> A player’s Elo cannot drop below 100.</li>
         </ol>
       </div>
 
@@ -1223,709 +905,174 @@
      JAVASCRIPT CLIENT & SYNC
 ========================================= -->
 <script>
-/* =========================================
-   GLOBAL STATE & API CLIENT
-========================================= */
-const API_BASE = "";
-const SESSION_STORAGE_KEY = "carroll_pingpong_user_session_v5";
+"use strict";
+let clubState = { players: [], matches: [] };
+let admin = null;
+let busy = false;
+let refreshing = false;
 
-let clubState = {
-  players: [],
-  matches: []
-};
-
-let currentUser = null;
-let activeMatchFilter = "all";
-
-// Load user session from local device storage
-try {
-  const savedUser = localStorage.getItem(SESSION_STORAGE_KEY);
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-  }
-} catch (e) {
-  currentUser = null;
+const $ = id => document.getElementById(id);
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const activePlayers = () => clubState.players.filter(p => !p.archived);
+const sortedPlayers = () => [...activePlayers()].sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
+function message(text, error = false) {
+  $("appMessage").textContent = text;
+  $("appMessage").className = `notice${error ? " danger" : ""}${text ? "" : " hidden"}`;
 }
-
-/* =========================================
-   BACKEND SYNC API
-========================================= */
-async function fetchClubData() {
-  try {
-    const res = await fetch(`${API_BASE}/api/data`);
-    if (!res.ok) throw new Error("Failed to fetch club data");
-    const json = await res.json();
-    if (json.success) {
-      clubState.players = json.players || [];
-      clubState.matches = json.matches || [];
-
-      // If logged in, update current user's latest stats
-      if (currentUser) {
-        const matchingPlayer = clubState.players.find(p => String(p.id) === String(currentUser.id));
-        if (matchingPlayer) {
-          currentUser.elo = matchingPlayer.elo;
-          currentUser.wins = matchingPlayer.wins;
-          currentUser.losses = matchingPlayer.losses;
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-        }
-      }
-
-      render();
-    }
-  } catch (err) {
-    console.warn("Sync warning:", err.message);
+async function api(route, method = "GET", body) {
+  const res = await fetch(route, {
+    method, credentials: "same-origin", cache: "no-store",
+    ...(method !== "GET" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) } : {})
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 401 && route !== "/api/admin/login") { admin = null; render(); }
+    throw new Error(data.error || "Request failed. Please try again.");
   }
+  return data;
 }
-
-// Start real-time sync polling (every 3 seconds)
-setInterval(fetchClubData, 3000);
-window.addEventListener("focus", fetchClubData);
-
-/* =========================================
-   NAVIGATION & UI SWITCHING
-========================================= */
 function showSection(id) {
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  const target = document.getElementById(id);
-  if (target) target.classList.add("active");
-
-  document.querySelectorAll("nav button").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.section === id);
-  });
-
-  render();
-
-  window.scrollTo({
-    top: document.querySelector("main").offsetTop - 70,
-    behavior: "smooth"
-  });
+  document.querySelectorAll("main .section").forEach(section => section.classList.toggle("active", section.id === id));
+  document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
 }
-
-document.querySelectorAll("nav button").forEach(button => {
-  button.onclick = () => showSection(button.dataset.section);
-});
-
-function switchAuthView(view) {
-  const isSignup = view === "signup";
-  document.getElementById("authTabSignup").classList.toggle("active", isSignup);
-  document.getElementById("authTabLogin").classList.toggle("active", !isSignup);
-  document.getElementById("signupView").classList.toggle("hidden", !isSignup);
-  document.getElementById("loginView").classList.toggle("hidden", isSignup);
+document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => showSection(button.dataset.section));
+function renderLeaderboard() {
+  const search = $("leaderboardSearch").value.toLowerCase();
+  $("leaderboardBody").innerHTML = sortedPlayers().map((p, i) => ({ p, rank: i+1 })).filter(({p}) => p.name.toLowerCase().includes(search)).map(({p,rank}) => {
+    const total = p.wins + p.losses;
+    return `<tr><td>${rank}</td><td><strong>${escapeHtml(p.name)}</strong></td><td>${p.elo}</td><td>${total}</td><td>${p.wins}-${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td></tr>`;
+  }).join("") || '<tr><td colspan="6">No players found. The admin can add names to the roster.</td></tr>';
 }
-
-function setMatchFilter(filter) {
-  activeMatchFilter = filter;
-  document.getElementById("filterMatchesAll").classList.toggle("active", filter === "all");
-  document.getElementById("filterMatchesPending").classList.toggle("active", filter === "pending");
-  document.getElementById("filterMatchesOfficial").classList.toggle("active", filter === "official");
-  renderRecentMatches();
+function renderPlayersTable() {
+  const search = $("playersSearch").value.toLowerCase();
+  $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
+    const total = p.wins+p.losses;
+    return `<tr><td>${escapeHtml(p.name)}</td><td>${p.archived ? "Archived" : "Active"}</td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button></td>` : ""}</tr>`;
+  }).join("") || `<tr><td colspan="${admin ? 7 : 6}">No players found.</td></tr>`;
+  document.querySelectorAll(".admin-column").forEach(el => el.classList.toggle("hidden", !admin));
+  $("playersBody").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
-
-/* =========================================
-   SECURITY & STRING HELPERS
-========================================= */
-function esc(str) {
-  if (str === null || str === undefined) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function renderRecentMatches() {
+  const latest = clubState.matches.at(-1);
+  $("recentMatches").innerHTML = [...clubState.matches].reverse().map(m => {
+    const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
+    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} Elo</span></div>${admin && latest === m && m.before ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
+  }).join("") || '<p class="muted">No completed matches yet.</p>';
+  $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
-
-/* =========================================
-   AUTHENTICATION (SIGNUP & LOGIN)
-========================================= */
-document.getElementById("signupForm").onsubmit = async event => {
-  event.preventDefault();
-  const name = document.getElementById("signupName").value.trim();
-  const username = document.getElementById("signupUsername").value.trim().toLowerCase();
-  const password = document.getElementById("signupPassword").value;
-
-  if (!name || !username || !password) {
-    alert("Please fill out all fields.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Failed to create account.");
-      return;
-    }
-
-    currentUser = data.user;
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-    event.target.reset();
-
-    await fetchClubData();
-    syncSessionUI();
-    alert(`Welcome to Carroll Ping Pong Club, ${currentUser.name}! Your account has been created and synced across all devices.`);
-  } catch (err) {
-    alert("Connection error. Please ensure the server is reachable.");
-  }
-};
-
-document.getElementById("loginForm").onsubmit = async event => {
-  event.preventDefault();
-  const username = document.getElementById("loginUsername").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
-
-  if (!username || !password) {
-    alert("Please enter both username and password.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Invalid username or password.");
-      return;
-    }
-
-    currentUser = data.user;
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-    event.target.reset();
-
-    await fetchClubData();
-    syncSessionUI();
-    alert(`Welcome back, ${currentUser.name}!`);
-  } catch (err) {
-    alert("Connection error. Please try again.");
-  }
-};
-
-document.getElementById("logoutBtn").onclick = () => {
-  const name = currentUser ? currentUser.name : "Player";
-  currentUser = null;
-  localStorage.removeItem(SESSION_STORAGE_KEY);
-  syncSessionUI();
-  alert(`Logged out successfully.`);
-};
-
-document.getElementById("deleteAccountBtn").onclick = async () => {
-  if (!currentUser) return;
-
-  const confirmed = confirm(
-    `Are you sure you want to permanently delete your account (${currentUser.name})?\n\n` +
-    `• Your player profile will be removed from the club roster.\n` +
-    `• Any pending unconfirmed matches will be deleted.\n` +
-    `• This action cannot be undone.`
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/delete-account`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Failed to delete account.");
-      return;
-    }
-
-    const deletedName = currentUser.name;
-    currentUser = null;
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-
-    await fetchClubData();
-    syncSessionUI();
-    alert(`Account for ${deletedName} was permanently deleted.`);
-  } catch (err) {
-    alert("Connection error while deleting account.");
-  }
-};
-
-function syncSessionUI() {
-  const loggedIn = !!currentUser;
-
-  document.getElementById("accountLoggedOut").classList.toggle("hidden", loggedIn);
-  document.getElementById("accountLoggedIn").classList.toggle("hidden", !loggedIn);
-
-  document.getElementById("reportNoticeLoggedOut").classList.toggle("hidden", loggedIn);
-  document.getElementById("reportNoticeLoggedIn").classList.toggle("hidden", !loggedIn);
-  document.getElementById("quickRoleSelect").classList.toggle("hidden", !loggedIn);
-
-  if (loggedIn) {
-    document.getElementById("currentUserName").textContent = currentUser.name;
-
-    const player = clubState.players.find(p => String(p.id) === String(currentUser.id)) || currentUser;
-    document.getElementById("userEloDisplay").textContent = Math.round(player.elo || 1000);
-    document.getElementById("userRecordDisplay").textContent = `${player.wins || 0}-${player.losses || 0}`;
-
-    const sorted = [...clubState.players].sort((a, b) => b.elo - a.elo);
-    const rankIdx = sorted.findIndex(p => String(p.id) === String(currentUser.id));
-    document.getElementById("userRankDisplay").textContent = rankIdx >= 0 ? `#${rankIdx + 1}` : "#1";
-
-    // Check if user has pending match confirmations waiting for them
-    const pendingForUser = clubState.matches.filter(m => {
-      if (m.eloApplied) return false;
-      const isInvolved = String(m.winnerId) === String(currentUser.id) || String(m.loserId) === String(currentUser.id);
-      const hasConfirmed = m.confirmations && m.confirmations[currentUser.id];
-      return isInvolved && !hasConfirmed;
-    });
-
-    document.getElementById("userPendingAlert").classList.toggle("hidden", pendingForUser.length === 0);
-  }
-
-  render();
-}
-
-/* =========================================
-   MATCH REPORTING & CONFIRMATION
-========================================= */
-function setReporterRole(role) {
-  if (!currentUser) return;
-
-  const winnerSelect = document.getElementById("winner");
-  const loserSelect = document.getElementById("loser");
-
-  if (role === "winner") {
-    winnerSelect.value = currentUser.id;
-    if (loserSelect.value === String(currentUser.id)) {
-      loserSelect.value = "";
-    }
-  } else {
-    loserSelect.value = currentUser.id;
-    if (winnerSelect.value === String(currentUser.id)) {
-      winnerSelect.value = "";
-    }
+function renderSelectors() {
+  for (const id of ["winner", "loser"]) {
+    const selected = $(id).value;
+    $(id).innerHTML = `<option value="">Select ${id}…</option>` + [...activePlayers()].sort((a,b) => a.name.localeCompare(b.name)).map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} (${p.elo})</option>`).join("");
+    $(id).value = selected;
   }
   updateEloPreview();
 }
-
-function validateScoreInputs() {
-  const wScore = document.getElementById("winnerScore").value;
-  const lScore = document.getElementById("loserScore").value;
-  const warn = document.getElementById("scoreWarning");
-
-  if (wScore !== "" && lScore !== "") {
-    const wNum = parseInt(wScore, 10);
-    const lNum = parseInt(lScore, 10);
-    if (!isNaN(wNum) && !isNaN(lNum) && wNum <= lNum) {
-      warn.classList.remove("hidden");
-      return false;
-    }
-  }
-  warn.classList.add("hidden");
-  return true;
+function render() {
+  const players = activePlayers();
+  $("statPlayers").textContent = players.length;
+  $("statMatches").textContent = clubState.matches.length;
+  $("statElo").textContent = players.length ? Math.round(players.reduce((sum,p) => sum+p.elo,0)/players.length) : 1000;
+  $("statMatchSub").textContent = "Recorded by the club admin";
+  $("adminLoggedOut").classList.toggle("hidden", !!admin);
+  $("adminLoggedIn").classList.toggle("hidden", !admin);
+  $("adminName").textContent = admin?.username || "";
+  $("reportNoticeLoggedOut").classList.toggle("hidden", !!admin);
+  $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
+  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= 2);
+  $("matchFields").disabled = !admin || busy || players.length < 2;
+  $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
+  $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
+  $("logoutBtn").disabled = busy;
+  $("backupBtn").disabled = busy;
+  renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
 }
-
-function updateEloPreview() {
-  const wId = document.getElementById("winner").value;
-  const lId = document.getElementById("loser").value;
-  const previewBox = document.getElementById("eloPreview");
-  const previewText = document.getElementById("eloPreviewText");
-
-  if (!wId || !lId || wId === lId) {
-    previewBox.classList.add("hidden");
-    return;
-  }
-
-  const winner = clubState.players.find(p => String(p.id) === String(wId));
-  const loser = clubState.players.find(p => String(p.id) === String(lId));
-
-  if (winner && loser) {
-    const prob = 1 / (1 + Math.pow(10, (loser.elo - winner.elo) / 400));
-    const gain = Math.max(1, Math.round(32 * (1 - prob)));
-    previewText.textContent = `Winner +${gain} Elo / Loser -${gain} Elo`;
-    previewBox.classList.remove("hidden");
-  } else {
-    previewBox.classList.add("hidden");
-  }
-}
-
-document.getElementById("matchForm").onsubmit = async event => {
-  event.preventDefault();
-
-  if (!currentUser) {
-    alert("Please log in or create an account to submit a match result.");
-    showSection("matches");
-    return;
-  }
-
-  const winnerId = document.getElementById("winner").value;
-  const loserId = document.getElementById("loser").value;
-
-  if (!winnerId || !loserId) {
-    alert("Please select both a winner and a loser.");
-    return;
-  }
-
-  if (String(winnerId) === String(loserId)) {
-    alert("The winner and loser must be different players.");
-    return;
-  }
-
-  const wScoreRaw = document.getElementById("winnerScore").value.trim();
-  const lScoreRaw = document.getElementById("loserScore").value.trim();
-
-  if (wScoreRaw !== "" && lScoreRaw !== "") {
-    const wNum = parseInt(wScoreRaw, 10);
-    const lNum = parseInt(lScoreRaw, 10);
-    if (wNum <= lNum) {
-      alert("Invalid score: Winner score must be strictly greater than loser score.");
-      return;
-    }
-  }
-
-  const scoreText = (wScoreRaw !== "" && lScoreRaw !== "")
-    ? `${wScoreRaw}-${lScoreRaw}`
-    : "Score unrecorded";
-
+async function refresh() {
+  if (refreshing || busy) return;
+  refreshing = true;
   try {
-    const res = await fetch(`${API_BASE}/api/matches`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        winnerId,
-        loserId,
-        reporterId: currentUser.id,
-        score: scoreText
-      })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to submit match result.");
-      return;
-    }
-
-    event.target.reset();
-    document.getElementById("eloPreview").classList.add("hidden");
-    document.getElementById("scoreWarning").classList.add("hidden");
-
-    await fetchClubData();
-
-    alert(
-      `Match submitted! ${currentUser.name} confirmed their side.\n\n` +
-      `The opponent can now log in on any device to confirm the result.`
-    );
-  } catch (err) {
-    alert("Connection error while submitting match.");
+    const [data, session] = await Promise.all([api("/api/data"), api("/api/admin/session")]);
+    clubState = { players: data.players, matches: data.matches, revision: data.revision };
+    admin = session.admin;
+    $("syncStatus").textContent = "Up to date";
+    render();
+  } catch (err) { $("syncStatus").textContent = "Connection lost"; message(err.message, true); }
+  finally { refreshing = false; }
+}
+async function action(callback, success) {
+  if (busy) return;
+  busy = true; render(); message("");
+  try { await callback(); message(success); }
+  catch (err) { message(err.message, true); }
+  finally { busy = false; render(); await refresh(); }
+}
+function validateScoreInputs() {
+  const w = $("winnerScore").value, l = $("loserScore").value;
+  const valid = w === "" || l === "" || Number(w) > Number(l);
+  $("scoreWarning").classList.toggle("hidden", valid);
+  return valid;
+}
+function updateEloPreview() {
+  const w = clubState.players.find(p => p.name === $("winner").value);
+  const l = clubState.players.find(p => p.name === $("loser").value);
+  const visible = w && l && w.name !== l.name;
+  $("eloPreview").classList.toggle("hidden", !visible);
+  if (visible) {
+    const delta = Math.max(1, Math.round(32*(1-1/(1+Math.pow(10,(l.elo-w.elo)/400)))));
+    $("eloPreviewText").textContent = `Winner +${delta} / Loser −${Math.min(delta, Math.max(0,l.elo-100))}`;
+  }
+}
+$("loginForm").onsubmit = event => {
+  event.preventDefault();
+  const body = { username: $("loginUsername").value.trim(), password: $("loginPassword").value };
+  action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
+};
+$("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; }, "Logged out.");
+$("playerForm").onsubmit = event => {
+  event.preventDefault();
+  const name = $("playerName").value.trim();
+  action(async () => { await api("/api/players", "POST", { name }); $("playerForm").reset(); }, "Player added at 1000 Elo.");
+};
+$("matchForm").onsubmit = event => {
+  event.preventDefault();
+  if (!validateScoreInputs()) return;
+  if ($("winner").value === $("loser").value) return message("Choose two different players.", true);
+  const body = { winnerName: $("winner").value, loserName: $("loser").value, winnerScore: Number($("winnerScore").value), loserScore: Number($("loserScore").value) };
+  body.revision = clubState.revision;
+  action(async () => { await api("/api/matches", "POST", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
+};
+$("playersBody").onclick = event => {
+  const button = event.target.closest("button");
+  if (!button || busy || !admin) return;
+  const currentName = button.dataset.rename || button.dataset.archive;
+  const player = clubState.players.find(p => p.name === currentName);
+  if (!player) return;
+  if (button.dataset.rename) {
+    const name = prompt("Player name:", player.name);
+    if (name === null) return;
+    action(() => api("/api/players", "PATCH", { currentName: player.name, name }), "Player renamed. Match history updated.");
+  } else {
+    action(() => api("/api/players", "PATCH", { currentName: player.name, archived: !player.archived }), player.archived ? "Player reactivated." : "Player archived. Match history is preserved.");
   }
 };
-
-async function confirmMatch(matchId) {
-  if (!currentUser) {
-    alert("Please log in to confirm match results.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/matches/${matchId}/confirm`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to confirm match.");
-      return;
-    }
-
-    await fetchClubData();
-
-    if (json.eloApplied) {
-      alert(`Both players confirmed! The match is official and Elo ratings have been updated across all devices.`);
-    } else {
-      alert("Your confirmation has been saved. Awaiting confirmation from opponent.");
-    }
-  } catch (err) {
-    alert("Connection error while confirming match.");
-  }
-}
-
-async function rejectOrCancelMatch(matchId) {
-  if (!currentUser) {
-    alert("Please log in to manage match results.");
-    return;
-  }
-
-  const match = clubState.matches.find(m => String(m.id) === String(matchId));
-  if (!match) return;
-
-  const promptMsg = match.eloApplied
-    ? `Void and remove this official match (${match.winnerName} def. ${match.loserName})? Elo ratings will be rolled back.`
-    : `Reject/Cancel this pending match report (${match.winnerName} vs ${match.loserName})?`;
-
-  if (!confirm(promptMsg)) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/matches/${matchId}/reject`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to remove match.");
-      return;
-    }
-
-    await fetchClubData();
-    alert("Match removed successfully.");
-  } catch (err) {
-    alert("Connection error while removing match.");
-  }
-}
-
-/* =========================================
-   RENDERING FUNCTIONS
-========================================= */
-function render() {
-  renderHomeStats();
-  renderLeaderboard();
-  renderPlayersTable();
-  renderDropdowns();
-  renderRecentMatches();
-}
-
-function renderHomeStats() {
-  document.getElementById("statPlayers").textContent = clubState.players.length;
-
-  const officialMatches = clubState.matches.filter(m => m.eloApplied);
-  const pendingMatches = clubState.matches.filter(m => !m.eloApplied);
-
-  document.getElementById("statMatches").textContent = officialMatches.length;
-  document.getElementById("statPendingSub").textContent = `${pendingMatches.length} pending confirmation`;
-
-  const avgElo = clubState.players.length
-    ? Math.round(clubState.players.reduce((sum, p) => sum + p.elo, 0) / clubState.players.length)
-    : 1000;
-  document.getElementById("statElo").textContent = avgElo;
-}
-
-function renderLeaderboard() {
-  const searchTerm = (document.getElementById("leaderboardSearch")?.value || "").toLowerCase();
-  const sorted = [...clubState.players].sort((a, b) => {
-    if (b.elo !== a.elo) return b.elo - a.elo;
-    return (b.wins || 0) - (a.wins || 0);
-  });
-
-  const filtered = sorted.filter(p =>
-    p.name.toLowerCase().includes(searchTerm) ||
-    (p.username && p.username.toLowerCase().includes(searchTerm))
-  );
-
-  const tbody = document.getElementById("leaderboardBody");
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">
-          No players registered yet.<br>
-          <button class="small-btn primary" style="margin-top:10px;" onclick="showSection('matches')">
-            Create an Account to Join the Roster
-          </button>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map((player, idx) => {
-    const isCurrent = currentUser && String(currentUser.id) === String(player.id);
-    const totalMatches = (player.wins || 0) + (player.losses || 0);
-    const winRate = totalMatches > 0 ? Math.round(((player.wins || 0) / totalMatches) * 100) : 0;
-
-    let rankClass = "rank";
-    let rankBadge = `${idx + 1}`;
-    if (idx === 0) { rankClass = "rank-1"; rankBadge = "🥇 1"; }
-    else if (idx === 1) { rankClass = "rank-2"; rankBadge = "🥈 2"; }
-    else if (idx === 2) { rankClass = "rank-3"; rankBadge = "🥉 3"; }
-
-    return `
-      <tr class="${isCurrent ? "highlight-row" : ""}">
-        <td class="${rankClass}"><strong>${rankBadge}</strong></td>
-        <td>
-          <strong>${esc(player.name)}</strong>
-          ${isCurrent ? '<span class="confirm-chip done" style="margin-left:6px;">You</span>' : ''}
-        </td>
-        <td><span class="elo-pill">${Math.round(player.elo)}</span></td>
-        <td>${totalMatches}</td>
-        <td><strong>${player.wins || 0}</strong> - ${player.losses || 0}</td>
-        <td>${winRate}%</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function renderPlayersTable() {
-  const searchTerm = (document.getElementById("playersSearch")?.value || "").toLowerCase();
-  const sorted = [...clubState.players].sort((a, b) => b.elo - a.elo);
-  const filtered = sorted.filter(p =>
-    p.name.toLowerCase().includes(searchTerm) ||
-    (p.username && p.username.toLowerCase().includes(searchTerm))
-  );
-
-  const tbody = document.getElementById("playersBody");
-  if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">
-          No registered players yet.
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(player => {
-    const total = (player.wins || 0) + (player.losses || 0);
-    const winRate = total > 0 ? Math.round(((player.wins || 0) / total) * 100) : 0;
-    return `
-      <tr>
-        <td><strong>${esc(player.name)}</strong></td>
-        <td class="muted">@${esc(player.username || "user")}</td>
-        <td><span class="elo-pill">${Math.round(player.elo)}</span></td>
-        <td style="color:var(--green); font-weight:700;">${player.wins || 0}</td>
-        <td style="color:var(--red); font-weight:700;">${player.losses || 0}</td>
-        <td>${winRate}%</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function renderDropdowns() {
-  const winnerSelect = document.getElementById("winner");
-  const loserSelect = document.getElementById("loser");
-  const needPlayersNotice = document.getElementById("reportNoticeNeedPlayers");
-  const submitBtn = document.getElementById("submitMatchBtn");
-
-  const currentWinnerVal = winnerSelect.value;
-  const currentLoserVal = loserSelect.value;
-
-  if (clubState.players.length < 2) {
-    needPlayersNotice.classList.remove("hidden");
-  } else {
-    needPlayersNotice.classList.add("hidden");
-  }
-
-  const buildOptions = (selectedVal, placeholder) => {
-    let html = `<option value="" disabled ${!selectedVal ? "selected" : ""}>${placeholder}</option>`;
-    html += clubState.players.map(p => `
-      <option value="${p.id}" ${String(selectedVal) === String(p.id) ? "selected" : ""}>
-        ${esc(p.name)} (${Math.round(p.elo)} Elo)
-      </option>
-    `).join("");
-    return html;
-  };
-
-  winnerSelect.innerHTML = buildOptions(currentWinnerVal, "Select winner...");
-  loserSelect.innerHTML = buildOptions(currentLoserVal, "Select loser...");
-}
-
-function renderRecentMatches() {
-  const container = document.getElementById("recentMatches");
-
-  let list = clubState.matches.slice().reverse();
-
-  if (activeMatchFilter === "pending") {
-    list = list.filter(m => !m.eloApplied);
-  } else if (activeMatchFilter === "official") {
-    list = list.filter(m => m.eloApplied);
-  }
-
-  if (list.length === 0) {
-    container.innerHTML = `
-      <div class="muted" style="text-align:center; padding:28px 16px;">
-        No matches recorded yet. Report a match to get started!
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = list.map(match => {
-    const winnerConfirmed = !!(match.confirmations && match.confirmations[match.winnerId]);
-    const loserConfirmed = !!(match.confirmations && match.confirmations[match.loserId]);
-
-    const isUserWinner = currentUser && String(currentUser.id) === String(match.winnerId);
-    const isUserLoser = currentUser && String(currentUser.id) === String(match.loserId);
-    const isInvolved = isUserWinner || isUserLoser;
-    const hasUserConfirmed = currentUser && match.confirmations && !!match.confirmations[currentUser.id];
-
-    let actionButtons = "";
-
-    if (match.eloApplied) {
-      actionButtons = `
-        <span class="badge badge-official">Official • +${match.winnerChange} / -${match.loserChange} Elo</span>
-      `;
-    } else {
-      if (isInvolved && !hasUserConfirmed) {
-        actionButtons = `
-          <button class="small-btn success" onclick="confirmMatch(${match.id})">✓ Confirm</button>
-          <button class="small-btn danger" onclick="rejectOrCancelMatch(${match.id})">✕ Reject</button>
-        `;
-      } else if (isInvolved && hasUserConfirmed) {
-        actionButtons = `
-          <span class="badge badge-pending">Waiting for opponent</span>
-          <button class="small-btn danger" title="Cancel your submission" onclick="rejectOrCancelMatch(${match.id})">Cancel</button>
-        `;
-      } else {
-        actionButtons = `<span class="badge badge-pending">Awaiting confirmation</span>`;
-      }
-    }
-
-    const formattedDate = match.date ? new Date(match.date).toLocaleDateString([], {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
-    }) : "";
-
-    return `
-      <div class="match-item ${match.eloApplied ? 'is-official' : 'is-pending'}">
-        <div class="match-main">
-          <div class="match-headline">
-            <span style="color:var(--green); font-weight:800;">🏆 ${esc(match.winnerName)}</span>
-            <span class="muted" style="font-size:13px; font-weight:normal;">defeated</span>
-            <strong>${esc(match.loserName)}</strong>
-          </div>
-          <div class="match-meta">
-            <span><strong>Score:</strong> ${esc(match.score)}</span>
-            <span>•</span>
-            <span>${formattedDate}</span>
-          </div>
-          <div class="confirm-status">
-            <span class="confirm-chip ${winnerConfirmed ? 'done' : ''}">
-              ${winnerConfirmed ? '✓' : '○'} ${esc(match.winnerName)}
-            </span>
-            <span class="confirm-chip ${loserConfirmed ? 'done' : ''}">
-              ${loserConfirmed ? '✓' : '○'} ${esc(match.loserName)}
-            </span>
-          </div>
-        </div>
-        <div class="match-actions">
-          ${actionButtons}
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-/* =========================================
-   INITIALIZATION
-========================================= */
-syncSessionUI();
-fetchClubData();
+$("recentMatches").onclick = event => {
+  const button = event.target.closest("[data-undo]");
+  if (!button || busy || !admin || !confirm("Undo the latest match and restore both players' previous ratings and records?")) return;
+  action(() => api("/api/matches/latest", "DELETE", { revision: clubState.revision }), "Latest match undone.");
+};
+$("backupBtn").onclick = () => action(async () => {
+  const backup = await api("/api/backup");
+  const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a"); link.href = url;
+  link.download = `pingpong-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}, "Data backup downloaded.");
+// Discard the old player login profile; only the server cookie grants admin access.
+localStorage.removeItem("carroll_pingpong_user_session_v5");
+render(); refresh();
+setInterval(refresh, 3000);
+window.addEventListener("focus", refresh);
 </script>
-
 </body>
 </html>

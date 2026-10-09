@@ -8,3 +8,4 @@ node_modules/
 backups/
 *.backup.json
 .DS_Store
+data/

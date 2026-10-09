@@ -1,133 +1,60 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const http = require("node:http");
-const path = require("node:path");
-const net = require("node:net");
-const { spawn } = require("node:child_process");
-const { once } = require("node:events");
 const { fakeFirestore } = require("./mock-firestore.cjs");
 const { createStore, INITIAL_DB } = require("../lib/firestore-storage");
-
+const { migrateDatabase } = require("../lib/club-schema");
 const original = {
-  version: 1, accounts: [{ id: 1, username: "alex", password: "existing-password" }],
-  players: [{ id: 1, name: "Alex", elo: 1100, wins: 3, losses: 2 }],
-  matches: [{ id: 50, winnerId: 1, loserId: 2, eloApplied: false, confirmations: { 1: true } }]
+  version: 1, accounts: [{ id: 1, username: "old", password: "old-password" }],
+  players: [{ id: 1, accountId: 1, username: "old", name: "Alex", elo: 1120, wins: 4, losses: 2 },
+    { id: 2, name: "Sam", elo: 980, wins: 1, losses: 3 }],
+  matches: [{ id: 50, winnerId: 1, loserId: 2, winnerName: "Old name", loserName: "Sam", score: "11-7", eloApplied: true, confirmations: { 1: true, 2: true } },
+    { id: 51, winnerId: 2, loserId: 1, eloApplied: false }]
 };
-test("import preserves accounts, player IDs, ratings and pending confirmations", async () => {
+const clean = migrateDatabase(original);
+test("legacy native and serialized data migrate without player accounts, IDs or confirmation fields", async () => {
+  for (const legacy of [{ ...original, revision: 7 }, { state: JSON.stringify(original), revision: 7 }]) {
+    const db = fakeFirestore(); db.records.set("clubs/test", legacy);
+    const results = await Promise.all([createStore(db, "clubs/test").read(), createStore(db, "clubs/test").read()]);
+    for (const result of results) { assert.deepEqual(result.db, clean); assert.equal(result.revision, 8); }
+    const saved = db.records.get("clubs/test");
+    assert.equal(saved.version, 2); assert.equal(saved.players[0].elo, 1120);
+    assert.equal(saved.matches[0].winnerName, "Alex"); assert.equal(saved.matches.length, 1);
+    assert.doesNotMatch(JSON.stringify(saved), /"(?:accounts|id|accountId|winnerId|loserId|confirmations|eloApplied|username|password|state)":/);
+  }
+});
+test("native field order does not trigger migration or invalidate a form revision", async () => {
+  const db = fakeFirestore();
+  db.records.set("clubs/test", { matches: clean.matches, revision: 3, players: clean.players, updatedAt: "old", version: 2 });
+  const store = createStore(db, "clubs/test");
+  assert.equal((await store.read()).revision, 3); assert.equal((await store.read()).revision, 3);
+});
+test("imports refuse to overwrite existing native documents even without revision metadata", async () => {
   const db = fakeFirestore(); const store = createStore(db, "clubs/test");
   assert.deepEqual((await store.read()).db, INITIAL_DB);
-  await store.importIfEmpty(original);
-  assert.deepEqual((await store.read()).db, original);
+  await store.importIfEmpty(original); assert.deepEqual((await store.read()).db, clean);
   await assert.rejects(store.importIfEmpty(INITIAL_DB), { statusCode: 409 });
-  assert.deepEqual((await store.read()).db, original);
+  db.records.set("clubs/test", clean);
+  await assert.rejects(store.importIfEmpty(INITIAL_DB), { statusCode: 409 });
 });
-test("stale saves cannot overwrite another instance's changes", async () => {
+test("stale writes cannot overwrite another backend instance", async () => {
   const db = fakeFirestore(); const first = createStore(db, "clubs/test"); const second = createStore(db, "clubs/test");
   const a = await first.read(); const b = await second.read();
-  a.db.players.push({ id: 1, name: "First", elo: 1000 });
+  a.db.players.push({ name: "Alex", elo: 1000, wins: 0, losses: 0, archived: false });
   await first.write(a.db, a.revision);
-  b.db.players.push({ id: 2, name: "Stale", elo: 1000 });
   await assert.rejects(second.write(b.db, b.revision), { statusCode: 409 });
-  assert.deepEqual((await second.read()).db.players, a.db.players);
+  assert.deepEqual((await second.read()).db, a.db);
 });
-test("failed writes and malformed or oversized data do not replace saved state", async () => {
-  const db = fakeFirestore(); const store = createStore(db, "clubs/test");
-  await store.importIfEmpty(original);
-  db.setWriteFailure(true);
-  await assert.rejects(store.write(INITIAL_DB, 1), /outage/);
-  assert.deepEqual((await store.read()).db, original);
-  await assert.rejects(store.write({}, 1), /Invalid club database/);
-  await assert.rejects(store.write({ ...INITIAL_DB, matches: [{ note: "x".repeat(910000) }] }, 1), { statusCode: 413 });
-});
-
-test("legacy migration preserves records and is safe across simultaneous readers", async () => {
-  const db = fakeFirestore();
-  db.records.set("clubs/test", { state: JSON.stringify(original), revision: 7, updatedAt: "old" });
-  const first = createStore(db, "clubs/test"); const second = createStore(db, "clubs/test");
-  const results = await Promise.all([first.read(), second.read()]);
-  for (const result of results) {
-    assert.deepEqual(result.db, original);
-    assert.equal(result.revision, 8);
-  }
-  const document = db.records.get("clubs/test");
-  assert.equal(document.state, undefined);
-  assert.deepEqual(document.players, original.players);
-  assert.deepEqual(document.accounts, original.accounts);
-  assert.deepEqual(document.matches, original.matches);
-  await assert.rejects(first.write(INITIAL_DB, 7), { statusCode: 409 });
-});
-test("native JSON without metadata is readable and cannot be overwritten by import", async () => {
-  const db = fakeFirestore(); db.records.set("clubs/test", structuredClone(original));
-  const store = createStore(db, "clubs/test");
-  assert.deepEqual((await store.read()).db, original);
-  await assert.rejects(store.importIfEmpty(INITIAL_DB), { statusCode: 409 });
-  await store.write(original, 0);
-  assert.equal((await store.read()).revision, 1);
-  assert.deepEqual((await store.read()).db, original);
-});
-test("failed migration leaves the legacy document intact", async () => {
+test("failed migration, invalid data and oversized writes leave the stored document intact", async () => {
   const db = fakeFirestore(); const legacy = { state: JSON.stringify(original), revision: 4 };
   db.records.set("clubs/test", legacy); db.setWriteFailure(true);
-  await assert.rejects(createStore(db, "clubs/test").read(), /outage/);
-  assert.deepEqual(db.records.get("clubs/test"), legacy);
+  const store = createStore(db, "clubs/test");
+  await assert.rejects(store.read(), /outage/); assert.deepEqual(db.records.get("clubs/test"), legacy);
+  db.setWriteFailure(false); await store.read();
+  await assert.rejects(store.write({}, 5), /Invalid club database/);
+  await assert.rejects(store.write({ ...clean, matches: [{ winnerName: "Alex", loserName: "Sam", score: "x".repeat(910000) }] }, 5), { statusCode: 413 });
+  assert.deepEqual((await store.read()).db, clean);
 });
-
-async function port() {
-  const s = net.createServer(); s.listen(0, "127.0.0.1"); await once(s, "listening");
-  const p = s.address().port; await new Promise(resolve => s.close(resolve)); return p;
-}
-async function workflow(base) {
-  async function call(route, body) {
-    const response = await fetch(base + route, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
-    return { status: response.status, data: await response.json() };
-  }
-  const status = await call("/api/status");
-  assert.equal(status.data.storageFormat, "native-object");
-  assert.equal(status.data.storage, "firebase-firestore"); assert.equal(status.data.persistent, true);
-  const username = `player-${Math.random()}`;
-  const first = await call("/api/auth/signup", { name: "Alex", username, password: "12345" });
-  assert.equal(first.status, 201);
-  const secondName = `sam-${Math.random()}`;
-  const second = await call("/api/auth/signup", { name: "Sam", username: secondName, password: "12345" });
-  assert.equal(second.status, 201);
-  assert.equal((await call("/api/auth/login", { username, password: "12345" })).status, 200);
-  const winnerId = first.data.user.id, loserId = second.data.user.id;
-  assert.notEqual(winnerId, loserId);
-  const match = await call("/api/matches", { winnerId, loserId, reporterId: winnerId, score: "11-7" });
-  assert.equal(match.status, 201); assert.equal(match.data.match.eloApplied, false);
-  let data = (await call("/api/data")).data;
-  assert.equal(data.players.find(p => p.id === winnerId).elo, 1000);
-  const confirmed = await call(`/api/matches/${match.data.match.id}/confirm`, { userId: loserId });
-  assert.equal(confirmed.status, 200); assert.equal(confirmed.data.eloApplied, true);
-  data = (await call("/api/data")).data;
-  assert.equal(data.players.find(p => p.id === winnerId).elo, 1016);
-  assert.equal(data.players.find(p => p.id === loserId).elo, 984);
-}
-
-test("Render Node backend still supports player login and dual-confirmation matches", async t => {
-  const p = await port();
-  const env = { ...process.env, PORT: String(p), FIREBASE_PROJECT_ID: "demo-club", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080", NODE_ENV: "test" };
-  for (const name of ["RENDER", "VERCEL"]) delete env[name];
-  const child = spawn(process.execPath, ["--require", path.join(__dirname, "mock-firestore.cjs"), "server.js"], { cwd: path.join(__dirname, ".."), env, stdio: "pipe" });
-  let errors = ""; child.stderr.on("data", chunk => errors += chunk);
-  t.after(async () => { if (child.exitCode === null) { child.kill(); await once(child, "exit"); } });
-  const base = `http://127.0.0.1:${p}`;
-  let ready = false;
-  for (let i=0; i<100; i++) {
-    try { await fetch(base + "/api/status"); ready = true; break; }
-    catch { await new Promise(resolve => setTimeout(resolve, 25)); }
-  }
-  assert.ok(ready, errors);
-  await workflow(base);
-  assert.equal((await fetch(base + "/data/db.json")).status, 404);
-});
-test("Vercel API uses the same persistent storage without changing match confirmation", async t => {
-  process.env.FIREBASE_PROJECT_ID = "demo-club";
-  process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
-  process.env.NODE_ENV = "test";
-  const handler = require("../api/index.js");
-  const server = http.createServer(handler); server.listen(0, "127.0.0.1"); await once(server, "listening");
-  t.after(() => new Promise(resolve => server.close(resolve)));
-  await workflow(`http://127.0.0.1:${server.address().port}`);
+test("ambiguous player names cannot silently merge ratings during migration", () => {
+  assert.throws(() => migrateDatabase({ ...original, players: [...original.players, { ...original.players[0], name: " alex " }] }), /unique name/);
 });

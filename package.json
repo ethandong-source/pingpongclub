@@ -1,11 +1,11 @@
 {
   "name": "carroll-pingpong-club",
   "version": "1.0.0",
-  "description": "Carroll High School Ping Pong Club \u2014 Elo & Match Tracker with Cross-Device Sync",
+  "description": "Carroll Ping Pong Club \u2014 admin-managed players and matches with Firestore",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/firestore-storage.test.js",
+    "test": "node --test test/*.test.js",
     "import:firestore": "node scripts/import-firestore.js"
   },
   "dependencies": {

@@ -1,109 +1,67 @@
-# Firebase storage setup for betterLogging
+# Firebase and admin setup for betterLogging
 
-This branch changes only backend storage. Player signup/login, Elo, match reporting, and two-player confirmations are retained. The frontend is unchanged. Both Render's Node backend and the Vercel API now store the existing JSON database in Cloud Firestore.
-
-Configured project: **carrollpingpongclub**. Firestore database: **(default)**.
-
-## What information to share
-
-Send only:
-
-- Firebase **Project ID** (not the project display name).
-- Firestore **database ID**, normally `(default)`.
-- Confirmation that Cloud Firestore has been created.
-
-Do not send a service-account private key in chat or commit it to GitHub. No frontend Firebase API key, authDomain, appId, or Firebase Authentication setup is needed for this backend-only integration.
-
-## Configure Firebase
-
-1. In the Firebase console, create/select the project.
-2. Under Build → Firestore Database, create a **Cloud Firestore Standard edition** database. Keep `(default)` unless you need a named database. Choose a region near your Render service.
-3. For a dedicated club project, use the rules in `firestore.rules` to deny direct browser access. The server uses its service account, which authenticates using IAM rather than browser security rules. Do not replace a shared project's existing rules without considering its other apps.
-4. Open Project settings → Service accounts and generate a private key. Keep the downloaded JSON file private. Its `project_id`, `client_email`, and `private_key` fields are used below. The service account needs permission to read and write Firestore documents.
-
-## Configure Render
-
-Before any redeployment, download a private copy of the live database from your existing `/api/backup` endpoint, or back up its `data/db.json` file. The current local-file deployment's live data does not automatically travel with GitHub code. Original backups include existing account passwords; store them privately.
-
-In the Render web service's Environment settings, add:
+Keep your existing Firestore settings:
 
 ```text
 FIREBASE_PROJECT_ID=carrollpingpongclub
-FIREBASE_CLIENT_EMAIL=<client_email from the service-account JSON>
-FIREBASE_PRIVATE_KEY=<private_key from the service-account JSON>
 FIRESTORE_DATABASE_ID=(default)
 FIRESTORE_DOCUMENT_PATH=clubs/carroll-pingpong
 ```
 
-For `FIREBASE_PRIVATE_KEY`, paste the full PEM private key including BEGIN/END lines. Actual newlines or literal `\n` sequences both work. Do not include extra surrounding quotation marks in Render's value field.
+The backend also needs `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` from its Firebase service account, configured privately in Render or Vercel. Literal `\n` in the private key is supported. Do not put keys in GitHub or chat. The service account needs Firestore read/write permissions. Both hosting backends share the same adapter and document. Browser access remains denied by `firestore.rules`; only the backend service account accesses Firestore.
 
-Use Node.js **22 or newer**, build command `npm ci`, and start command `npm start`. This branch includes a lockfile. Old `DATABASE_URL`, `KV_REST_API_*`, and `UPSTASH_REDIS_REST_*` settings are no longer used by the backend.
+Add `ADMIN_USERNAME` (default `admin`), `ADMIN_PASSWORD` (at least 12 characters), and `SESSION_SECRET` (at least 32 random characters). Generate the secret locally:
 
-Configure the same variables in Vercel if you use that deployment too. If both hosts should share data, use the same project, database ID, and document path.
-
-## Import the existing players and matches BEFORE switching the live site
-
-The import is an offline command, not a new public API endpoint. It preserves all existing accounts/passwords, player IDs/ratings, match records, and confirmations. It refuses to overwrite an existing club document.
-
-1. Obtain a private backup from the old live app before redeploying. The script accepts either the backup response `{ "data": { ... } }` or a raw `db.json` object.
-2. Stop new match/account entries while taking the final backup and switching storage, so new entries are not left behind in the old file.
-3. In a local checkout of this branch, run `npm ci`.
-4. Create an uncommitted `.env` with the Firebase settings above. Use `.env.example` as the format reference and keep your private backup outside the repository or in the ignored `backups/` folder.
-5. Import with:
-
-```bash
-node --env-file=.env scripts/import-firestore.js /absolute/path/to/private-backup.json
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-With the variables already exported in your terminal, you can instead run:
+These configure the admin login. Players do not have accounts. Sessions use an HttpOnly cookie and expire after eight hours. Changing the password or session secret invalidates existing sessions. If needed, set `APP_ORIGIN` to the exact public URL, without a trailing slash.
 
-```bash
-npm run import:firestore -- /absolute/path/to/private-backup.json
-```
+## Stored object
 
-6. The script prints record counts, never password or key contents. In Firestore, check document `clubs/carroll-pingpong`. It contains native fields `version`, `accounts`, `players`, and `matches`, plus `revision` and `updatedAt` metadata. There is no serialized `state` field.
-7. Once imported, configure Render to deploy `betterLogging` and redeploy. This GitHub update itself does not change Render's deployment-branch setting.
-8. Open `/api/status`. It should show `storage: "firebase-firestore"`, `storageFormat: "native-object"`, `persistent: true`, and the same imported counts. Log in with an existing player account, record/confirm a match, and verify the data survives a restart.
-
-If a valid Firestore connection exists but the club document has not been imported yet, the app starts with an empty club. It does not silently copy an unrelated local starter file. Import first to avoid accidentally starting a fresh database. If someone has already created a document, export it and reconcile the data before retrying the import; the script never overwrites it.
-
-## How the storage implementation works
-
-- Requests read fresh state from Firestore, rather than using stale process memory.
-- Saves are awaited before returning success.
-- A Firestore transaction checks the revision, so a stale request cannot overwrite another instance's changes. A conflicting write returns 409; refresh and retry.
-- Requests within one running instance are serialized. A storage error returns an error instead of switching to temporary local files.
-- Existing accounts and passwords keep their original format; this change does not add Firebase Authentication or remove player accounts.
-- The current small club fits in one document. The code limits saved JSON to 900,000 bytes; split players/matches into collections before reaching that limit.
-- The frontend still polls every three seconds. Each refresh now reads one document; Firestore's free daily read quota depends on traffic. Consider increasing polling intervals later if needed.
-- No Firebase credentials are written into static frontend files or GitHub. Old local data paths and backend storage-module paths are blocked by the Node static-file server.
-- The original API authorization behavior is retained; Firestore rules protect direct database access, not the website's existing backend endpoints.
-
-## Verification
-
-Run `npm test`. Tests cover preservation/import, conflicting writes, storage failures, document size validation, and unchanged signup/login/match-confirmation behavior through both Node and Vercel backends. Tests use an in-memory Firestore test double; they do not connect to your live project. A live project test still requires the credentials configured above.
-
-Official references:
-
-- https://firebase.google.com/docs/admin/setup
-- https://firebase.google.com/docs/firestore/manage-data/transactions
-- https://firebase.google.com/docs/firestore/security/get-started
-
-## Native document structure and migration
-
-Both backends read and write the same document: project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong` (unless overridden by the environment settings above).
+The Firestore document has this shape (example records):
 
 ```json
 {
-  "version": 1,
-  "accounts": [],
-  "players": [],
-  "matches": [],
+  "version": 2,
+  "players": [
+    { "name": "Alex", "elo": 1016, "wins": 1, "losses": 0, "archived": false },
+    { "name": "Sam", "elo": 984, "wins": 0, "losses": 1, "archived": false }
+  ],
+  "matches": [
+    {
+      "winnerName": "Alex",
+      "loserName": "Sam",
+      "score": "11-7",
+      "date": "2026-10-08T00:00:00.000Z",
+      "winnerChange": 16,
+      "loserChange": 16,
+      "enteredBy": "admin",
+      "before": {
+        "winner": { "elo": 1000, "wins": 0, "losses": 0 },
+        "loser": { "elo": 1000, "wins": 0, "losses": 0 }
+      }
+    }
+  ],
   "revision": 1,
   "updatedAt": "2026-10-08T00:00:00.000Z"
 }
 ```
 
-The arrays above illustrate the shape; existing records are retained. On the first backend read after deployment, a legacy `state` JSON string is converted into these native fields in a transaction. The conversion reads the latest document and increments its revision, preventing stale writes. Backups still contain just the original club object, without storage metadata. A native club object without revision metadata is also readable. Imports refuse to overwrite any existing document.
+Names are the player references. `before` supports safely undoing a new match; `enteredBy` records the admin who entered it. `revision` protects concurrent saves and stale form submissions. Neither metadata field is an account or match ID. Backups omit the document's revision and timestamp metadata.
 
-For an existing Firebase deployment, deploy this branch with the same environment variables; do not re-import or manually replace the document. Older backend versions that expect `state` cannot read the converted document, so a rollback requires a backend that supports this format.
+## Migration and import
+
+For the existing Firebase deployment, deploy this branch with the same Firebase variables and the new admin variables. No re-import is needed. On the first database read, a transaction converts either the old `state` JSON string or native version 1 fields into version 2. Completed matches and player ratings are retained. Account records, IDs, reporter/confirmation fields and unapplied pending matches are removed. Duplicate player names cause migration to stop rather than merge players; resolve them in the old deployment first. A rollback needs a backend that supports version 2.
+
+For an empty Firestore document only, import a private old or new backup:
+
+```sh
+npm ci
+node --env-file=.env scripts/import-firestore.js /absolute/path/to/private-backup.json
+```
+
+The importer converts the backup to the names-only schema and refuses to overwrite any existing document. Never commit a private backup. The single document has a size limit; writes above the adapter's 900 KB safety threshold are rejected before overwriting existing data.
+
+After deployment, `/api/status` reports `storage: "firebase-firestore"`, `storageFormat: "native-object"`, `persistent: true` and player/match counts. Log in through Matches and enter a test result; use Undo latest match to reverse it.
