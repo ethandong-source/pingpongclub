@@ -1,0 +1,3 @@
+Temporary Codex write-access test.
+Created on 2026-10-08 on the betterLogging branch.
+This file can be deleted after write access is verified.
