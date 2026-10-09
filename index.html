@@ -25,10 +25,10 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
 
 /* Scoreboard numbers lead; labels follow. */
 body{font-size:17px}.hero .stat-card{display:flex;flex-direction:column;border-left:2px solid #d5a440;border-top:0;padding:0 0 0 14px;border-radius:0}.hero .stat-value{order:0;font-size:46px;margin:0 0 8px;letter-spacing:-1.5px}.hero .stat-title{order:1;font-size:15px;text-transform:none;letter-spacing:0;font-weight:600;color:#e1ede4;line-height:1.35}.hero .grid{gap:26px;margin-top:34px}.hero p{font-size:19px;line-height:1.65}.hero-photo{border:1px solid #ffffff30}.notice,.elo-preview-box,label,.small-btn,.match-item p,.badge,.history-count,.player-history li,.podium-rating-label,footer{font-size:15px}.faq code{font-size:14px}th{font-size:14px;text-transform:none;letter-spacing:0;white-space:nowrap}.faq summary{font-size:19px}.podium-name{font-size:17px}.card-header .muted{font-size:16px!important}.card-header input{font-size:16px!important;padding:11px 14px!important}.match-item{gap:24px}.history-meta{line-height:1.6}.faq p{max-width:70ch}.card{box-shadow:none}.leader-row td:first-child{font-size:21px}.podium-place-1 .podium-step{border-top:0}
-/* Rankings cover the full-size opening section as the page scrolls. */
-.home-view .hero{position:sticky;top:0;z-index:0;transform:none;opacity:1}
-main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:48px 5% 64px;border-radius:36px 36px 0 0}main>.section,main>#appMessage{max-width:calc(1180px + var(--scroll-progress,0) * 100px);margin-left:auto;margin-right:auto}.home-view main{margin-top:-20px}nav{position:sticky;top:0;z-index:3}#home>.podium{margin-top:8px}.faq{margin-top:56px}.faq details{background:transparent;border-width:0 0 1px;border-radius:0;margin-bottom:0;padding:22px 4px}.faq details:first-child{border-top:2px solid var(--green)}.faq details[open]{background:transparent}.faq h2{margin-bottom:8px}footer{position:relative;z-index:1}
-@media(max-width:600px){body{font-size:16px}.hero p{font-size:17px}.hero .grid{gap:16px}.hero .stat-value{font-size:35px}.hero .stat-title{font-size:14px}.hero .stat-card{padding:0 0 0 10px}.podium-name{font-size:14px}main{padding:30px 16px 44px;border-radius:24px 24px 0 0}.home-view main{margin-top:-12px}th{font-size:13px}.notice,label,.small-btn,.badge,.history-count,.player-history li,footer{font-size:14px}.faq summary{font-size:17px}}
+/* Home sections follow the normal page flow. */
+.home-view .hero{position:relative;transform:none;opacity:1}
+main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:48px 5% 64px;border-radius:36px 36px 0 0}main>.section,main>#appMessage{max-width:1180px;margin-left:auto;margin-right:auto}.home-view main{margin-top:0}nav{position:sticky;top:0;z-index:3}#home>.podium{margin-top:8px}.faq{margin-top:56px}.faq details{background:transparent;border-width:0 0 1px;border-radius:0;margin-bottom:0;padding:22px 4px}.faq details:first-child{border-top:2px solid var(--green)}.faq details[open]{background:transparent}.faq h2{margin-bottom:8px}footer{position:relative;z-index:1}
+@media(max-width:600px){body{font-size:16px}.hero p{font-size:17px}.hero .grid{gap:16px}.hero .stat-value{font-size:35px}.hero .stat-title{font-size:14px}.hero .stat-card{padding:0 0 0 10px}.podium-name{font-size:14px}main{padding:30px 16px 44px;border-radius:24px 24px 0 0}.home-view main{margin-top:0}th{font-size:13px}.notice,label,.small-btn,.badge,.history-count,.player-history li,footer{font-size:14px}.faq summary{font-size:17px}}
 @media(prefers-reduced-motion:reduce){.home-view .hero{position:relative;transform:none;opacity:1}}
 </style>
 </head>
@@ -294,26 +294,10 @@ async function api(route, method = "GET", body) {
 }
 function showSection(id) {
   document.body.classList.toggle("home-view", id === "home");
-  updateScrollEffect();
   document.querySelector(".hero").classList.toggle("hidden", id !== "home");
   document.querySelectorAll("main .section").forEach(section => section.classList.toggle("active", section.id === id));
   document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
 }
-const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-let scrollFrame = null;
-function updateScrollEffect() {
-  const hero = document.querySelector(".hero");
-  const enabled = document.body.classList.contains("home-view") && !motionPreference.matches;
-  const progress = enabled ? Math.min(1,Math.max(0,window.scrollY / Math.max(1,hero.offsetHeight))) : 0;
-  document.documentElement.style.setProperty("--scroll-progress",progress);
-  scrollFrame = null;
-}
-window.addEventListener("scroll", () => {
-  if (scrollFrame === null) scrollFrame = requestAnimationFrame(updateScrollEffect);
-}, { passive: true });
-window.addEventListener("resize",updateScrollEffect);
-motionPreference.addEventListener("change",updateScrollEffect);
-updateScrollEffect();
 document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => showSection(button.dataset.section));
 function renderPodium() {
   const leaders = sortedPlayers().slice(0, 3);
