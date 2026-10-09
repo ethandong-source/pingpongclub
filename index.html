@@ -37,7 +37,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 @media(max-width:600px){.hero{min-height:0;padding:48px 20px}.hero-container{gap:38px}.hero h1{font-size:42px}.hero-photo{min-height:0;max-height:260px}}
 
 /* An open invitation beside a full-height club photo reel. */
-.hero{padding:0;min-height:0;display:block}.hero-container{max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}.hero-copy{padding:76px clamp(28px,5.5vw,84px);display:flex;flex-direction:column;justify-content:center}.hero h1{font-size:clamp(38px,4vw,60px);line-height:1.1}.hero p{margin-bottom:26px}.join-groupme{align-self:flex-start;display:inline-flex;align-items:center;gap:24px;background:#e8bb53;color:#173a2a;border:0;border-radius:999px;padding:17px 25px;font:inherit;font-weight:800;text-decoration:none}.join-groupme:disabled{cursor:default}.join-groupme:focus-visible,.photo-pause:focus-visible{outline:3px solid white;outline-offset:5px}.hero .grid{margin-top:42px;gap:20px}.hero .stat-value{font-size:clamp(32px,3.6vw,48px)}.hero-gallery{position:relative;overflow:hidden;min-height:650px;background:#174a39}.photo-track{display:flex;height:100%;position:absolute;inset:0;transition:transform 750ms cubic-bezier(.22,.61,.36,1)}.photo-track.resetting{transition:none}.photo-slide{flex:0 0 100%;height:100%;margin:0}.photo-slide img{display:block;width:100%;height:100%;object-fit:cover}.photo-pause{position:absolute;bottom:24px;right:24px;border:1px solid #ffffff70;border-radius:999px;color:white;background:#16392cdd;padding:11px 18px;font:inherit;font-size:15px;cursor:pointer}.hero-gallery:hover .photo-pause{background:#16392c}
+.hero{padding:0;min-height:0;display:block}.hero-container{max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}.hero-copy{padding:76px clamp(28px,5.5vw,84px);display:flex;flex-direction:column;justify-content:center}.hero h1{font-size:clamp(38px,4vw,60px);line-height:1.1}.hero p{margin-bottom:26px}.join-groupme{align-self:flex-start;display:inline-flex;align-items:center;gap:24px;background:#e8bb53;color:#173a2a;border:0;border-radius:999px;padding:17px 25px;font:inherit;font-weight:800;text-decoration:none}.groupme-logo{width:28px;height:28px;flex:none}.join-groupme{gap:14px;transition:background-color .2s ease}.join-groupme:hover{background:#f1ca6c}.join-groupme:focus-visible{outline:3px solid white;outline-offset:5px}.hero .grid{margin-top:42px;gap:20px}.hero .stat-value{font-size:clamp(32px,3.6vw,48px)}.hero-gallery{position:relative;overflow:hidden;min-height:650px;background:#174a39}.photo-track{display:flex;height:100%;position:absolute;inset:0;transition:transform 750ms cubic-bezier(.22,.61,.36,1)}.photo-track.resetting{transition:none}.photo-slide{flex:0 0 100%;height:100%;margin:0}.photo-slide img{display:block;width:100%;height:100%;object-fit:cover}
 @media(max-width:850px){.hero-copy{padding:52px 28px}.hero-gallery{min-height:620px}.hero .grid{gap:12px}.hero .stat-title{font-size:14px}.hero .stat-card{padding-left:10px}.hero h1{font-size:42px}}
 @media(max-width:600px){.hero-container{grid-template-columns:1fr}.hero-copy{padding:48px 24px}.hero-gallery{min-height:360px}.hero .grid{gap:18px}.hero .stat-value{font-size:35px}.hero h1{font-size:42px}.photo-slide img{object-position:center 55%}}
 @media(prefers-reduced-motion:reduce){.photo-track{transition:none}}
@@ -74,7 +74,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         Find your next opponent. Play a game, tell the admin the score,
         and see where you stand in the Carroll High School club.
       </p>
-    <button id="groupmeJoin" class="join-groupme" disabled title="Club invite link coming soon">Join GroupMe <span aria-hidden="true">↗</span></button>
+    <a id="groupmeJoin" class="join-groupme" href="https://groupme.com/join_group/117865708/3qNgz0D2" target="_blank" rel="noopener noreferrer"><svg fill="#00AFF0" aria-hidden="true" focusable="false" class="groupme-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11.1597 6.57419H12.8398V8.16898H11.1597V6.57419ZM18.1997 0H5.80011C3.14898 0 1 2.03979 1 4.55577V16.3243C1 18.8402 3.14898 20.88 5.80011 20.88H9.92715L11.9786 24L14.0306 20.88H18.1997C20.8506 20.88 23 18.8402 23 16.3243V4.55574C23 2.03976 20.8506 0 18.1997 0ZM7.56833 8.16895H9.34755V6.57416H7.56833V4.85447H9.34755V3.16587H11.1597V4.85447H12.8398V3.16587H14.6519V4.85447H16.4308V6.57416H14.6519V8.16895H16.4308V9.88852H14.6519V11.5772H12.8398V9.88852H11.1597V11.5772H9.34755V9.88852H7.56833V8.16895ZM20.3122 13.4321C20.3122 13.4321 17.9202 17.708 12.2406 17.708C12.1619 17.708 12.0843 17.707 12.007 17.7057C11.9299 17.707 11.8522 17.708 11.7737 17.708C6.09416 17.708 3.70211 13.4321 3.70211 13.4321C3.70211 13.4321 3.54729 13.1536 3.54729 12.8534C3.53754 12.6368 3.64915 12.3263 3.9421 12.1433C4.105 12.0417 4.259 11.9914 4.40179 11.9757C5.08566 11.9069 5.48202 12.3295 5.80794 12.8121C6.16788 13.3447 8.24445 15.678 12.007 15.7672C15.7698 15.678 17.8464 13.3447 18.2063 12.8121C18.5322 12.3295 18.9429 11.9062 19.6125 11.9757C19.7553 11.9914 19.9094 12.0417 20.0722 12.1433C20.3652 12.3263 20.4792 12.5839 20.469 12.8532C20.446 13.2494 20.3122 13.4321 20.3122 13.4321Z"/></svg><span>Join GroupMe</span><span aria-hidden="true">↗</span></a>
     <div class="grid">
       <div class="stat-card">
         <div class="stat-title">Active players</div>
@@ -99,7 +99,6 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong-18511482.jpg" alt="Red and black paddles beside a net on a green table" width="500" height="750"></figure>
         <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong.png" alt="" width="612" height="408"></figure>
       </div>
-      <button class="photo-pause" id="photoPause" aria-pressed="false">Pause photos</button>
     </div>
   </div>
 </section>
@@ -205,7 +204,6 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
             <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
             <button class="btn primary" type="submit">Add player</button>
           </form>
-          <p class="muted">New players start at 1000 Elo. Rename, archive, or delete players in Roster. Deleting keeps recorded matches.</p>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
             <button id="backupBtn" type="button" class="small-btn secondary">Download data backup</button>
             <button id="logoutBtn" type="button" class="small-btn secondary">Log out</button>
@@ -522,14 +520,9 @@ $("backupBtn").onclick = () => action(async () => {
 }, "Data backup downloaded.");
 // Discard the old player login profile; only the server cookie grants admin access.
 localStorage.removeItem("carroll_pingpong_user_session_v5");
-const photoTrack = $("photoTrack"), photoPause = $("photoPause");
+const photoTrack = $("photoTrack");
 const photoSlides = [...photoTrack.children];
-let photoIndex = 0, photosPaused = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-function updatePhotoPause() {
-  photoPause.textContent = photosPaused ? "Play photos" : "Pause photos";
-  photoPause.setAttribute("aria-pressed", String(photosPaused));
-}
-photoPause.onclick = () => { photosPaused = !photosPaused; updatePhotoPause(); };
+let photoIndex = 0;
 function resetPhotoLoop() {
   if (photoIndex !== 3) return;
   photoTrack.classList.add("resetting");
@@ -540,13 +533,12 @@ function resetPhotoLoop() {
 }
 photoTrack.addEventListener("transitionend", resetPhotoLoop);
 setInterval(() => {
-  if (photosPaused || document.hidden || !document.body.classList.contains("home-view") || photoTrack.parentElement.matches(":hover, :focus-within")) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.hidden || !document.body.classList.contains("home-view") || photoTrack.parentElement.matches(":hover, :focus-within")) return;
   photoIndex += 1;
   photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== photoIndex)));
   photoTrack.style.transform = `translateX(-${photoIndex * 100}%)`;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) resetPhotoLoop();
 }, 5000);
-updatePhotoPause();
 render(); refresh();
 setInterval(refresh, 3000);
 window.addEventListener("focus", refresh);
