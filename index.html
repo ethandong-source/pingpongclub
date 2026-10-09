@@ -116,20 +116,73 @@
     .hero-container {
       max-width: 1180px;
       margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      align-items: center;
+      gap: 40px;
     }
 
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 13px;
+    .hero-copy { min-width: 0; }
+    .podium { margin: 0; min-width: 0; }
+    .podium figcaption {
+      text-align: center;
+      font-size: 16px;
       font-weight: 700;
-      margin-bottom: 14px;
-      backdrop-filter: blur(4px);
+      margin-bottom: 22px;
+      color: #e5f2e7;
+    }
+    .podium-places {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .podium-place { flex: 1; min-width: 0; text-align: center; }
+    .podium-place-1 { order: 2; --medal: #f3cb65; --step-height: 126px; }
+    .podium-place-2 { order: 1; --medal: #d2dbe1; --step-height: 88px; }
+    .podium-place-3 { order: 3; --medal: #cd9674; --step-height: 64px; }
+    .podium-name {
+      display: block;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .podium-rating {
+      display: block;
+      color: #e5f2e7;
+      font-size: 12px;
+      margin: 5px 0 13px;
+      min-height: 18px;
+    }
+    .podium-step {
+      height: var(--step-height);
+      background: var(--medal);
+      color: #20312a;
+      border-radius: 5px 5px 0 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      box-shadow: inset 0 4px 0 rgba(255,255,255,.3), 0 12px 20px rgba(0,0,0,.12);
+      font-size: 42px;
+      font-weight: 900;
+    }
+    .podium-step::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 4px;
+      bottom: 0;
+      width: 10px;
+      background: rgba(0,0,0,.12);
+    }
+    @media (max-width: 700px) {
+      .hero-container { grid-template-columns: 1fr; gap: 26px; }
+      .podium { width: 100%; max-width: 390px; margin: 0 auto; }
+      .hero { padding-top: 34px; }
     }
 
     .hero h1 {
@@ -145,12 +198,6 @@
       max-width: 680px;
       color: rgba(255, 255, 255, 0.92);
       margin: 0 0 24px;
-    }
-
-    .hero .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
     }
 
     /* BUTTONS */
@@ -598,23 +645,17 @@
 ========================================= -->
 <section class="hero">
   <div class="hero-container">
-    <div class="hero-tag">
-      <span>🏓</span>
-      <span>Carroll High School Ping Pong Club</span>
+    <div class="hero-copy">
+      <h1>Ping Pong Club Website</h1>
+      <p>
+        Follow club rankings and match results from any device.
+        The club admin manages the roster and records each match; players do not need accounts.
+      </p>
     </div>
-    <h1>Ping Pong Club Website</h1>
-    <p>
-      Follow club rankings and match results from any device.
-      The club admin manages the roster and records each match; players do not need accounts.
-    </p>
-    <div class="actions">
-      <button class="btn primary" onclick="showSection('matches')">
-        🏓 View Matches
-      </button>
-      <button class="btn outline" onclick="document.getElementById('homeLeaderboard').scrollIntoView({behavior: 'smooth', block: 'start'})">
-        🏆 View Leaderboard
-      </button>
-    </div>
+    <figure class="podium" aria-label="Top three players by Elo rating">
+      <figcaption>Top three</figcaption>
+      <ol id="podiumPlaces" class="podium-places"></ol>
+    </figure>
   </div>
 </section>
 
@@ -868,6 +909,17 @@ function showSection(id) {
   document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
 }
 document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => showSection(button.dataset.section));
+function renderPodium() {
+  const leaders = sortedPlayers().slice(0, 3);
+  $("podiumPlaces").innerHTML = [0, 1, 2].map(index => {
+    const player = leaders[index];
+    return `<li class="podium-place podium-place-${index+1}" aria-label="Rank ${index+1}${player ? `: ${escapeHtml(player.name)}, ${player.elo} Elo` : ": No player yet"}">
+      <span class="podium-name">${player ? escapeHtml(player.name) : "No player yet"}</span>
+      <span class="podium-rating">${player ? `${player.elo} Elo` : ""}</span>
+      <div class="podium-step" aria-hidden="true">${index+1}</div>
+    </li>`;
+  }).join("");
+}
 function renderLeaderboard() {
   const search = $("leaderboardSearch").value.toLowerCase();
   $("leaderboardBody").innerHTML = sortedPlayers().map((p, i) => ({ p, rank: i+1 })).filter(({p}) => p.name.toLowerCase().includes(search)).map(({p,rank}) => {
@@ -918,7 +970,7 @@ function render() {
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("logoutBtn").disabled = busy;
   $("backupBtn").disabled = busy;
-  renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
+  renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
 }
 async function refresh() {
   if (refreshing || busy) return;
