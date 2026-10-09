@@ -35,6 +35,12 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 .hero{min-height:620px;display:flex;align-items:center;padding-top:84px;padding-bottom:84px;background:#1e5138}.hero-container{width:100%;gap:52px}.hero h1{font-size:clamp(40px,4.3vw,62px)}.hero-photo{min-height:340px}
 @media(max-width:850px){.hero{min-height:560px;padding-top:64px;padding-bottom:64px}.hero-container{gap:28px}.hero h1{font-size:42px}.hero-photo{min-height:260px}}
 @media(max-width:600px){.hero{min-height:0;padding:48px 20px}.hero-container{gap:38px}.hero h1{font-size:42px}.hero-photo{min-height:0;max-height:260px}}
+
+/* An open invitation beside a full-height club photo reel. */
+.hero{padding:0;min-height:0;display:block}.hero-container{max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}.hero-copy{padding:76px clamp(28px,5.5vw,84px);display:flex;flex-direction:column;justify-content:center}.hero h1{font-size:clamp(38px,4vw,60px);line-height:1.1}.hero p{margin-bottom:26px}.join-groupme{align-self:flex-start;display:inline-flex;align-items:center;gap:24px;background:#e8bb53;color:#173a2a;border:0;border-radius:999px;padding:17px 25px;font:inherit;font-weight:800;text-decoration:none}.join-groupme:disabled{cursor:default}.join-groupme:focus-visible,.photo-pause:focus-visible{outline:3px solid white;outline-offset:5px}.hero .grid{margin-top:42px;gap:20px}.hero .stat-value{font-size:clamp(32px,3.6vw,48px)}.hero-gallery{position:relative;overflow:hidden;min-height:650px;background:#174a39}.photo-track{display:flex;height:100%;position:absolute;inset:0;transition:transform 750ms cubic-bezier(.22,.61,.36,1)}.photo-track.resetting{transition:none}.photo-slide{flex:0 0 100%;height:100%;margin:0}.photo-slide img{display:block;width:100%;height:100%;object-fit:cover}.photo-pause{position:absolute;bottom:24px;right:24px;border:1px solid #ffffff70;border-radius:999px;color:white;background:#16392cdd;padding:11px 18px;font:inherit;font-size:15px;cursor:pointer}.hero-gallery:hover .photo-pause{background:#16392c}
+@media(max-width:850px){.hero-copy{padding:52px 28px}.hero-gallery{min-height:620px}.hero .grid{gap:12px}.hero .stat-title{font-size:14px}.hero .stat-card{padding-left:10px}.hero h1{font-size:42px}}
+@media(max-width:600px){.hero-container{grid-template-columns:1fr}.hero-copy{padding:48px 24px}.hero-gallery{min-height:360px}.hero .grid{gap:18px}.hero .stat-value{font-size:35px}.hero h1{font-size:42px}.photo-slide img{object-position:center 55%}}
+@media(prefers-reduced-motion:reduce){.photo-track{transition:none}}
 </style>
 </head>
 
@@ -68,6 +74,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         Find your next opponent. Play a game, tell the admin the score,
         and see where you stand in the Carroll High School club.
       </p>
+    <button id="groupmeJoin" class="join-groupme" disabled title="Club invite link coming soon">Join GroupMe <span aria-hidden="true">↗</span></button>
     <div class="grid">
       <div class="stat-card">
         <div class="stat-title">Active players</div>
@@ -85,7 +92,15 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
       </div>
     </div>
     </div>
-    <img class="hero-photo" src="/assets/ping-pong.png" alt="Two red ping-pong paddles and balls beside a net on a blue table" width="612" height="408">
+    <div class="hero-gallery" role="region" aria-label="Ping-pong photo slideshow">
+      <div class="photo-track" id="photoTrack">
+        <figure class="photo-slide"><img src="/assets/ping-pong.png" alt="Red paddles and balls beside the net on a blue table" width="612" height="408" fetchpriority="high"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong-3846048.jpg" alt="A ping-pong paddle and ball on a blue table" width="500" height="750"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong-18511482.jpg" alt="Red and black paddles beside a net on a green table" width="500" height="750"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong.png" alt="" width="612" height="408"></figure>
+      </div>
+      <button class="photo-pause" id="photoPause" aria-pressed="false">Pause photos</button>
+    </div>
   </div>
 </section>
 
@@ -179,7 +194,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <div id="adminLoggedOut">
           <p class="muted">Players do not need accounts. The admin manages names and match results.</p>
           <form id="loginForm">
-            <div class="form-group"><label for="loginUsername">Admin username</label><input id="loginUsername" value="admin" required autocomplete="username"></div>
+            <div class="form-group"><label for="loginUsername">Admin username</label><input id="loginUsername" required autocomplete="username"></div>
             <div class="form-group"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div>
             <button class="btn dark" type="submit">Log in as admin</button>
           </form>
@@ -394,8 +409,8 @@ function setStat(id, value, animate) {
   el.textContent = "0+";
   const tick = time => {
     if (state.start === null) state.start = time;
-    const progress = Math.min(1,(time-state.start)/1100);
-    el.textContent = `${Math.round(value * (1-Math.pow(1-progress,3)))}+`;
+    const progress = Math.min(1,(time-state.start)/3200);
+    el.textContent = `${Math.round(value * ((1-Math.cos(Math.PI*progress))/2))}+`;
     if (progress < 1) state.frame = requestAnimationFrame(tick);
     else statAnimations.delete(id);
   };
@@ -461,7 +476,7 @@ $("loginForm").onsubmit = event => {
   const body = { username: $("loginUsername").value.trim(), password: $("loginPassword").value };
   action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
 };
-$("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; }, "Logged out.");
+$("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; $("loginForm").reset(); }, "");
 $("playerForm").onsubmit = event => {
   event.preventDefault();
   const name = $("playerName").value.trim();
@@ -507,6 +522,31 @@ $("backupBtn").onclick = () => action(async () => {
 }, "Data backup downloaded.");
 // Discard the old player login profile; only the server cookie grants admin access.
 localStorage.removeItem("carroll_pingpong_user_session_v5");
+const photoTrack = $("photoTrack"), photoPause = $("photoPause");
+const photoSlides = [...photoTrack.children];
+let photoIndex = 0, photosPaused = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function updatePhotoPause() {
+  photoPause.textContent = photosPaused ? "Play photos" : "Pause photos";
+  photoPause.setAttribute("aria-pressed", String(photosPaused));
+}
+photoPause.onclick = () => { photosPaused = !photosPaused; updatePhotoPause(); };
+function resetPhotoLoop() {
+  if (photoIndex !== 3) return;
+  photoTrack.classList.add("resetting");
+  photoIndex = 0;
+  photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== 0)));
+  photoTrack.style.transform = "translateX(0)";
+  requestAnimationFrame(() => requestAnimationFrame(() => photoTrack.classList.remove("resetting")));
+}
+photoTrack.addEventListener("transitionend", resetPhotoLoop);
+setInterval(() => {
+  if (photosPaused || document.hidden || !document.body.classList.contains("home-view") || photoTrack.parentElement.matches(":hover, :focus-within")) return;
+  photoIndex += 1;
+  photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== photoIndex)));
+  photoTrack.style.transform = `translateX(-${photoIndex * 100}%)`;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) resetPhotoLoop();
+}, 5000);
+updatePhotoPause();
 render(); refresh();
 setInterval(refresh, 3000);
 window.addEventListener("focus", refresh);
