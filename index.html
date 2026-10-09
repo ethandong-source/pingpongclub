@@ -142,8 +142,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 Elo and do not need an account.</p></details>
         <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
         <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
-        <details><summary>How does the score affect Elo?</summary><p>Beating a stronger opponent earns more points. Close games produce smaller rating changes than decisive wins: at equal ratings, 12–10 changes Elo by 9, while 12–0 changes it by 16.</p><p>We use K = 32 with a score multiplier:<br><code>E = 1 / (1 + 10^((opponent Elo − winner Elo) / 400))<br>M = 0.5 + 0.5 × (winner points − loser points) / winner points<br>Change = max(1, round(32 × (1 − E) × M))</code></p><p>The winner gains the change and the loser loses it, with a minimum rating of 100. This applies to new results; earlier ratings stay as recorded.</p></details>
-        <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring both players’ previous ratings and records.</p></details>
+        <details><summary>How does the score affect Elo?</summary><p>A win over a stronger opponent moves your rating more than a win over a weaker opponent. Close games move ratings less than decisive wins.</p><p>New players move faster: K is 30 for the first 10 matches, 20 for matches 10–29, and 16 from match 30 onward. Each player uses their own K, so the winner’s gain and loser’s loss can differ. Both are capped at 30 points, and a rating cannot drop below 100. An expected win can produce no rating change.</p><p>For two new players at equal ratings, 12–10 changes each rating by 9 and 12–0 by 15. A 1400-rated player with 30 matches beating a new 1000-rated player 12–0 gains 1 point; the opponent loses 3.</p><p><code>E = 1 / (1 + 10^((opponent Elo − winner Elo) / 400))<br>M = 0.5 + 0.5 × (winner points − loser points) / winner points<br>Each change = min(30, round(player K × (1 − E) × M))</code></p><p>New results use this club adaptation of Elo. Earlier ratings and match history stay as recorded.</p></details>
+        <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring both players’ previous ratings and records. Matches involving a deleted player cannot be undone.</p></details>
       </div>
     </div>
   </section>
@@ -186,19 +186,11 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         </div>
         <div id="adminLoggedIn" class="hidden">
           <p>Signed in as <strong id="adminName"></strong>.</p>
-          <details style="margin-bottom:16px;">
-            <summary>Change admin login</summary>
-            <form id="adminSettingsForm" style="margin-top:12px;">
-              <div class="form-group"><label for="adminUsername">Admin username</label><input id="adminUsername" maxlength="80" required autocomplete="username"></div>
-              <div class="form-group"><label for="adminPassword">New admin password</label><input id="adminPassword" type="password" minlength="4" maxlength="256" required autocomplete="new-password"></div>
-              <button class="btn dark" type="submit">Save admin login</button>
-            </form>
-          </details>
           <form id="playerForm">
             <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
             <button class="btn primary" type="submit">Add player</button>
           </form>
-          <p class="muted">New players start at 1000 Elo. Manage names and active status in Roster.</p>
+          <p class="muted">New players start at 1000 Elo. Rename, archive, or delete players in Roster. Deleting keeps recorded matches.</p>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
             <button id="backupBtn" type="button" class="small-btn secondary">Download data backup</button>
             <button id="logoutBtn" type="button" class="small-btn secondary">Log out</button>
@@ -339,7 +331,7 @@ function renderPlayersTable() {
       const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleDateString() : "Date not recorded";
       return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(won ? m.winnerChange : m.loserChange) || 0} Elo</span></li>`;
     }).join("") || '<li class="muted">No matches played yet.</li>';
-    return `<tr class="${p.archived ? "archived" : ""}"><td><details class="player-history" data-player="${escapeHtml(p.name)}" ${open.has(p.name) ? "open" : ""}><summary>${escapeHtml(p.name)}<span class="history-count">${matches.length} ${matches.length === 1 ? "match" : "matches"}</span></summary><ul>${history}</ul></details></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button></td>` : ""}</tr>`;
+    return `<tr class="${p.archived ? "archived" : ""}"><td><details class="player-history" data-player="${escapeHtml(p.name)}" ${open.has(p.name) ? "open" : ""}><summary>${escapeHtml(p.name)}<span class="history-count">${matches.length} ${matches.length === 1 ? "match" : "matches"}</span></summary><ul>${history}</ul></details></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
   }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
   document.querySelectorAll(".admin-column").forEach(el => el.classList.toggle("hidden", !admin));
   $("playersBody").querySelectorAll("button").forEach(b => b.disabled = busy);
@@ -356,7 +348,7 @@ function renderRecentMatches() {
   $("viewAllMatches").setAttribute("aria-expanded", String(showAllMatches));
   $("recentMatches").innerHTML = visible.map(m => {
     const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
-    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} Elo</span></div>${admin && latest === m && m.before ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
+    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} Elo</span></div>${admin && latest === m && m.before && clubState.players.some(p => p.name === m.winnerName) && clubState.players.some(p => p.name === m.loserName) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
   }).join("") || '<p class="muted">No completed matches yet.</p>';
   $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
@@ -421,7 +413,6 @@ function render(animateStats = false) {
   $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
   $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= 2);
   $("matchFields").disabled = !admin || busy || players.length < 2;
-  $("adminSettingsForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("logoutBtn").disabled = busy;
@@ -461,8 +452,8 @@ function updateEloPreview() {
   const visible = w && l && w.name !== l.name && $("winnerScore").value !== "" && $("loserScore").value !== "" && Number.isInteger(ws) && Number.isInteger(ls) && ws > ls && ls >= 0 && ws <= 99;
   $("eloPreview").classList.toggle("hidden", !visible);
   if (visible) {
-    const delta = ClubElo.ratingChange(w.elo, l.elo, ws, ls);
-    $("eloPreviewText").textContent = `Winner +${delta} / Loser −${Math.min(delta, Math.max(0,l.elo-100))}`;
+    const changes = ClubElo.ratingChanges(w, l, ws, ls);
+    $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
   }
 }
 $("loginForm").onsubmit = event => {
@@ -471,14 +462,6 @@ $("loginForm").onsubmit = event => {
   action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
 };
 $("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; }, "Logged out.");
-$("adminSettingsForm").onsubmit = event => {
-  event.preventDefault();
-  const body = { username: $("adminUsername").value.trim(), password: $("adminPassword").value };
-  action(async () => {
-    const result = await api("/api/admin/settings", "POST", body);
-    admin = result.admin; $("adminSettingsForm").reset();
-  }, "Admin login saved to Firestore.");
-};
 $("playerForm").onsubmit = event => {
   event.preventDefault();
   const name = $("playerName").value.trim();
@@ -495,10 +478,13 @@ $("matchForm").onsubmit = event => {
 $("playersBody").onclick = event => {
   const button = event.target.closest("button");
   if (!button || busy || !admin) return;
-  const currentName = button.dataset.rename || button.dataset.archive;
+  const currentName = button.dataset.rename || button.dataset.archive || button.dataset.delete;
   const player = clubState.players.find(p => p.name === currentName);
   if (!player) return;
-  if (button.dataset.rename) {
+  if (button.dataset.delete) {
+    if (!confirm(`Delete ${player.name} from the roster? Their recorded matches and opponents’ ratings will stay unchanged. This cannot be undone from the website.`)) return;
+    action(() => api("/api/players", "DELETE", { name: player.name, revision: clubState.revision }), "Player deleted. Match history preserved.");
+  } else if (button.dataset.rename) {
     const name = prompt("Player name:", player.name);
     if (name === null) return;
     action(() => api("/api/players", "PATCH", { currentName: player.name, name }), "Player renamed. Match history updated.");
