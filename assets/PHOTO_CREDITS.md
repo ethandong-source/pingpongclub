@@ -6,4 +6,4 @@
 
 The Pexels photos are temporary placeholders, distributed under the Pexels license. Replace with club photos when available.
 
-GroupMe button icon: theSVG GroupMe brand icon (CC0-1.0), https://thesvg.org/icon/groupme. GroupMe is a trademark of its owner.
+GroupMe button image: supplied by the user. GroupMe is a trademark of its owner.
