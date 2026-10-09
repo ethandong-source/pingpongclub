@@ -4,7 +4,9 @@ A public leaderboard and match history with an admin-managed roster. Players hav
 
 ## Admin setup and deployment
 
-Deploy the `betterLogging` branch on Render or Vercel. Keep the existing Firebase environment variables. For the first login only, set `ADMIN_USERNAME` (defaults to `admin`) and `ADMIN_PASSWORD` (at least 4 characters). The backend automatically creates an `admin` object in the same Firestore document with the username, password hash, salt and generated session secret. Once created, Firestore is the source of admin login information, and the two admin environment variables can be removed. `SESSION_SECRET` is no longer required.
+Deploy the `betterLogging` branch on Render or Vercel. Keep the existing Firebase environment variables. No admin environment variables are needed. On startup (or the first Vercel status/login request), the backend automatically creates the requested initial admin login in Firestore if there is no admin record. The repository contains only a salted password hash for that initial login. The session secret is generated privately at runtime.
+
+An existing Firestore admin record is never replaced by deployment. Subsequent username/password changes are stored only in Firestore. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
 
 Under Matches, sign in and open **Change admin login** to set a different username/password. The password is hashed automatically; no extra setup or public signup is needed. Keep Firebase keys in hosting settings, never frontend code or GitHub. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
 

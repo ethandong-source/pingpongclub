@@ -21,4 +21,6 @@ const server = http.createServer(async (req, res) => {
     res.end("Could not load the website.");
   }
 });
-server.listen(process.env.PORT || 8000, "0.0.0.0", () => console.log("Ping Pong Club server started."));
+require("./lib/admin-auth").getAdmin().then(() => {
+  server.listen(process.env.PORT || 8000, "0.0.0.0", () => console.log("Ping Pong Club server started."));
+}).catch(error => { console.error("Could not initialize Firestore:", error.message); process.exit(1); });

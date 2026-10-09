@@ -17,3 +17,19 @@ test("admin details persist as a hashed password in the same club document", asy
   await store.read(); assert.equal((await store.read()).revision, 1);
   assert.equal(firestore.records.get("clubs/test").admin.passwordHash, admin.passwordHash);
 });
+test("initial admin is created without environment settings and never replaces an existing login or club data", async () => {
+  const { database } = require("./mock-firestore.cjs");
+  const { getAdmin } = require("../lib/admin-auth");
+  const initial = require("../lib/initial-admin.json");
+  Object.assign(process.env, { FIREBASE_PROJECT_ID: "demo-club", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080", NODE_ENV: "test" });
+  for (const key of ["ADMIN_USERNAME", "ADMIN_PASSWORD", "SESSION_SECRET", "RENDER", "VERCEL"]) delete process.env[key];
+  const players = [{ name: "Alex", elo: 1100, wins: 3, losses: 2, archived: false }];
+  database.records.set("clubs/carroll-pingpong", { version: 2, players, matches: [], revision: 4 });
+  const admin = await getAdmin();
+  assert.equal(admin.username, initial.username); assert.equal(admin.passwordHash, initial.passwordHash);
+  assert.deepEqual(database.records.get("clubs/carroll-pingpong").players, players);
+  assert.equal(database.records.get("clubs/carroll-pingpong").revision, 5);
+  const replacement = await makeAdmin("replacement", "different-password");
+  database.records.get("clubs/carroll-pingpong").admin = replacement;
+  assert.deepEqual(await getAdmin(), replacement);
+});

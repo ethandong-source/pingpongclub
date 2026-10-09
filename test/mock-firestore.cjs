@@ -29,6 +29,16 @@ function fakeFirestore() {
   };
 }
 const database = fakeFirestore();
+// Isolated test credentials; never use or seed the production login in tests.
+const crypto = require("node:crypto");
+database.records.set("clubs/carroll-pingpong", {
+  version: 2, players: [], matches: [], revision: 1,
+  admin: {
+    username: "admin", passwordSalt: "0".repeat(32),
+    passwordHash: crypto.scryptSync("test-password-at-least-12", "0".repeat(32), 64).toString("hex"),
+    sessionSecret: "1".repeat(64)
+  }
+});
 const originalLoad = Module._load;
 Module._load = function(name, parent, isMain) {
   if (name === "firebase-admin/app") return { getApps: () => [], cert: c => c, initializeApp: () => ({ name: "pingpong-storage" }) };

@@ -10,7 +10,7 @@ FIRESTORE_DOCUMENT_PATH=clubs/carroll-pingpong
 
 The backend also needs `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` from its Firebase service account, configured privately in Render or Vercel. Literal `\n` in the private key is supported. Do not put keys in GitHub or chat. The service account needs Firestore read/write permissions. Both hosting backends share the same adapter and document. Browser access remains denied by `firestore.rules`; only the backend service account accesses Firestore.
 
-For the first login, keep/set `ADMIN_USERNAME` (default `admin`) and `ADMIN_PASSWORD` (4–256 characters). The backend copies them into Firestore once, automatically hashing the password and generating the session secret. Once the record exists, it always takes precedence over environment credentials; you can remove `ADMIN_USERNAME`, `ADMIN_PASSWORD` and the old `SESSION_SECRET` environment variable.
+No admin environment variables are needed. The Node backend creates the requested initial `admin` record on startup; the Vercel backend does so on its first status/login request. Initialization uses the salted hash in `lib/initial-admin.json` and a newly generated session secret. It never overwrites an existing Firestore admin. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
 
 To change the login, sign in through Matches, open **Change admin login**, and save the new username and password. This updates the same Firestore admin record and keeps you signed in. Old sessions are invalidated. Do not edit the hash, salt or session secret manually in the console. The admin object is excluded from public responses and club backups, so backups can be shared without exposing admin credentials. No player accounts or public signup are added.
 
@@ -57,7 +57,7 @@ Names are the player references. `before` supports safely undoing a new match; `
 
 ## Migration and import
 
-For the existing Firebase deployment, deploy this branch with the same Firebase variables and the initial admin variables. No re-import is needed. On the first database read, a transaction converts either the old `state` JSON string or native version 1 fields into version 2. Completed matches and player ratings are retained. Account records, IDs, reporter/confirmation fields and unapplied pending matches are removed. Duplicate player names cause migration to stop rather than merge players; resolve them in the old deployment first. A rollback needs a backend that supports version 2.
+For the existing Firebase deployment, deploy this branch with the same Firebase variables . No re-import is needed. On the first database read, a transaction converts either the old `state` JSON string or native version 1 fields into version 2. Completed matches and player ratings are retained. Account records, IDs, reporter/confirmation fields and unapplied pending matches are removed. Duplicate player names cause migration to stop rather than merge players; resolve them in the old deployment first. A rollback needs a backend that supports version 2.
 
 For an empty Firestore document only, import a private old or new backup:
 
