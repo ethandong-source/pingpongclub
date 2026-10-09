@@ -534,7 +534,7 @@
   </div>
 
   <div class="nav-actions">
-    <span class="live-dot" title="Real-time shared sync across all devices">Sync Active</span>
+    <span class="live-dot" title="Real-time shared sync across all devices">This should be green, or there's a problem</span>
   </div>
 </nav>
 
@@ -545,7 +545,7 @@
       <span>🏓</span>
       <span>Carroll High School Ping Pong Club</span>
     </div>
-    <h1>Official Elo & Match Tracker</h1>
+    <h1>Carroll Ping Pong Website</h1>
     <p>
       Create an account to join the club, report match scores, and verify outcomes with
       two-player confirmations. All player ratings and match records sync across all devices.
@@ -590,12 +590,12 @@
       <div class="card">
         <h2>How the Club Rating Works</h2>
         <p>
-          Every registered player begins at a baseline of <strong>1000 ELO</strong>.
-          After every competitive match, the winner gains rating points and the loser loses the exact same amount.
+          Every player begins at <strong>1000 ELO</strong>.
+          After every competitive match, the winner gains Elo and the loser loses the exact same amount.
         </p>
         <p>
-          Our rating system uses the standard Elo algorithm (K = 32): beating a higher-rated player yields a larger rating surge,
-          while winning against a lower-rated player rewards fewer points.
+          Beating a higher-rated player gains you more Elo,
+          while winning against a lower-rated player rewards fewer Elo.
         </p>
         <div class="notice">
           <strong>Dual-Confirmation Integrity:</strong> When a match is reported, ratings do not change immediately.
@@ -610,7 +610,7 @@
           <strong>Starting Rating:</strong> 1000 Elo<br>
           <strong>K-Factor:</strong> 32<br>
           <strong>Match Format:</strong> Best of games to 11 points (win by 2)<br>
-          <strong>Cross-Device Sync:</strong> Real-time shared backend
+          <strong>Cross-Device Sync:</strong> Website syncs across all devices
         </p>
         <hr style="border:0; border-top:1px solid var(--line); margin: 16px 0;">
         <p class="muted" style="font-size:13px; margin:0;">
@@ -627,7 +627,7 @@
         <div>
           <h2>Club Leaderboard</h2>
           <div class="muted" style="font-size:13px; margin-top:3px;">
-            Rankings update automatically when both players confirm match scores.
+            Rankings update automatically when both players confirm match scores. </strong> Also, Ethan Dong mogs all of you </strong>
           </div>
         </div>
         <input
@@ -855,7 +855,7 @@
         <div>
           <h2>Match History & Verification</h2>
           <div class="muted" style="font-size:13px; margin-top:2px;">
-            Matches require dual player confirmation to become official.
+            Matches require both players to confirm the score.
           </div>
         </div>
         <div class="tabs" style="margin:0; border:0; padding:0;">
@@ -917,7 +917,7 @@
           <li><strong>Match Reporting:</strong> Either participant may report the match result immediately following play.</li>
           <li><strong>Two-Player Confirmation:</strong> ELO ratings do not change until <em>both</em> the winner and the loser log in and confirm the result.</li>
           <li><strong>Dispute / Rejection:</strong> If a match was reported mistakenly or with incorrect score, either player can reject/cancel the pending report.</li>
-          <li><strong>Rating Conservation:</strong> Rating points gained by the winner equal the exact points deducted from the loser.</li>
+          <li><strong>Have Fun:</strong> We want all of y'all to have fun, no disrespect pls.</li>
         </ol>
       </div>
 
@@ -931,8 +931,8 @@
           Δ Elo = Round( 32 × (1 − E<sub>Winner</sub>) )
         </div>
         <div class="notice">
-          <strong>Interactive Test:</strong>
-          If a 1000 Elo player defeats a 1100 Elo player, expected score is ~36%, resulting in a <strong>+20 Elo</strong> gain!
+          <strong>Info::</strong>
+          I know this looks confusing, but this is just a normal Elo system that a lot of things use.
         </div>
       </div>
     </div>
@@ -981,14 +981,10 @@
       </div>
 
       <div style="margin-top: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; line-height: 1.6;">
-        <strong>💡 Why did data disappear before & how to make it permanent for FREE:</strong><br>
-        On Render's Free tier, the web service container goes to sleep after 15 minutes of inactivity and wipes local files on cold-start.
-        To keep your accounts and match histories permanently saved in the cloud 24/7 at $0 cost:
+        <strong>💡 Don't mind this, this is only for me, and the other presidents.
         <ol style="margin: 6px 0 0 18px; padding: 0;">
-          <li>In your <a href="https://dashboard.render.com" target="_blank" style="color:var(--accent); font-weight:700;">Render Dashboard</a>, click <strong>New +</strong> &gt; <strong>PostgreSQL</strong>.</li>
-          <li>Enter a name (e.g. <code>pingpong-db</code>), select <strong>Free</strong> tier, and click <strong>Create Database</strong>.</li>
-          <li>Copy the <strong>Internal Database URL</strong>.</li>
-          <li>Open your Web Service &gt; <strong>Environment</strong> tab, add a variable named <code>DATABASE_URL</code> and paste the copied URL.</li>
+         
+          <li>This is only for me to save the club progress every time we finish a meeting!😁</li>
         </ol>
       </div>
     </div>
@@ -999,7 +995,7 @@
 <!-- FOOTER -->
 <footer>
   <strong>Carroll High School — Ping Pong Club</strong><br>
-  <span class="muted">Live Match & Elo Tracking System</span>
+  <span class="muted">Founders: Ethan Dong🏆, Cody Li, Liang Sun, and Ethan Mugilan</span>
 </footer>
 
 <!-- JAVASCRIPT LOGIC -->
