@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The website uses its backend. Only the server's service account accesses Firestore.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

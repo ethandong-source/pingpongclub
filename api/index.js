@@ -1,19 +1,5 @@
-const fs = require("fs");
-const path = require("path");
-
+const { INITIAL_DB, STORAGE_TYPE, runStorageRequest, getDatabase, saveDatabase } = require("../lib/firestore-storage");
 const K_FACTOR = 32;
-const KV_KEY = "carroll_pingpong_db";
-
-const DATA_DIR = path.join("/tmp", "data");
-const LOCAL_DB_FILE = path.join(__dirname, "..", "data", "db.json");
-const TMP_DB_FILE = path.join(DATA_DIR, "db.json");
-
-const INITIAL_DB = {
-  version: 1,
-  accounts: [],
-  players: [],
-  matches: []
-};
 
 // Elo Math
 function expectedProbability(playerElo, opponentElo) {
@@ -24,76 +10,6 @@ function calculateEloGain(winnerElo, loserElo) {
   const prob = expectedProbability(winnerElo, loserElo);
   const change = Math.round(K_FACTOR * (1 - prob));
   return Math.max(1, change);
-}
-
-// Storage Helpers (Supports Vercel KV / Upstash Redis, or local/tmp filesystem fallback)
-async function getDatabase() {
-  // 1. Check Vercel KV / Upstash Redis
-  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-
-  if (kvUrl && kvToken) {
-    try {
-      const res = await fetch(`${kvUrl}/get/${KV_KEY}`, {
-        headers: { Authorization: `Bearer ${kvToken}` }
-      });
-      const data = await res.json();
-      if (data && data.result) {
-        return typeof data.result === "string" ? JSON.parse(data.result) : data.result;
-      }
-      return JSON.parse(JSON.stringify(INITIAL_DB));
-    } catch (err) {
-      console.error("Vercel KV fetch error:", err);
-    }
-  }
-
-  // 2. Fallback to filesystem
-  if (fs.existsSync(LOCAL_DB_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(LOCAL_DB_FILE, "utf8"));
-    } catch (e) {}
-  }
-  if (fs.existsSync(TMP_DB_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(TMP_DB_FILE, "utf8"));
-    } catch (e) {}
-  }
-
-  return JSON.parse(JSON.stringify(INITIAL_DB));
-}
-
-async function saveDatabase(db) {
-  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-
-  if (kvUrl && kvToken) {
-    try {
-      await fetch(`${kvUrl}/set/${KV_KEY}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${kvToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(JSON.stringify(db))
-      });
-      return;
-    } catch (err) {
-      console.error("Vercel KV save error:", err);
-    }
-  }
-
-  // Fallback to /tmp filesystem for serverless
-  if (!fs.existsSync(DATA_DIR)) {
-    try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
-  }
-  try {
-    fs.writeFileSync(TMP_DB_FILE, JSON.stringify(db, null, 2), "utf8");
-  } catch (e) {}
-
-  // Also write to local if writable
-  try {
-    fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(db, null, 2), "utf8");
-  } catch (e) {}
 }
 
 // Request body helper
@@ -127,7 +43,7 @@ function sendJson(res, statusCode, payload) {
 }
 
 // Vercel Serverless Function Handler
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -140,6 +56,14 @@ module.exports = async function handler(req, res) {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = parsedUrl.pathname;
   let db = await getDatabase();
+
+  if (req.method === "GET" && (pathname === "/api/status" || pathname === "/status")) {
+    return sendJson(res, 200, {
+      status: "online", storage: STORAGE_TYPE, persistent: true,
+      counts: { players: db.players.length, accounts: db.accounts.length, matches: db.matches.length },
+      time: new Date().toISOString()
+    });
+  }
 
   // 1. GET /api/data
   if (req.method === "GET" && (pathname === "/api/data" || pathname === "/data")) {
@@ -156,7 +80,7 @@ module.exports = async function handler(req, res) {
       success: true,
       players: publicPlayers,
       matches: db.matches || [],
-      storageType: (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL) ? "vercel_kv" : "filesystem",
+      storageType: STORAGE_TYPE,
       serverTime: new Date().toISOString()
     });
   }
@@ -220,7 +144,7 @@ module.exports = async function handler(req, res) {
         }
       });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -257,7 +181,7 @@ module.exports = async function handler(req, res) {
         }
       });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -297,7 +221,7 @@ module.exports = async function handler(req, res) {
         message: `Account for ${playerName} was permanently deleted.`
       });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -356,7 +280,7 @@ module.exports = async function handler(req, res) {
 
       return sendJson(res, 201, { success: true, match: newMatch });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -412,7 +336,7 @@ module.exports = async function handler(req, res) {
       await saveDatabase(db);
       return sendJson(res, 200, { success: true, match, eloApplied });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -454,7 +378,7 @@ module.exports = async function handler(req, res) {
 
       return sendJson(res, 200, { success: true });
     } catch (err) {
-      return sendJson(res, 500, { error: err.message });
+      return sendJson(res, err.statusCode || 500, { error: err.message });
     }
   }
 
@@ -466,4 +390,12 @@ module.exports = async function handler(req, res) {
   }
 
   return sendJson(res, 404, { error: "Endpoint not found" });
+}
+
+module.exports = function(req, res) {
+  return runStorageRequest(() => handler(req, res)).catch(err => {
+    console.error("Firestore request failed:", err.message);
+    if (!res.headersSent) sendJson(res, err.statusCode || 503, { error: "Club storage is unavailable. Please try again." });
+    else if (!res.writableEnded) res.end();
+  });
 };

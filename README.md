@@ -11,28 +11,20 @@ A responsive full-stack web application for Carroll High School Ping Pong Club t
 - **Elo Rating Engine**: Calculates rating adjustments using the standard Elo algorithm with a baseline rating of 1000 and a K-factor of 32.
 - **Dual-Confirmation Verification**: Reported matches remain pending until both participants verify the result, preventing fraudulent or erroneous rating changes.
 - **Dynamic Leaderboard**: Real-time club rankings sorted by Elo, matches played, win-loss records, and win percentages.
-- **Vercel-Ready**: Pre-configured for seamless 1-click deployment on Vercel with Vercel Serverless Functions and Vercel KV / Upstash Redis support.
+- **Vercel-Ready**: Pre-configured for seamless 1-click deployment on Vercel with Vercel Serverless Functions and Firebase Firestore storage.
 
-## Deploying to Vercel (Step-by-Step)
+## Persistent storage with Firebase
 
-### 1. Import Project into Vercel
-1. Go to [Vercel.com](https://vercel.com) and click **Add New...** > **Project**.
-2. Select your GitHub repository (`pingpongclub`).
-3. Click **Deploy**.
+This branch uses **Cloud Firestore** for both the Render/Node server and the Vercel API. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for Firebase project settings, secret environment variables, and the existing-data import command.
 
-### 2. Enable Persistent Cross-Device Storage (Vercel KV)
-Because serverless functions on Vercel are stateless, add free persistent storage in 1 click:
-1. In your Vercel Project Dashboard, click the **Storage** tab.
-2. Click **Create Database** and choose **KV** (or Upstash Redis).
-3. Connect it to your project. Vercel automatically injects the environment variables (`KV_REST_API_URL` and `KV_REST_API_TOKEN`).
-4. Redeploy (or push a new commit) — your app is now 100% persistent across all devices globally!
+Back up and import the current live database **before redeploying**. Existing accounts, player ratings, match records, and confirmations are preserved; no player/account behavior is changed. Firebase credentials belong in hosting environment settings, never frontend code or GitHub.
 
 ## Local Development
 
 ```bash
-npm start
-# or
-node server.js
+npm ci
+# Configure Firebase credentials in an uncommitted .env first.
+node --env-file=.env server.js
 ```
 
 Open `http://localhost:8000` in your browser.
