@@ -40,7 +40,7 @@ async function workflow(base) {
   const simultaneous = await Promise.all([request("/api/matches", "POST", match), request("/api/matches", "POST", match)]);
   assert.deepEqual(simultaneous.map(r => r.status).sort(), [201, 409]);
   data = (await request("/api/data")).data;
-  assert.equal(data.matches.length, 1); assert.equal(data.players[0].elo, 1016); assert.equal(data.players[1].elo, 984);
+  assert.equal(data.matches.length, 1); assert.equal(data.players[0].elo, 1011); assert.equal(data.players[1].elo, 989);
   assert.equal(data.players[0].wins, 1); assert.equal(data.players[1].losses, 1);
   assert.equal((await request("/api/matches", "POST", match)).status, 409);
   assert.equal((await request("/api/players", "PATCH", { currentName: "Alex", name: "Alex Renamed" })).status, 200);

@@ -8,13 +8,13 @@ const { handle } = require("./lib/club");
 const server = http.createServer(async (req, res) => {
   const pathname = new URL(req.url, "http://localhost").pathname;
   if (pathname.startsWith("/api/")) return handle(req, res);
-  if (!["GET", "HEAD"].includes(req.method) || !["/", "/index.html"].includes(pathname)) {
+  if (!["GET", "HEAD"].includes(req.method) || !["/", "/index.html", "/elo.js"].includes(pathname)) {
     res.writeHead(404, { "Content-Type": "text/plain" });
     return res.end("Not found");
   }
   try {
-    const html = await fs.readFile(path.join(__dirname, "index.html"));
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin" });
+    const html = await fs.readFile(path.join(__dirname, pathname === "/elo.js" ? "elo.js" : "index.html"));
+    res.writeHead(200, { "Content-Type": pathname === "/elo.js" ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", "Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "same-origin" });
     res.end(req.method === "HEAD" ? undefined : html);
   } catch {
     res.writeHead(500, { "Content-Type": "text/plain" });

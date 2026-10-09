@@ -1,6 +1,6 @@
 # Carroll Ping Pong Club
 
-A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately, with K = 32 and a minimum Elo of 100. There is no participant confirmation step.
+A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately, with K = 32, a score-margin multiplier of 0.5 + 0.5 × (winner points − loser points) / winner points, and a minimum Elo of 100. At equal ratings, 12–10 changes ratings by 9 while 12–0 changes them by 16. The shared elo.js module drives the backend and preview; previous results are not recalculated. There is no participant confirmation step.
 
 ## Admin setup and deployment
 
