@@ -107,8 +107,8 @@
 
     /* HERO */
     .hero {
-      padding: 60px 6% 44px;
-      background: linear-gradient(135deg, #14201a 0%, #1e3a2b 50%, #2e7d32 100%);
+      padding: 60px 6% 0;
+      background: linear-gradient(135deg, #356e4c 0%, #39764e 50%, #3f7d4d 100%);
       color: white;
       position: relative;
     }
@@ -118,19 +118,12 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1.15fr 1fr;
-      align-items: center;
+      align-items: stretch;
       gap: 40px;
     }
 
-    .hero-copy { min-width: 0; }
-    .podium { margin: 0; min-width: 0; }
-    .podium figcaption {
-      text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 22px;
-      color: #e5f2e7;
-    }
+    .hero-copy { min-width: 0; align-self: center; padding-bottom: 44px; }
+    .podium { margin: 0; min-width: 0; align-self: end; }
     .podium-places {
       list-style: none;
       margin: 0;
@@ -153,7 +146,7 @@
       margin-bottom: 16px;
     }
     .podium-step {
-      height: var(--step-height);
+      height: calc(var(--step-height) + 44px);
       background: var(--column);
       color: white;
       border-radius: 5px 5px 0 0;
@@ -191,6 +184,7 @@
       .hero-container { grid-template-columns: 1fr; gap: 26px; }
       .podium { width: 100%; max-width: 390px; margin: 0 auto; }
       .hero { padding-top: 34px; }
+      .hero-copy { padding-bottom: 0; }
     }
 
     .hero h1 {
@@ -661,7 +655,6 @@
       </p>
     </div>
     <figure class="podium" aria-label="Top three players by Elo rating">
-      <figcaption>Top three</figcaption>
       <ol id="podiumPlaces" class="podium-places"></ol>
     </figure>
   </div>
