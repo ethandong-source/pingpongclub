@@ -17,6 +17,11 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
 /* Opening photo and statistics; the podium belongs with the rankings. */
 .hero{padding-bottom:40px}.hero-container{align-items:center}.hero-copy{padding-bottom:0}.hero-photo{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:5px}.hero .grid{margin-top:32px;border-bottom:0;padding-bottom:0;gap:14px}.hero .stat-card{padding:0 12px}.hero .stat-title,.hero .stat-sub{color:#d8e9dd}.hero .stat-value{color:white;font-size:32px}.hero .stat-title{font-size:10px;letter-spacing:.8px}.hero .stat-sub{font-size:11px}#home>.podium{max-width:500px;margin:0 auto;color:var(--ink)}#home .podium-step{color:white}#homeLeaderboard{margin-top:0!important}.faq{grid-template-columns:1fr;gap:8px}.faq>div:first-child p{margin-bottom:12px}#viewAllMatches{margin-top:20px}
 @media(max-width:600px){.hero{padding-bottom:28px}.hero-container{gap:28px}.hero .stat-card{padding:0 8px}.hero .stat-value{font-size:28px}.hero .stat-sub{font-size:10px}.hero-photo{max-height:230px}#home>.podium{max-width:390px}}
+
+/* Softer surfaces and a gentler rhythm across the club pages. */
+.hero{border-radius:0 0 36px 36px;padding-top:52px;padding-bottom:48px}.hero-photo{border-radius:24px}.card{border-radius:20px;padding:28px}.table-wrap{border-radius:13px}input,select{border-radius:12px}.btn,.small-btn{border-radius:999px;transition:background-color .18s ease,transform .18s ease,box-shadow .18s ease}.btn:hover:not(:disabled),.small-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 12px #19342a15}nav button{border-radius:10px 10px 0 0;transition:color .18s ease}.notice,.elo-preview-box{border-radius:12px}.grid-2{gap:28px}.faq{gap:16px}.faq details{background:#ffffff80;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:10px}.faq details:first-child{border-top:1px solid var(--line)}.faq details[open]{background:white;border-color:#b5cdbd}.faq summary{line-height:1.5}.podium-step{border-radius:14px 14px 0 0}.stat-value{font-variant-numeric:tabular-nums;min-height:1.2em}.hero .stat-card{border-radius:0 8px 8px 0}main{padding-top:42px}footer{border-radius:28px 28px 0 0}.match-item{padding:24px 4px}
+@media(max-width:600px){.hero{border-radius:0 0 24px 24px;padding:32px 20px}.hero-photo{border-radius:18px}.card{padding:18px;border-radius:16px}.faq details{padding:16px}.hero .stat-title{font-size:9px}.hero .stat-sub{font-size:9px}main{padding-top:30px}}
+@media(prefers-reduced-motion:reduce){.btn,.small-btn,nav button{transition:none}.btn:hover:not(:disabled),.small-btn:hover:not(:disabled){transform:none}}
 </style>
 </head>
 
@@ -64,9 +69,9 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
       </div>
 
       <div class="stat-card">
-        <div class="stat-title">Average Elo</div>
-        <div class="stat-value" id="statElo">1000</div>
-        <div class="stat-sub">Across the active roster</div>
+        <div class="stat-title">Matches This Week</div>
+        <div class="stat-value" id="statWeek">0</div>
+        <div class="stat-sub">Since Monday · club time</div>
       </div>
     </div>
     </div>
@@ -259,6 +264,8 @@ let admin = null;
 let busy = false;
 let refreshing = false;
 let showAllMatches = false;
+let statsInitialized = false;
+const statAnimations = new Map();
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -351,11 +358,48 @@ function renderSelectors() {
   }
   updateEloPreview();
 }
-function render() {
+function clubDateKey(date) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const value = type => parts.find(p => p.type === type).value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+function matchesThisWeek(matches, now = new Date()) {
+  const today = clubDateKey(now);
+  const monday = new Date(today + "T00:00:00Z");
+  monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+  const start = monday.toISOString().slice(0,10);
+  return matches.filter(m => {
+    const date = new Date(m.date);
+    if (!m.date || !Number.isFinite(date.getTime()) || date > now) return false;
+    const key = clubDateKey(date);
+    return key >= start && key <= today;
+  }).length;
+}
+function setStat(id, value, animate) {
+  const el = $(id), previous = statAnimations.get(id);
+  if (previous?.target === value) return;
+  if (previous) { cancelAnimationFrame(previous.frame); statAnimations.delete(id); }
+  if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches || value === 0) {
+    el.textContent = value;
+    return;
+  }
+  const state = { target: value, frame: null, start: null };
+  statAnimations.set(id,state);
+  el.textContent = "0";
+  const tick = time => {
+    if (state.start === null) state.start = time;
+    const progress = Math.min(1,(time-state.start)/1100);
+    el.textContent = Math.round(value * (1-Math.pow(1-progress,3)));
+    if (progress < 1) state.frame = requestAnimationFrame(tick);
+    else statAnimations.delete(id);
+  };
+  state.frame = requestAnimationFrame(tick);
+}
+function render(animateStats = false) {
   const players = activePlayers();
-  $("statPlayers").textContent = players.length;
-  $("statMatches").textContent = clubState.matches.length;
-  $("statElo").textContent = players.length ? Math.round(players.reduce((sum,p) => sum+p.elo,0)/players.length) : 1000;
+  setStat("statPlayers",players.length,animateStats);
+  setStat("statMatches",clubState.matches.length,animateStats);
+  setStat("statWeek",matchesThisWeek(clubState.matches),animateStats);
   $("statMatchSub").textContent = "Recorded by the club admin";
   $("adminLoggedOut").classList.toggle("hidden", !!admin);
   $("adminLoggedIn").classList.toggle("hidden", !admin);
@@ -378,7 +422,8 @@ async function refresh() {
     const [data, session] = await Promise.all([api("/api/data"), api("/api/admin/session")]);
     clubState = { players: data.players, matches: data.matches, revision: data.revision };
     admin = session.admin;
-    render();
+    render(!statsInitialized);
+    statsInitialized = true;
   } catch (err) { message(err.message, true); }
   finally { refreshing = false; }
 }
