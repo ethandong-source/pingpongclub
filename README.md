@@ -17,7 +17,7 @@ A responsive full-stack web application for Carroll High School Ping Pong Club t
 
 This branch uses **Cloud Firestore** for both the Render/Node server and the Vercel API. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for Firebase project settings, secret environment variables, and the existing-data import command.
 
-Back up and import the current live database **before redeploying**. Existing accounts, player ratings, match records, and confirmations are preserved; no player/account behavior is changed. Firebase credentials belong in hosting environment settings, never frontend code or GitHub.
+For an initial migration from file storage, back up and import the current live database **before redeploying**. For an existing Firebase deployment, keep the same environment variables and deploy this branch; its first read automatically converts the old JSON string to native Firestore fields. Existing accounts, player ratings, match records, and confirmations are preserved; no player/account behavior is changed. Firebase credentials belong in hosting environment settings, never frontend code or GitHub.
 
 ## Local Development
 

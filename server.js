@@ -95,7 +95,7 @@ async function handleRequest(req, res) {
   if (req.method === "GET" && pathname === "/api/status") {
     return sendJson(res, 200, {
       status: "online",
-      storage: storageType,
+      storage: storageType, storageFormat: "native-object",
       persistent: storageType === "firebase-firestore",
       counts: {
         players: (db.players || []).length,

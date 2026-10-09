@@ -41,6 +41,38 @@ test("failed writes and malformed or oversized data do not replace saved state",
   await assert.rejects(store.write({ ...INITIAL_DB, matches: [{ note: "x".repeat(910000) }] }, 1), { statusCode: 413 });
 });
 
+test("legacy migration preserves records and is safe across simultaneous readers", async () => {
+  const db = fakeFirestore();
+  db.records.set("clubs/test", { state: JSON.stringify(original), revision: 7, updatedAt: "old" });
+  const first = createStore(db, "clubs/test"); const second = createStore(db, "clubs/test");
+  const results = await Promise.all([first.read(), second.read()]);
+  for (const result of results) {
+    assert.deepEqual(result.db, original);
+    assert.equal(result.revision, 8);
+  }
+  const document = db.records.get("clubs/test");
+  assert.equal(document.state, undefined);
+  assert.deepEqual(document.players, original.players);
+  assert.deepEqual(document.accounts, original.accounts);
+  assert.deepEqual(document.matches, original.matches);
+  await assert.rejects(first.write(INITIAL_DB, 7), { statusCode: 409 });
+});
+test("native JSON without metadata is readable and cannot be overwritten by import", async () => {
+  const db = fakeFirestore(); db.records.set("clubs/test", structuredClone(original));
+  const store = createStore(db, "clubs/test");
+  assert.deepEqual((await store.read()).db, original);
+  await assert.rejects(store.importIfEmpty(INITIAL_DB), { statusCode: 409 });
+  await store.write(original, 0);
+  assert.equal((await store.read()).revision, 1);
+  assert.deepEqual((await store.read()).db, original);
+});
+test("failed migration leaves the legacy document intact", async () => {
+  const db = fakeFirestore(); const legacy = { state: JSON.stringify(original), revision: 4 };
+  db.records.set("clubs/test", legacy); db.setWriteFailure(true);
+  await assert.rejects(createStore(db, "clubs/test").read(), /outage/);
+  assert.deepEqual(db.records.get("clubs/test"), legacy);
+});
+
 async function port() {
   const s = net.createServer(); s.listen(0, "127.0.0.1"); await once(s, "listening");
   const p = s.address().port; await new Promise(resolve => s.close(resolve)); return p;
@@ -51,6 +83,7 @@ async function workflow(base) {
     return { status: response.status, data: await response.json() };
   }
   const status = await call("/api/status");
+  assert.equal(status.data.storageFormat, "native-object");
   assert.equal(status.data.storage, "firebase-firestore"); assert.equal(status.data.persistent, true);
   const username = `player-${Math.random()}`;
   const first = await call("/api/auth/signup", { name: "Alex", username, password: "12345" });

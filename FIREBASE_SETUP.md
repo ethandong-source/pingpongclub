@@ -61,9 +61,9 @@ With the variables already exported in your terminal, you can instead run:
 npm run import:firestore -- /absolute/path/to/private-backup.json
 ```
 
-6. The script prints record counts, never password or key contents. In Firestore, check document `clubs/carroll-pingpong`. It contains the fields `state` (the existing club JSON as a string), `revision`, and `updatedAt`.
+6. The script prints record counts, never password or key contents. In Firestore, check document `clubs/carroll-pingpong`. It contains native fields `version`, `accounts`, `players`, and `matches`, plus `revision` and `updatedAt` metadata. There is no serialized `state` field.
 7. Once imported, configure Render to deploy `betterLogging` and redeploy. This GitHub update itself does not change Render's deployment-branch setting.
-8. Open `/api/status`. It should show `storage: "firebase-firestore"`, `persistent: true`, and the same imported counts. Log in with an existing player account, record/confirm a match, and verify the data survives a restart.
+8. Open `/api/status`. It should show `storage: "firebase-firestore"`, `storageFormat: "native-object"`, `persistent: true`, and the same imported counts. Log in with an existing player account, record/confirm a match, and verify the data survives a restart.
 
 If a valid Firestore connection exists but the club document has not been imported yet, the app starts with an empty club. It does not silently copy an unrelated local starter file. Import first to avoid accidentally starting a fresh database. If someone has already created a document, export it and reconcile the data before retrying the import; the script never overwrites it.
 
@@ -88,3 +88,22 @@ Official references:
 - https://firebase.google.com/docs/admin/setup
 - https://firebase.google.com/docs/firestore/manage-data/transactions
 - https://firebase.google.com/docs/firestore/security/get-started
+
+## Native document structure and migration
+
+Both backends read and write the same document: project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong` (unless overridden by the environment settings above).
+
+```json
+{
+  "version": 1,
+  "accounts": [],
+  "players": [],
+  "matches": [],
+  "revision": 1,
+  "updatedAt": "2026-10-08T00:00:00.000Z"
+}
+```
+
+The arrays above illustrate the shape; existing records are retained. On the first backend read after deployment, a legacy `state` JSON string is converted into these native fields in a transaction. The conversion reads the latest document and increments its revision, preventing stale writes. Backups still contain just the original club object, without storage metadata. A native club object without revision metadata is also readable. Imports refuse to overwrite any existing document.
+
+For an existing Firebase deployment, deploy this branch with the same environment variables; do not re-import or manually replace the document. Older backend versions that expect `state` cannot read the converted document, so a rollback requires a backend that supports this format.

@@ -59,7 +59,7 @@ async function handler(req, res) {
 
   if (req.method === "GET" && (pathname === "/api/status" || pathname === "/status")) {
     return sendJson(res, 200, {
-      status: "online", storage: STORAGE_TYPE, persistent: true,
+      status: "online", storage: STORAGE_TYPE, storageFormat: "native-object", persistent: true,
       counts: { players: db.players.length, accounts: db.accounts.length, matches: db.matches.length },
       time: new Date().toISOString()
     });
