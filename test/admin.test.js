@@ -57,6 +57,19 @@ async function workflow(base) {
   assert.doesNotMatch(JSON.stringify(backup), /"(?:id|accountId|accounts|winnerId|loserId|confirmations|eloApplied|password|username)":/);
   const status = (await request("/api/status")).data;
   assert.equal(status.storage, "firebase-firestore"); assert.equal(status.persistent, true);
+  const oldCookie = cookie;
+  assert.equal((await request("/api/admin/settings", "POST", { username: "clubadmin", password: "new-password" }, false)).status, 401);
+  const updated = await request("/api/admin/settings", "POST", { username: "clubadmin", password: "new-password" });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.admin.username, "clubadmin");
+  cookie = updated.res.headers.get("set-cookie").split(";")[0];
+  assert.equal((await request("/api/admin/session")).data.admin.username, "clubadmin");
+  assert.equal((await request("/api/admin/session", "GET", null, false, { Cookie: oldCookie })).data.admin, null);
+  assert.equal((await request("/api/admin/login", "POST", { username: "admin", password: settings.ADMIN_PASSWORD })).status, 401);
+  const newLogin = await request("/api/admin/login", "POST", { username: "clubadmin", password: "new-password" });
+  assert.equal(newLogin.status, 200);
+  assert.doesNotMatch(JSON.stringify((await request("/api/data")).data), /passwordHash|passwordSalt|sessionSecret/);
+  assert.doesNotMatch(JSON.stringify((await request("/api/backup")).data), /passwordHash|passwordSalt|sessionSecret/);
   const logout = await request("/api/admin/logout", "POST", {});
   assert.match(logout.res.headers.get("set-cookie"), /Max-Age=0/);
 }

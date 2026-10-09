@@ -798,6 +798,14 @@
         </div>
         <div id="adminLoggedIn" class="hidden">
           <p>Signed in as <strong id="adminName"></strong>.</p>
+          <details style="margin-bottom:16px;">
+            <summary>Change admin login</summary>
+            <form id="adminSettingsForm" style="margin-top:12px;">
+              <div class="form-group"><label for="adminUsername">Admin username</label><input id="adminUsername" maxlength="80" required autocomplete="username"></div>
+              <div class="form-group"><label for="adminPassword">New admin password</label><input id="adminPassword" type="password" minlength="4" maxlength="256" required autocomplete="new-password"></div>
+              <button class="btn dark" type="submit">Save admin login</button>
+            </form>
+          </details>
           <form id="playerForm">
             <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
             <button class="btn primary" type="submit">Add player</button>
@@ -981,6 +989,7 @@ function render() {
   $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
   $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= 2);
   $("matchFields").disabled = !admin || busy || players.length < 2;
+  $("adminSettingsForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("logoutBtn").disabled = busy;
@@ -1028,6 +1037,14 @@ $("loginForm").onsubmit = event => {
   action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
 };
 $("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; }, "Logged out.");
+$("adminSettingsForm").onsubmit = event => {
+  event.preventDefault();
+  const body = { username: $("adminUsername").value.trim(), password: $("adminPassword").value };
+  action(async () => {
+    const result = await api("/api/admin/settings", "POST", body);
+    admin = result.admin; $("adminSettingsForm").reset();
+  }, "Admin login saved to Firestore.");
+};
 $("playerForm").onsubmit = event => {
   event.preventDefault();
   const name = $("playerName").value.trim();

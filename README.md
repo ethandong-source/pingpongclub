@@ -4,19 +4,15 @@ A public leaderboard and match history with an admin-managed roster. Players hav
 
 ## Admin setup and deployment
 
-Deploy the `betterLogging` branch on Render or Vercel. Keep the existing Firebase environment variables and add:
+Deploy the `betterLogging` branch on Render or Vercel. Keep the existing Firebase environment variables. For the first login only, set `ADMIN_USERNAME` (defaults to `admin`) and `ADMIN_PASSWORD` (at least 4 characters). The backend automatically creates an `admin` object in the same Firestore document with the username, password hash, salt and generated session secret. Once created, Firestore is the source of admin login information, and the two admin environment variables can be removed. `SESSION_SECRET` is no longer required.
 
-- `ADMIN_USERNAME`: your admin login name (defaults to `admin`).
-- `ADMIN_PASSWORD`: a private password of at least 12 characters.
-- `SESSION_SECRET`: a random secret of at least 32 characters; generate one with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
-
-Set these in the hosting dashboard, never in GitHub or frontend code. Public views work without admin credentials; admin login remains disabled until they are configured. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
+Under Matches, sign in and open **Change admin login** to set a different username/password. The password is hashed automatically; no extra setup or public signup is needed. Keep Firebase keys in hosting settings, never frontend code or GitHub. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
 
 Admins can download a backup or undo the latest newly entered match. Undo restores the saved prior ratings exactly. Existing legacy results cannot be undone because they lack prior-rating snapshots. Stale submissions are rejected using a document revision, protecting against duplicate clicks and conflicting admins.
 
 ## Firestore data
 
-Both backends use project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong`. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md). This is a native object with `version`, `players`, `matches`, `revision` and `updatedAt`. No player/account IDs, match IDs, account passwords or confirmation fields are stored. Admin credentials stay in server environment variables.
+Both backends use project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong`. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md). This is a native object with `version`, `players`, `matches`, `admin`, `revision` and `updatedAt`. No player/account IDs, match IDs, account passwords or confirmation fields are stored. The `admin` object stores admin login information in Firestore. Public views and club backups exclude it.
 
 The first database read automatically migrates existing version 1 data, preserving player names, ratings, win/loss records and completed matches. Obsolete player accounts and confirmation metadata are removed. Old unconfirmed results are removed without changing ratings: they were never applied. Download a backup from the old deployment before deploying if you need to retain that obsolete data. The supplied club backup contains 10 players and 32 completed matches, all of which migrate.
 
