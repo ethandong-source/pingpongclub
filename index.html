@@ -956,9 +956,28 @@
           📥 Export Club Backup (.json)
         </button>
         <button class="small-btn secondary" style="padding: 9px 14px; font-size: 13px; font-weight:700;" onclick="document.getElementById('backupFileInput').click()">
-          📤 Restore / Import Backup
+          📤 Upload Backup File (.json)
+        </button>
+        <button class="small-btn secondary" style="padding: 9px 14px; font-size: 13px; font-weight:700;" onclick="toggleRestoreTextBox()">
+          📋 Paste Backup JSON Text
         </button>
         <input type="file" id="backupFileInput" accept=".json" style="display: none;" onchange="handleRestoreFile(event)">
+      </div>
+
+      <!-- PASTE JSON TEXT BOX (GREAT FOR IPAD / MOBILE) -->
+      <div id="restoreTextWrap" class="hidden" style="margin-top: 14px; padding: 14px; background: white; border: 1px solid #cbd5e1; border-radius: 8px;">
+        <label for="restoreTextInput" style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 6px;">
+          Paste your JSON backup text below:
+        </label>
+        <textarea id="restoreTextInput" rows="5" placeholder='{"data":{"accounts":[...],"players":[...],"matches":[...]}}' style="width: 100%; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn accent" style="padding: 8px 16px; font-size: 13px;" onclick="handleRestoreText()">
+            Restore Club Data from Text
+          </button>
+          <button class="small-btn secondary" onclick="toggleRestoreTextBox()">
+            Cancel
+          </button>
+        </div>
       </div>
 
       <div style="margin-top: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; line-height: 1.6;">
@@ -1097,6 +1116,44 @@ async function handleRestoreFile(event) {
     }
   };
   reader.readAsText(file);
+}
+
+function toggleRestoreTextBox() {
+  const wrap = document.getElementById("restoreTextWrap");
+  if (wrap) wrap.classList.toggle("hidden");
+}
+
+async function handleRestoreText() {
+  const input = document.getElementById("restoreTextInput");
+  if (!input) return;
+  const raw = input.value.trim();
+  if (!raw) {
+    alert("Please paste your backup JSON text first.");
+    return;
+  }
+
+  try {
+    let parsed = JSON.parse(raw);
+    if (parsed.data) parsed = parsed.data;
+
+    const res = await fetch(`${API_BASE}/api/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: parsed })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert(data.error || "Failed to restore backup.");
+      return;
+    }
+
+    await fetchClubData();
+    alert(`Success! ${data.message || "Database restored successfully."}`);
+    toggleRestoreTextBox();
+    input.value = "";
+  } catch (err) {
+    alert("Invalid JSON text: " + err.message);
+  }
 }
 
 async function fetchClubData() {
