@@ -13,6 +13,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 6
 main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);padding-bottom:25px;gap:30px}.stat-card{padding:0 20px;border-left:2px solid var(--gold)}.stat-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted)}.stat-value{font-size:38px;font-weight:800;letter-spacing:-1px;line-height:1.2;margin:7px 0}.stat-sub{font-size:12px;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:6px;padding:24px}.card-header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}.card-header h2{margin-bottom:6px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;text-align:left}th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 16px;border-bottom:2px solid var(--green);white-space:nowrap}td{padding:17px 16px;border-bottom:1px solid var(--line);vertical-align:top}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#f6f8f3}.leader-row td:first-child{color:#8c6519;font-weight:800}.leader-row{background:#fcfaf2}td:nth-child(3){font-weight:700}.grid-2{display:grid;grid-template-columns:1.2fr 1fr;gap:24px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-group{margin-bottom:18px}label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}input,select{background:white;color:var(--ink);width:100%;padding:11px 12px;border:1px solid #b8c9bc;border-radius:4px}input:focus,select:focus{border-color:var(--green)}.btn,.small-btn{border:1px solid var(--green);border-radius:4px;background:var(--green);color:white;font-weight:700;padding:11px 18px}.btn{margin-top:14px}.small-btn{font-size:12px;padding:6px 9px}.secondary{background:white;color:var(--green)}.danger{color:#96382d;background:#fff3ef;border-color:#e4b5ab}.notice{padding:13px 16px;background:#edf4ee;border-left:3px solid var(--green);font-size:13px}.notice.warning{background:#fff9e7;border-color:var(--gold)}.notice.danger{border-color:#96382d}.elo-preview-box{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;background:#faf4df;color:#735616;border-left:3px solid var(--gold);font-size:13px}.match-list{display:grid}.match-item{padding:20px 0;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.match-item p{color:var(--muted);margin:5px 0;font-size:13px}.badge{font-size:11px;color:var(--green);font-weight:700}.faq{margin-top:48px;display:grid;grid-template-columns:1fr 2fr;gap:40px}.faq h2{font-size:32px}.faq details{border-bottom:1px solid var(--line);padding:18px 0}.faq details:first-child{border-top:2px solid var(--green)}.faq summary{font-weight:700;font-size:16px}.faq p{color:var(--muted);margin:14px 0 0}.faq code{font-size:12px;overflow-wrap:anywhere}.player-history summary{font-weight:700;white-space:nowrap}.history-count{font-weight:400;font-size:11px;color:var(--muted);display:block;margin-left:18px}.player-history ul{list-style:none;margin:14px 0 0;padding:0;min-width:250px;max-width:380px}.player-history li{padding:12px 0;border-top:1px solid var(--line);font-size:12px}.history-result{font-weight:800;color:var(--green);margin-right:8px}.history-result.loss{color:#97632c}.history-meta{display:block;color:var(--muted);margin-top:3px}.archived{color:var(--muted)}footer{border-top:1px solid var(--line);padding:28px 6%;font-size:12px;color:var(--muted);background:white}footer strong{color:var(--green)}
 @media(max-width:850px){.hero-container{grid-template-columns:1fr 1fr;gap:24px}.hero h1{font-size:38px}.hero p{font-size:15px}.grid-2{grid-template-columns:1fr}.faq{grid-template-columns:1fr;gap:8px}.podium-name{font-size:12px}.card{padding:20px}td,th{padding:14px 12px}}
 @media(max-width:600px){nav{flex-wrap:wrap;gap:10px;padding:14px 20px}nav .links{width:100%;gap:28px}.brand{font-size:22px}.hero{padding:32px 20px 0}.hero-container{grid-template-columns:1fr;gap:32px}.hero-copy{padding:0}.hero h1{font-size:40px;letter-spacing:-1.5px}.podium{width:100%;max-width:390px;justify-self:center}.podium-place-1{--height:185px}.podium-place-2{--height:115px}.podium-place-3{--height:80px}.podium-step{padding-top:14px}.podium-medal{width:48px;height:48px;font-size:29px}.podium-place-1 .podium-medal{width:60px;height:60px;font-size:36px}.podium-rating{font-size:19px;margin-top:8px}main{padding:26px 16px 40px}.grid{gap:10px}.stat-card{padding:0 10px}.stat-title{font-size:9px;letter-spacing:.7px}.stat-value{font-size:29px}.stat-sub{font-size:10px}.card-header{align-items:flex-start;flex-direction:column;gap:12px}.card-header input{max-width:100%!important}h2{font-size:23px}.card{padding:16px}.form-grid{grid-template-columns:1fr;gap:0}.match-item{align-items:flex-start;flex-direction:column}.faq{margin-top:32px}.faq h2{font-size:28px}footer{padding:24px 20px}}
+
+/* Opening photo and statistics; the podium belongs with the rankings. */
+.hero{padding-bottom:40px}.hero-container{align-items:center}.hero-copy{padding-bottom:0}.hero-photo{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:5px}.hero .grid{margin-top:32px;border-bottom:0;padding-bottom:0;gap:14px}.hero .stat-card{padding:0 12px}.hero .stat-title,.hero .stat-sub{color:#d8e9dd}.hero .stat-value{color:white;font-size:32px}.hero .stat-title{font-size:10px;letter-spacing:.8px}.hero .stat-sub{font-size:11px}#home>.podium{max-width:500px;margin:0 auto;color:var(--ink)}#home .podium-step{color:white}#homeLeaderboard{margin-top:0!important}.faq{grid-template-columns:1fr;gap:8px}.faq>div:first-child p{margin-bottom:12px}#viewAllMatches{margin-top:20px}
+@media(max-width:600px){.hero{padding-bottom:28px}.hero-container{gap:28px}.hero .stat-card{padding:0 8px}.hero .stat-value{font-size:28px}.hero .stat-sub{font-size:10px}.hero-photo{max-height:230px}#home>.podium{max-width:390px}}
 </style>
 </head>
 
@@ -46,23 +50,6 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
         The table is open. Follow the rankings, find your next opponent,
         and see every result from the Carroll High School club.
       </p>
-    </div>
-    <figure class="podium" aria-label="Top three players by Elo rating">
-      <ol id="podiumPlaces" class="podium-places"></ol>
-    </figure>
-  </div>
-</section>
-
-<!-- =========================================
-     MAIN CONTENT
-========================================= -->
-<main>
-  <div id="appMessage" role="status" aria-live="polite" class="notice hidden" style="margin-bottom:16px;"></div>
-
-  <!-- =========================================
-       HOME SECTION
-  ========================================= -->
-  <section id="home" class="section active">
     <div class="grid">
       <div class="stat-card">
         <div class="stat-title">Active Players</div>
@@ -82,6 +69,24 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
         <div class="stat-sub">Across the active roster</div>
       </div>
     </div>
+    </div>
+    <img class="hero-photo" src="/assets/ping-pong.png" alt="Two red ping-pong paddles and balls beside a net on a blue table" width="612" height="408">
+  </div>
+</section>
+
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
+<main>
+  <div id="appMessage" role="status" aria-live="polite" class="notice hidden" style="margin-bottom:16px;"></div>
+
+  <!-- =========================================
+       HOME SECTION
+  ========================================= -->
+  <section id="home" class="section active">
+    <figure class="podium" aria-label="Top three players by Elo rating">
+      <ol id="podiumPlaces" class="podium-places"></ol>
+    </figure>
 
     <div id="homeLeaderboard" class="card" style="margin-top:20px;scroll-margin-top:100px;">
       <div class="card-header">
@@ -190,6 +195,7 @@ main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.
       <h2>Match history</h2>
       <p class="muted">Results recorded by the admin. To correct a result, the admin can undo the latest match and enter it again.</p>
       <div id="recentMatches" class="match-list"></div>
+      <button id="viewAllMatches" type="button" class="small-btn secondary hidden" aria-expanded="false" aria-controls="recentMatches">View all matches</button>
     </div>
   </section>
 
@@ -252,6 +258,7 @@ let clubState = { players: [], matches: [] };
 let admin = null;
 let busy = false;
 let refreshing = false;
+let showAllMatches = false;
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -321,12 +328,21 @@ function renderPlayersTable() {
 }
 function renderRecentMatches() {
   const latest = clubState.matches.at(-1);
-  $("recentMatches").innerHTML = [...clubState.matches].reverse().map(m => {
+  const ordered = clubState.matches.map((match,index) => ({match,index})).sort((a,b) => {
+    const ad = Date.parse(a.match.date), bd = Date.parse(b.match.date);
+    return Number.isFinite(ad) && Number.isFinite(bd) && ad !== bd ? bd-ad : b.index-a.index;
+  }).map(item => item.match);
+  const visible = showAllMatches ? ordered : ordered.slice(0,5);
+  $("viewAllMatches").classList.toggle("hidden", ordered.length <= 5);
+  $("viewAllMatches").textContent = showAllMatches ? "Show fewer matches" : `View all ${ordered.length} matches`;
+  $("viewAllMatches").setAttribute("aria-expanded", String(showAllMatches));
+  $("recentMatches").innerHTML = visible.map(m => {
     const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
     return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} Elo</span></div>${admin && latest === m && m.before ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
   }).join("") || '<p class="muted">No completed matches yet.</p>';
   $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
+$("viewAllMatches").onclick = () => { showAllMatches = !showAllMatches; renderRecentMatches(); };
 function renderSelectors() {
   for (const id of ["winner", "loser"]) {
     const selected = $(id).value;
