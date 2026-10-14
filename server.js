@@ -200,18 +200,7 @@ function saveDb(data) {
   }
 }
 
-// Elo Calculation Engine
-const K_FACTOR = 32;
-
-function expectedProbability(playerElo, opponentElo) {
-  return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
-}
-
-function calculateEloGain(winnerElo, loserElo) {
-  const prob = expectedProbability(winnerElo, loserElo);
-  const change = Math.round(K_FACTOR * (1 - prob));
-  return Math.max(1, change);
-}
+const { DEFAULTS, replay } = require("./ratings");
 
 // Helper: Parse JSON body
 function parseJsonBody(req) {
@@ -301,6 +290,8 @@ const server = http.createServer(async (req, res) => {
       name: p.name,
       username: p.username,
       elo: p.elo,
+      rd: p.rd ?? DEFAULTS.initialRD,
+      lastRatedAt: p.lastRatedAt ?? null,
       wins: p.wins || 0,
       losses: p.losses || 0
     }));
@@ -310,6 +301,7 @@ const server = http.createServer(async (req, res) => {
       storage: storageType,
       players: publicPlayers,
       matches: db.matches || [],
+      ratingSystem: db.ratingSystem || { name: "glicko-1", ...DEFAULTS },
       serverTime: new Date().toISOString()
     });
   }
@@ -413,7 +405,9 @@ const server = http.createServer(async (req, res) => {
         accountId: playerId,
         name,
         username,
-        elo: 1000,
+        elo: db.ratingSystem?.startingRating ?? DEFAULTS.startingRating,
+        rd: db.ratingSystem?.initialRD ?? DEFAULTS.initialRD,
+        lastRatedAt: null,
         wins: 0,
         losses: 0
       };
@@ -459,7 +453,9 @@ const server = http.createServer(async (req, res) => {
         id: account.id,
         name: account.name,
         username: account.username,
-        elo: 1000,
+        elo: db.ratingSystem?.startingRating ?? DEFAULTS.startingRating,
+        rd: db.ratingSystem?.initialRD ?? DEFAULTS.initialRD,
+        lastRatedAt: null,
         wins: 0,
         losses: 0
       };
@@ -625,15 +621,11 @@ const server = http.createServer(async (req, res) => {
         const loser = (db.players || []).find(p => String(p.id) === String(match.loserId));
 
         if (winner && loser) {
-          const delta = calculateEloGain(winner.elo, loser.elo);
-          winner.elo += delta;
-          loser.elo = Math.max(100, loser.elo - delta);
-          winner.wins = (winner.wins || 0) + 1;
-          loser.losses = (loser.losses || 0) + 1;
-
-          match.winnerChange = delta;
-          match.loserChange = delta;
-          match.eloApplied = true;
+          const candidate = JSON.parse(JSON.stringify(db));
+          candidate.matches.find(m => String(m.id) === String(match.id)).eloApplied = true;
+          db = replay(candidate).database;
+          Object.assign(match, db.matches.find(m => String(m.id) === String(match.id)));
+          const delta = match.winnerChange;
           eloApplied = true;
 
           console.log(`[ELO] Finalized: ${winner.name} (+${delta} -> ${winner.elo}) vs ${loser.name} (-${delta} -> ${loser.elo})`);
@@ -673,21 +665,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { error: "Unauthorized: You cannot reject this match." });
       }
 
-      if (match.eloApplied) {
-        const winner = (db.players || []).find(p => String(p.id) === String(match.winnerId));
-        const loser = (db.players || []).find(p => String(p.id) === String(match.loserId));
-
-        if (winner && match.winnerChange) {
-          winner.elo = Math.max(100, winner.elo - match.winnerChange);
-          winner.wins = Math.max(0, (winner.wins || 0) - 1);
-        }
-        if (loser && match.loserChange) {
-          loser.elo += match.loserChange;
-          loser.losses = Math.max(0, (loser.losses || 0) - 1);
-        }
-      }
-
-      db.matches.splice(matchIdx, 1);
+      const remaining = { ...db, matches: db.matches.filter((_, index) => index !== matchIdx) };
+      db = replay(remaining).database;
       saveDb(db);
 
       console.log(`[MATCH] Removed match id: ${matchId}`);
@@ -719,6 +698,7 @@ const server = http.createServer(async (req, res) => {
 
       db = {
         version: backupData.version || 1,
+        ...(backupData.ratingSystem ? { ratingSystem: backupData.ratingSystem } : {}),
         accounts: Array.isArray(backupData.accounts) ? backupData.accounts : [],
         players: Array.isArray(backupData.players) ? backupData.players : [],
         matches: Array.isArray(backupData.matches) ? backupData.matches : []

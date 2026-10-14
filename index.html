@@ -591,7 +591,7 @@
         <h2>How the Club Rating Works</h2>
         <p>
           Every registered player begins at a baseline of <strong>1000 ELO</strong>.
-          After every competitive match, the winner gains Elo and the loser loses the exact same amount.
+          After every competitive match, the winner gains Elo and the loser’s rating decreases based on their rating uncertainty.
         </p>
         <p>
           Beating a higher-rated player gains more Elo,
@@ -608,7 +608,7 @@
         <p>
           <strong>Club:</strong> Carroll High School Ping Pong Club<br>
           <strong>Starting Rating:</strong> 1000 Elo<br>
-          <strong>K-Factor:</strong> 32<br>
+          <strong>Rating System:</strong> Glicko (rating + uncertainty)<br>
           <strong>Match Format:</strong> Best of games to 11 points (win by 2)<br>
           <strong>Cross-Device Sync:</strong> Website syncs across devices
         </p>
@@ -720,7 +720,7 @@
 
           <div id="eloPreview" class="elo-preview-box hidden">
             <span>Projected Elo Change:</span>
-            <strong id="eloPreviewText" style="color:var(--green);">+16 / -16</strong>
+            <strong id="eloPreviewText" style="color:var(--green);">Calculated from ratings and uncertainty</strong>
           </div>
 
           <button id="submitMatchBtn" class="btn dark" type="submit">
@@ -922,18 +922,10 @@
       </div>
 
       <div class="card">
-        <h2>Elo Rating Formula</h2>
-        <p>Ratings are calculated using the standard Elo formula with <strong>K = 32</strong>:</p>
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; font-family:monospace; font-size:13px;">
-          <strong>1. Expected Win Probability:</strong><br>
-          E<sub>Winner</sub> = 1 / (1 + 10 <sup>(Loser Elo − Winner Elo) / 400</sup>)<br><br>
-          <strong>2. Rating Change:</strong><br>
-          Δ Elo = Round( 32 × (1 − E<sub>Winner</sub>) )
-        </div>
-        <div class="notice">
-          <strong>Info:</strong>
-          I know this looks confusing, but its just a normal elo system.
-        </div>
+        <h2>Glicko Ratings</h2>
+        <p>We use the published <strong>Glicko-1</strong> algorithm, the rating-system family used by Chess.com.</p>
+        <p>Each player has a rating and a rating deviation (RD), which measures uncertainty. New players start at 1000 with RD 350. Ratings stabilize as players complete matches, and uncertainty increases during inactivity.</p>
+        <div class="notice">Ratings and changes are saved as whole numbers after each match. Confirmed matches are replayed in date order. Both ratings use pre-match values; gains and losses may differ. The club uses one match per rating period and configurable daily uncertainty growth, rather than Chess.com’s unpublished production settings.</div>
       </div>
     </div>
 
@@ -1015,6 +1007,7 @@
 </footer>
 
 <!-- JAVASCRIPT LOGIC -->
+<script src="/ratings.js"></script>
 <script>
 const API_BASE = "";
 const SESSION_STORAGE_KEY = "carroll_pingpong_user_session_v6";
@@ -1225,6 +1218,7 @@ async function fetchClubData() {
     if (json.success) {
       const serverPlayers = json.players || [];
       const serverMatches = json.matches || [];
+      clubState.ratingSystem = json.ratingSystem || {};
 
       let savedCred = null;
       try {
@@ -1565,9 +1559,8 @@ function updateEloPreview() {
   const loser = clubState.players.find(p => String(p.id) === String(lId));
 
   if (winner && loser) {
-    const prob = 1 / (1 + Math.pow(10, (loser.elo - winner.elo) / 400));
-    const gain = Math.max(1, Math.round(32 * (1 - prob)));
-    previewText.textContent = `Winner +${gain} Elo / Loser -${gain} Elo`;
+    const next = ClubRatings.preview(winner, loser, new Date().toISOString(), clubState.ratingSystem || {});
+    previewText.textContent = `Winner +${Math.round(next.winnerChange)} / Loser -${Math.round(next.loserChange)} rating`;
     previewBox.classList.remove("hidden");
   } else {
     previewBox.classList.add("hidden");
@@ -1863,7 +1856,7 @@ function renderRecentMatches() {
 
     let actionButtons = "";
     if (match.eloApplied) {
-      actionButtons = `<span class="badge badge-official">Official • +${match.winnerChange} / -${match.loserChange} Elo</span>`;
+      actionButtons = `<span class="badge badge-official">Official • +${Math.round(Number(match.winnerChange))} / -${Math.round(Number(match.loserChange))} Elo</span>`;
     } else {
       if (isInvolved && !hasUserConfirmed) {
         actionButtons = `
