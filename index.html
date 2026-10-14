@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carroll Ping Pong Club — Elo & Match Tracker</title>
+  <title>Carroll Ping Pong Club — Glicko & Match Tracker</title>
 
   <style>
 :root{--ink:#19342a;--muted:#607068;--green:#18583c;--gold:#d5a440;--line:#d8e1d9;--paper:#f6f8f5;--accent:var(--green)}
@@ -113,7 +113,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
        HOME SECTION
   ========================================= -->
   <section id="home" class="section active">
-    <figure class="podium" aria-label="Top three players by Elo rating">
+    <figure class="podium" aria-label="Top three players by rating rating">
       <ol id="podiumPlaces" class="podium-places"></ol>
     </figure>
 
@@ -140,7 +140,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
             <tr>
               <th style="width: 60px;">Rank</th>
               <th>Player</th>
-              <th>ELO Rating</th>
+              <th>Rating</th>
               <th>Matches</th>
               <th>Record (W-L)</th>
               <th>Win Rate</th>
@@ -153,10 +153,10 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
     <div class="faq">
       <div><h2>Club FAQ</h2><p class="muted">A few things to know before your next game.</p></div>
       <div>
-        <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 Elo and do not need an account.</p></details>
+        <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 rating and do not need an account.</p></details>
         <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
         <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
-        <details><summary>How does the score affect Elo?</summary><p>A win over a stronger opponent moves your rating more than a win over a weaker opponent. Close games move ratings less than decisive wins.</p><p>New players move faster: K is 30 for the first 10 matches, 20 for matches 10–29, and 16 from match 30 onward. Each player uses their own K, so the winner’s gain and loser’s loss can differ. Both are capped at 30 points, and a rating cannot drop below 100. An expected win can produce no rating change.</p><p>For two new players at equal ratings, 12–10 changes each rating by 9 and 12–0 by 15. A 1400-rated player with 30 matches beating a new 1000-rated player 12–0 gains 1 point; the opponent loses 3.</p><p><code>E = 1 / (1 + 10^((opponent Elo − winner Elo) / 400))<br>M = 0.5 + 0.5 × (winner points − loser points) / winner points<br>Each change = min(30, round(player K × (1 − E) × M))</code></p><p>New results use this club adaptation of Elo. Earlier ratings and match history stay as recorded.</p></details>
+        <details><summary>How do club ratings work?</summary><p>We use Glicko-1. Everyone starts at 1000, and each recorded match updates both players from their ratings before the game. Beating a stronger opponent earns more than an expected win.</p><p>New players have more uncertain ratings, so their first results can cause large changes. Ratings settle as they play more matches. Inactivity increases uncertainty. Each player’s uncertainty is tracked separately, so gains and losses can differ.</p><p>Glicko uses the win or loss, not the point margin. A 12–10 win and a 12–0 win have the same effect for the same players at the same time. Ratings are saved as whole numbers; this system has no 30-point cap.</p></details>
         <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring both players’ previous ratings and records. Matches involving a deleted player cannot be undone.</p></details>
       </div>
     </div>
@@ -183,7 +183,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
               <div class="form-group"><label for="loserScore">Loser score (points)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
             </div>
             <p id="scoreWarning" class="notice danger hidden">The winner's score must be higher than the loser's score.</p>
-            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected Elo change:</span><strong id="eloPreviewText"></strong></div>
+            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected rating change:</span><strong id="eloPreviewText"></strong></div>
             <button class="btn dark" type="submit">Save match result</button>
           </fieldset>
         </form>
@@ -243,7 +243,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
             <tr>
               <th>Player Name</th>
               
-              <th>Current ELO</th>
+              <th>Rating</th>
               <th>Wins</th>
               <th>Losses</th>
               <th>Win %</th><th class="admin-column hidden">Admin actions</th>
@@ -271,7 +271,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 <!-- =========================================
      JAVASCRIPT CLIENT & SYNC
 ========================================= -->
-<script src="/elo.js"></script>
+<script src="/ratings.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
@@ -313,12 +313,12 @@ function renderPodium() {
   const leaders = sortedPlayers().slice(0, 3);
   $("podiumPlaces").innerHTML = [0, 1, 2].map(index => {
     const player = leaders[index];
-    return `<li class="podium-place podium-place-${index+1}" aria-label="Rank ${index+1}${player ? `: ${escapeHtml(player.name)}, ${player.elo} Elo` : ": No player yet"}">
+    return `<li class="podium-place podium-place-${index+1}" aria-label="Rank ${index+1}${player ? `: ${escapeHtml(player.name)}, ${player.elo} rating` : ": No player yet"}">
       <span class="podium-name">${player ? escapeHtml(player.name) : "No player yet"}</span>
       <div class="podium-step" aria-hidden="true">
         <span class="podium-medal">${index+1}</span>
         <span class="podium-rating">${player ? player.elo : "—"}</span>
-        <span class="podium-rating-label">Elo</span>
+        <span class="podium-rating-label">Rating</span>
       </div>
     </li>`;
   }).join("");
@@ -342,7 +342,7 @@ function renderPlayersTable() {
       const parts = String(m.score).split(/\s*[-–:]\s*/);
       const score = won || parts.length !== 2 ? m.score : parts.reverse().join("–");
       const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleDateString() : "Date not recorded";
-      return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(won ? m.winnerChange : m.loserChange) || 0} Elo</span></li>`;
+      return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(won ? m.winnerChange : m.loserChange) || 0} rating</span></li>`;
     }).join("") || '<li class="muted">No matches played yet.</li>';
     return `<tr class="${p.archived ? "archived" : ""}"><td><details class="player-history" data-player="${escapeHtml(p.name)}" ${open.has(p.name) ? "open" : ""}><summary>${escapeHtml(p.name)}<span class="history-count">${matches.length} ${matches.length === 1 ? "match" : "matches"}</span></summary><ul>${history}</ul></details></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
   }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
@@ -361,7 +361,7 @@ function renderRecentMatches() {
   $("viewAllMatches").setAttribute("aria-expanded", String(showAllMatches));
   $("recentMatches").innerHTML = visible.map(m => {
     const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
-    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} Elo</span></div>${admin && latest === m && m.before && clubState.players.some(p => p.name === m.winnerName) && clubState.players.some(p => p.name === m.loserName) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
+    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} rating</span></div>${admin && latest === m && m.before && clubState.players.some(p => p.name === m.winnerName) && clubState.players.some(p => p.name === m.loserName) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
   }).join("") || '<p class="muted">No completed matches yet.</p>';
   $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
@@ -437,7 +437,7 @@ async function refresh() {
   refreshing = true;
   try {
     const [data, session] = await Promise.all([api("/api/data"), api("/api/admin/session")]);
-    clubState = { players: data.players, matches: data.matches, revision: data.revision };
+    clubState = { players: data.players, matches: data.matches, revision: data.revision, ratingSystem: data.ratingSystem };
     admin = session.admin;
     render(!statsInitialized);
     statsInitialized = true;
@@ -465,7 +465,7 @@ function updateEloPreview() {
   const visible = w && l && w.name !== l.name && $("winnerScore").value !== "" && $("loserScore").value !== "" && Number.isInteger(ws) && Number.isInteger(ls) && ws > ls && ls >= 0 && ws <= 99;
   $("eloPreview").classList.toggle("hidden", !visible);
   if (visible) {
-    const changes = ClubElo.ratingChanges(w, l, ws, ls);
+    const changes = ClubRatings.preview(w, l, new Date().toISOString(), clubState.ratingSystem);
     $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
   }
 }
@@ -478,7 +478,7 @@ $("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout
 $("playerForm").onsubmit = event => {
   event.preventDefault();
   const name = $("playerName").value.trim();
-  action(async () => { await api("/api/players", "POST", { name }); $("playerForm").reset(); }, "Player added at 1000 Elo.");
+  action(async () => { await api("/api/players", "POST", { name }); $("playerForm").reset(); }, "Player added at 1000 rating.");
 };
 $("matchForm").onsubmit = event => {
   event.preventDefault();

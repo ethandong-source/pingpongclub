@@ -1,6 +1,6 @@
 # Carroll Ping Pong Club
 
-A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately. Rating changes use expected win probability, a score-margin multiplier, and each player’s own K: 30 before 10 matches, 20 for 10–29 matches, and 16 after that. Gains and losses may differ, are each capped at 30, and may round to zero for an expected win. The minimum Elo is 100. The shared elo.js module drives the backend and preview; previous results are not recalculated. There is no participant confirmation step.
+A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately. Ratings use Glicko-1 from the shared ratings.js module for the backend and browser preview. Each match is one rating period; new players start at 1000 with RD 350. Inactivity raises RD using c = sqrt((350² − 50²) / 100). Both participants update from their pre-match states, with whole-number ratings and unrounded RD. Changes may differ and are not capped at 30; point margin does not affect Glicko. There is no participant confirmation step.
 
 ## Admin setup and deployment
 
@@ -16,7 +16,7 @@ Admins can download a backup or undo the latest newly entered match. Undo restor
 
 Both backends use project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong`. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md). This is a native object with `version`, `players`, `matches`, `admin`, `revision` and `updatedAt`. No player/account IDs, match IDs, account passwords or confirmation fields are stored. The `admin` object stores admin login information in Firestore. Public views and club backups exclude it.
 
-The first database read automatically migrates existing version 1 data, preserving player names, ratings, win/loss records and completed matches. Obsolete player accounts and confirmation metadata are removed. Old unconfirmed results are removed without changing ratings: they were never applied. Download a backup from the old deployment before deploying if you need to retain that obsolete data. The supplied club backup contains 10 players and 32 completed matches, all of which migrate.
+The first database read automatically migrates existing version 1 data, preserving player names and completed matches, then rebuilding ratings and win/loss records with Glicko from full history. Obsolete player accounts and confirmation metadata are removed. Old unconfirmed results are removed without changing ratings: they were never applied. Download a backup from the old deployment before deploying if you need to retain that obsolete data. The supplied club backup contains 10 players and 32 completed matches, all of which migrate.
 
 ## Local development
 
@@ -30,3 +30,7 @@ npm test
 Tests use an isolated Firestore double and do not contact the real Firebase project. Backend APIs and environment files are never served as static files.
 
 Admins can delete a player from the roster. Recorded matches and opponents’ ratings remain intact. Names in historical matches cannot be reused for new players or renames, so different people do not share one history. A match involving a deleted player cannot be undone. Admin login editing is removed; the existing Firestore login remains unchanged.
+
+## Glicko deployment and recovery
+
+The betterLogging Firestore backend preserves RD, lastRatedAt, rating-system configuration, and pre-match undo snapshots in native fields. If rating metadata was stripped by an older deployment, the first read transaction replays the complete dated match history from 1000 and saves the recovered states under a revision check. Missing or invalid historical dates stop recovery instead of silently guessing. Deleted participants are replayed without restoring them to the roster. After migration, normal reads do not replay or change ratings. Undo restores rating, RD, last-rated date and counters. Existing admin credentials and roster names remain unchanged.

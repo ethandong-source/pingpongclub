@@ -7,7 +7,7 @@ const { handle } = require("./lib/club");
 const staticFiles = {
   "/": ["index.html", "text/html; charset=utf-8"],
   "/index.html": ["index.html", "text/html; charset=utf-8"],
-  "/elo.js": ["elo.js", "text/javascript; charset=utf-8"],
+  "/ratings.js": ["ratings.js", "text/javascript; charset=utf-8"],
   "/assets/groupme.png": ["assets/groupme.png", "image/png"],
   "/assets/ping-pong.png": ["assets/ping-pong.png", "image/png"],
   "/assets/ping-pong-3846048.jpg": ["assets/ping-pong-3846048.jpg", "image/jpeg"],

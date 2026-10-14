@@ -34,13 +34,17 @@ async function workflow(base) {
   assert.equal((await request("/api/players", "POST", { name: " alex " })).status, 409);
   let data = (await request("/api/data")).data;
   assert.equal(data.players[0].elo, 1000);
+  const originalPlayers = structuredClone(data.players);
   const match = { winnerName: "Alex", loserName: "Sam", winnerScore: 11, loserScore: 7, revision: data.revision };
   assert.equal((await request("/api/matches", "POST", { ...match, loserName: "Alex" })).status, 400);
   assert.equal((await request("/api/matches", "POST", { ...match, winnerScore: 2 })).status, 400);
   const simultaneous = await Promise.all([request("/api/matches", "POST", match), request("/api/matches", "POST", match)]);
   assert.deepEqual(simultaneous.map(r => r.status).sort(), [201, 409]);
   data = (await request("/api/data")).data;
-  assert.equal(data.matches.length, 1); assert.equal(data.players[0].elo, 1010); assert.equal(data.players[1].elo, 990);
+  assert.equal(data.matches.length, 1); assert.equal(data.players[0].elo, 1162); assert.equal(data.players[1].elo, 838);
+  assert.ok(data.players[0].rd < 350); assert.equal(data.matches[0].ratingSystem, "glicko-1");
+  const expected = require("../ratings").preview(originalPlayers[0],originalPlayers[1],data.matches[0].date,data.ratingSystem);
+  assert.equal(data.matches[0].winnerChange,expected.winnerChange); assert.equal(data.matches[0].loserChange,expected.loserChange);
   assert.equal(data.players[0].wins, 1); assert.equal(data.players[1].losses, 1);
   assert.equal((await request("/api/matches", "POST", match)).status, 409);
   assert.equal((await request("/api/players", "PATCH", { currentName: "Alex", name: "Alex Renamed" })).status, 200);
@@ -50,6 +54,7 @@ async function workflow(base) {
   assert.equal((await request("/api/matches/latest", "DELETE", { revision: data.revision })).status, 200);
   data = (await request("/api/data")).data;
   assert.equal(data.matches.length, 0); assert.equal(data.players[0].elo, 1000); assert.equal(data.players[0].wins, 0);
+  assert.equal(data.players[0].rd,350); assert.equal(data.players[0].lastRatedAt,null); assert.equal(data.players[1].rd,350);
   assert.equal((await request("/api/players", "PATCH", { currentName: "Sam", archived: true })).status, 200);
   data = (await request("/api/data")).data;
   assert.equal((await request("/api/matches", "POST", { ...match, winnerName: "Alex Renamed", revision: data.revision })).status, 400);

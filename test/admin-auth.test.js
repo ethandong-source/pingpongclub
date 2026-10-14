@@ -23,8 +23,8 @@ test("initial admin is created without environment settings and never replaces a
   const initial = require("../lib/initial-admin.json");
   Object.assign(process.env, { FIREBASE_PROJECT_ID: "demo-club", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080", NODE_ENV: "test" });
   for (const key of ["ADMIN_USERNAME", "ADMIN_PASSWORD", "SESSION_SECRET", "RENDER", "VERCEL"]) delete process.env[key];
-  const players = [{ name: "Alex", elo: 1100, wins: 3, losses: 2, archived: false }];
-  database.records.set("clubs/carroll-pingpong", { version: 2, players, matches: [], revision: 4 });
+  const players = [{ name: "Alex", elo: 1100, wins: 3, losses: 2, archived: false, rd: 350, lastRatedAt: null }];
+  database.records.set("clubs/carroll-pingpong", { version: 2, players, matches: [], ratingSystem: require("../lib/glicko").ratingSystem(), revision: 4 });
   const admin = await getAdmin();
   assert.equal(admin.username, initial.username); assert.equal(admin.passwordHash, initial.passwordHash);
   assert.deepEqual(database.records.get("clubs/carroll-pingpong").players, players);
