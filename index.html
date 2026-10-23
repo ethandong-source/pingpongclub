@@ -94,10 +94,15 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
     </div>
     <div class="hero-gallery" role="region" aria-label="Ping-pong photo slideshow">
       <div class="photo-track" id="photoTrack">
-        <figure class="photo-slide"><img src="/assets/ping-pong.png" alt="Red paddles and balls beside the net on a blue table" width="612" height="408" fetchpriority="high"></figure>
-        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong-3846048.jpg" alt="A ping-pong paddle and ball on a blue table" width="500" height="750"></figure>
-        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong-18511482.jpg" alt="Red and black paddles beside a net on a green table" width="500" height="750"></figure>
-        <figure class="photo-slide" aria-hidden="true"><img src="/assets/ping-pong.png" alt="" width="612" height="408"></figure>
+        <figure class="photo-slide"><img src="/assets/club-photo-01.webp" alt="Club members playing table tennis in the school courtyard" width="964" height="1280" fetchpriority="high"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-02.webp" alt="Players gathering beside the courtyard ping-pong table" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-03.webp" alt="A player preparing a shot across the outdoor table" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-04.webp" alt="A club member returning a shot near the table net" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-05.webp" alt="A player following through on a courtyard ping-pong shot" width="720" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-06.webp" alt="Club members playing beside the school building" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-07.webp" alt="Players beside the table between games" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-08.webp" alt="A courtyard match viewed from behind a player" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-01.webp" alt="" width="964" height="1280"></figure>
       </div>
     </div>
   </div>
@@ -523,9 +528,10 @@ $("backupBtn").onclick = () => action(async () => {
 localStorage.removeItem("carroll_pingpong_user_session_v5");
 const photoTrack = $("photoTrack");
 const photoSlides = [...photoTrack.children];
+const photoCount = photoSlides.length - 1; // Last slide repeats the first for a seamless loop.
 let photoIndex = 0;
 function resetPhotoLoop() {
-  if (photoIndex !== 3) return;
+  if (photoIndex !== photoCount) return;
   photoTrack.classList.add("resetting");
   photoIndex = 0;
   photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== 0)));
