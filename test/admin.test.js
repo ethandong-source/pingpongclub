@@ -81,6 +81,48 @@ async function workflow(base) {
   assert.equal((await request("/api/matches/latest", "DELETE", { revision: data.revision })).status,409);
   assert.doesNotMatch(JSON.stringify((await request("/api/data")).data), /passwordHash|passwordSalt|sessionSecret/);
   assert.doesNotMatch(JSON.stringify((await request("/api/backup")).data), /passwordHash|passwordSalt|sessionSecret/);
+  // Doubles on the same API and Firestore adapter, with no production writes.
+  for (const name of ["Riley","Morgan","Taylor","Jordan"]) assert.equal((await request("/api/players","POST",{name})).status,201);
+  data=(await request("/api/data")).data;
+  const baseline=structuredClone(data.players), oldCount=data.matches.length;
+  const doubles={type:"doubles",winnerNames:["Riley","Morgan"],loserNames:["Taylor","Jordan"],winnerScore:11,loserScore:9,revision:data.revision};
+  assert.equal((await request("/api/matches","POST",doubles,false)).status,401);
+  for (const invalid of [
+    {type:"triples"},{winnerNames:["Riley"]},{winnerNames:["Riley","Riley"]},
+    {loserNames:["Riley","Jordan"]},{loserNames:["Missing","Jordan"]},{winnerScore:8}
+  ]) assert.equal((await request("/api/matches","POST",{...doubles,...invalid})).status,400);
+  assert.equal((await request("/api/players","PATCH",{currentName:"Jordan",archived:true})).status,200);
+  data=(await request("/api/data")).data;
+  assert.equal((await request("/api/matches","POST",{...doubles,revision:data.revision})).status,400);
+  assert.equal((await request("/api/players","PATCH",{currentName:"Jordan",archived:false})).status,200);
+  data=(await request("/api/data")).data;doubles.revision=data.revision;
+  const concurrent=await Promise.all([request("/api/matches","POST",doubles),request("/api/matches","POST",doubles)]);
+  assert.deepEqual(concurrent.map(r=>r.status).sort(),[201,409]);
+  data=(await request("/api/data")).data;
+  assert.equal(data.matches.length,oldCount+1);
+  const recorded=data.matches.at(-1), find=name=>baseline.find(p=>p.name===name);
+  const projected=require("../ratings").previewDoubles(doubles.winnerNames.map(find),doubles.loserNames.map(find),recorded.date,data.ratingSystem);
+  assert.deepEqual(recorded.winnerChanges,projected.winnerChanges);assert.deepEqual(recorded.loserChanges,projected.loserChanges);
+  for(const [side,names] of [doubles.winnerNames,doubles.loserNames].entries()) for(const [i,name] of names.entries()){
+    const p=data.players.find(p=>p.name===name),expected=projected[side===0?"winners":"losers"][i];
+    assert.equal(p.elo,expected.elo);assert.equal(p.rd,expected.rd);assert.equal(p.lastRatedAt,recorded.date);
+    assert.equal(p[side===0?"wins":"losses"],1);
+  }
+  assert.deepEqual((await request("/api/backup")).data.data.matches.at(-1),recorded);
+  assert.equal((await request("/api/players","PATCH",{currentName:"Morgan",name:"Morgan Renamed"})).status,200);
+  data=(await request("/api/data")).data;assert.deepEqual(data.matches.at(-1).winnerNames,["Riley","Morgan Renamed"]);
+  assert.equal((await request("/api/matches/latest","DELETE",{revision:data.revision-1})).status,409);
+  assert.equal((await request("/api/matches/latest","DELETE",{revision:data.revision})).status,200);
+  data=(await request("/api/data")).data;
+  assert.equal(data.matches.length,oldCount);
+  baseline.find(p=>p.name==="Morgan").name="Morgan Renamed";assert.deepEqual(data.players,baseline);
+  assert.equal((await request("/api/matches","POST",{...doubles,winnerNames:["Riley","Morgan Renamed"],revision:data.revision})).status,201);
+  data=(await request("/api/data")).data;const kept=structuredClone(data.matches.at(-1));
+  assert.equal((await request("/api/players","DELETE",{name:"Jordan",revision:data.revision})).status,200);
+  data=(await request("/api/data")).data;assert.deepEqual(data.matches.at(-1),kept);
+  assert.equal((await request("/api/players","POST",{name:"Jordan"})).status,409);
+  assert.equal((await request("/api/players","PATCH",{currentName:"Taylor",name:"Jordan"})).status,409);
+  assert.equal((await request("/api/matches/latest","DELETE",{revision:data.revision})).status,409);
   const logout = await request("/api/admin/logout", "POST", {});
   assert.match(logout.res.headers.get("set-cookie"), /Max-Age=0/);
 }

@@ -162,7 +162,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
         <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
         <details><summary>How do club ratings work?</summary><p>We use Glicko-1. Everyone starts at 1000, and each recorded match updates both players from their ratings before the game. Beating a stronger opponent earns more than an expected win.</p><p>New players have more uncertain ratings, so their first results can cause large changes. Ratings settle as they play more matches. Inactivity increases uncertainty. Each player’s uncertainty is tracked separately, so gains and losses can differ.</p><p>Glicko uses the win or loss, not the point margin. A 12–10 win and a 12–0 win have the same effect for the same players at the same time. Ratings are saved as whole numbers; this system has no 30-point cap.</p></details>
-        <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring both players’ previous ratings and records. Matches involving a deleted player cannot be undone.</p></details>
+        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. The admin selects two players per team, and all four receive an individual rating update plus one win or loss. Our doubles adaptation of Glicko uses each team’s average rating to estimate the result, with each player’s own uncertainty determining how far their rating moves. A stronger partner changes your team’s expected chance of winning. Singles and doubles share the same club rating.</p></details>
+        <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring every player’s previous rating and record. Matches involving a deleted player cannot be undone.</p></details>
         <details><summary>Additional Questions?</summary><p>Ask the admins! we'll provide the answers for you.</p></details>
       </div>
     </div>
@@ -179,11 +180,17 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save.</p>
         <p id="reportNoticeNeedPlayers" class="notice warning hidden">Add at least two active players before recording a match.</p>
         <form id="matchForm">
+          <div class="form-group"><label for="matchType">Match type</label><select id="matchType" onchange="render()"><option value="singles">Singles · 1 vs 1</option><option value="doubles">Doubles · 2 vs 2</option></select></div>
           <fieldset id="matchFields" disabled style="border:0;padding:0;margin:0;min-width:0;">
             <div class="form-grid">
-              <div class="form-group"><label for="winner">Winner</label><select id="winner" required onchange="updateEloPreview()"></select></div>
-              <div class="form-group"><label for="loser">Loser</label><select id="loser" required onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="winner" id="winnerLabel">Winner</label><select id="winner" required onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="loser" id="loserLabel">Loser</label><select id="loser" required onchange="updateEloPreview()"></select></div>
             </div>
+            <div class="form-grid hidden" id="doublesPartners">
+              <div class="form-group"><label for="winnerPartner">Winning partner</label><select id="winnerPartner" onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="loserPartner">Losing partner</label><select id="loserPartner" onchange="updateEloPreview()"></select></div>
+            </div>
+            <p id="playerWarning" class="notice danger hidden">Choose four different players.</p>
             <div class="form-grid">
               <div class="form-group"><label for="winnerScore">Winner score (points)</label><input id="winnerScore" type="number" min="1" max="99" step="1" required oninput="validateScoreInputs()"></div>
               <div class="form-group"><label for="loserScore">Loser score (points)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
@@ -290,6 +297,8 @@ const statAnimations = new Map();
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const matchTeams = match => ClubRatings.matchTeams(match);
+const isDoubles = () => $("matchType").value === "doubles";
 const activePlayers = () => clubState.players.filter(p => !p.archived);
 const sortedPlayers = () => [...activePlayers()].sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
 function message(text, error = false) {
@@ -341,14 +350,16 @@ function renderPlayersTable() {
   const search = $("playersSearch").value.toLowerCase();
   $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
     const total = p.wins+p.losses;
-    const matches = [...clubState.matches].reverse().filter(m => m.winnerName === p.name || m.loserName === p.name);
+    const matches = [...clubState.matches].reverse().filter(m => matchTeams(m).flat().includes(p.name));
     const history = matches.map(m => {
-      const won = m.winnerName === p.name;
-      const opponent = won ? m.loserName : m.winnerName;
+      const teams = matchTeams(m), won = teams[0].includes(p.name), side = won ? 0 : 1;
+      const opponent = teams[1-side].join(" & ");
+      const teammate = teams[side].filter(n => n !== p.name).join(" & ");
+      const delta = m.type === "doubles" ? (won ? m.winnerChanges : m.loserChanges)[teams[side].indexOf(p.name)] : (won ? m.winnerChange : m.loserChange);
       const parts = String(m.score).split(/\s*[-–:]\s*/);
       const score = won || parts.length !== 2 ? m.score : parts.reverse().join("–");
       const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleDateString() : "Date not recorded";
-      return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(won ? m.winnerChange : m.loserChange) || 0} rating</span></li>`;
+      return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>${teammate ? `with ${escapeHtml(teammate)} · ` : ""}vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(delta) || 0} rating</span></li>`;
     }).join("") || '<li class="muted">No matches played yet.</li>';
     return `<tr class="${p.archived ? "archived" : ""}"><td><details class="player-history" data-player="${escapeHtml(p.name)}" ${open.has(p.name) ? "open" : ""}><summary>${escapeHtml(p.name)}<span class="history-count">${matches.length} ${matches.length === 1 ? "match" : "matches"}</span></summary><ul>${history}</ul></details></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
   }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
@@ -367,15 +378,17 @@ function renderRecentMatches() {
   $("viewAllMatches").setAttribute("aria-expanded", String(showAllMatches));
   $("recentMatches").innerHTML = visible.map(m => {
     const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
-    return `<div class="match-item is-official"><div><strong>${escapeHtml(m.winnerName)}</strong> defeated <strong>${escapeHtml(m.loserName)}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">Official · +${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0} rating</span></div>${admin && latest === m && m.before && clubState.players.some(p => p.name === m.winnerName) && clubState.players.some(p => p.name === m.loserName) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
+    const teams = matchTeams(m);
+    const changes = m.type === "doubles" ? teams.map((team,side) => team.map((name,i) => `${escapeHtml(name)} ${side === 0 ? "+" : "−"}${(side === 0 ? m.winnerChanges : m.loserChanges)[i]}`).join(" · ")).join(" / ") : `+${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0}`;
+    return `<div class="match-item is-official"><div><strong>${escapeHtml(teams[0].join(" & "))}</strong> defeated <strong>${escapeHtml(teams[1].join(" & "))}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">${m.type === "doubles" ? "Doubles" : "Singles"} · ${changes} rating</span></div>${admin && latest === m && m.before && teams.flat().every(name => clubState.players.some(p => p.name === name)) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
   }).join("") || '<p class="muted">No completed matches yet.</p>';
   $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
 $("viewAllMatches").onclick = () => { showAllMatches = !showAllMatches; renderRecentMatches(); };
 function renderSelectors() {
-  for (const id of ["winner", "loser"]) {
+  for (const id of ["winner", "loser", "winnerPartner", "loserPartner"]) {
     const selected = $(id).value;
-    $(id).innerHTML = `<option value="">Select ${id}…</option>` + [...activePlayers()].sort((a,b) => a.name.localeCompare(b.name)).map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} (${p.elo})</option>`).join("");
+    $(id).innerHTML = `<option value="">Select player…</option>` + [...activePlayers()].sort((a,b) => a.name.localeCompare(b.name)).map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} (${p.elo})</option>`).join("");
     $(id).value = selected;
   }
   updateEloPreview();
@@ -430,8 +443,14 @@ function render(animateStats = false) {
   $("adminName").textContent = admin?.username || "";
   $("reportNoticeLoggedOut").classList.toggle("hidden", !!admin);
   $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
-  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= 2);
-  $("matchFields").disabled = !admin || busy || players.length < 2;
+  const requiredPlayers = isDoubles() ? 4 : 2;
+  $("doublesPartners").classList.toggle("hidden", !isDoubles());
+  for (const id of ["winnerPartner","loserPartner"]) { $(id).required = isDoubles(); $(id).disabled = !isDoubles(); }
+  $("winnerLabel").textContent = isDoubles() ? "Winning team · player 1" : "Winner";
+  $("loserLabel").textContent = isDoubles() ? "Losing team · player 1" : "Loser";
+  $("reportNoticeNeedPlayers").textContent = `Add at least ${requiredPlayers} active players before recording ${isDoubles() ? "doubles" : "a match"}.`;
+  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= requiredPlayers);
+  $("matchFields").disabled = !admin || busy || players.length < requiredPlayers;
   $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
   $("logoutBtn").disabled = busy;
@@ -464,15 +483,28 @@ function validateScoreInputs() {
   updateEloPreview();
   return valid;
 }
+function selectedTeams() {
+  const names = isDoubles() ? [[$("winner").value,$("winnerPartner").value],[$("loser").value,$("loserPartner").value]] : [[$("winner").value],[$("loser").value]];
+  return names.map(team => team.map(name => clubState.players.find(p => p.name === name && !p.archived)));
+}
 function updateEloPreview() {
-  const w = clubState.players.find(p => p.name === $("winner").value);
-  const l = clubState.players.find(p => p.name === $("loser").value);
+  const teams = selectedTeams(), players = teams.flat();
+  const complete = players.every(Boolean), distinct = complete && new Set(players.map(p => p.name)).size === players.length;
+  $("playerWarning").classList.toggle("hidden", !complete || distinct);
+  $("playerWarning").textContent = `Choose ${isDoubles() ? "four" : "two"} different players.`;
   const ws = Number($("winnerScore").value), ls = Number($("loserScore").value);
-  const visible = w && l && w.name !== l.name && $("winnerScore").value !== "" && $("loserScore").value !== "" && Number.isInteger(ws) && Number.isInteger(ls) && ws > ls && ls >= 0 && ws <= 99;
+  const visible = distinct && $("winnerScore").value !== "" && $("loserScore").value !== "" && Number.isInteger(ws) && Number.isInteger(ls) && ws > ls && ls >= 0 && ws <= 99;
   $("eloPreview").classList.toggle("hidden", !visible);
   if (visible) {
-    const changes = ClubRatings.preview(w, l, new Date().toISOString(), clubState.ratingSystem);
-    $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
+    try {
+      if (isDoubles()) {
+        const changes = ClubRatings.previewDoubles(...teams,new Date().toISOString(),clubState.ratingSystem);
+        $("eloPreviewText").textContent = teams.map((team,side) => team.map((p,i) => `${p.name} ${side === 0 ? "+" : "−"}${(side === 0 ? changes.winnerChanges : changes.loserChanges)[i]}`).join(" · ")).join(" / ");
+      } else {
+        const changes = ClubRatings.preview(teams[0][0],teams[1][0],new Date().toISOString(),clubState.ratingSystem);
+        $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
+      }
+    } catch { $("eloPreview").classList.add("hidden"); }
   }
 }
 $("loginForm").onsubmit = event => {
@@ -489,8 +521,10 @@ $("playerForm").onsubmit = event => {
 $("matchForm").onsubmit = event => {
   event.preventDefault();
   if (!validateScoreInputs()) return;
-  if ($("winner").value === $("loser").value) return message("Choose two different players.", true);
+  const teams = selectedTeams();
+  if (teams.flat().some(p => !p) || new Set(teams.flat().map(p => p.name)).size !== teams.flat().length) return message("Choose a different active player for every position.",true);
   const body = { winnerName: $("winner").value, loserName: $("loser").value, winnerScore: Number($("winnerScore").value), loserScore: Number($("loserScore").value) };
+  if (isDoubles()) { delete body.winnerName; delete body.loserName; body.type = "doubles"; body.winnerNames = teams[0].map(p => p.name); body.loserNames = teams[1].map(p => p.name); }
   body.revision = clubState.revision;
   action(async () => { await api("/api/matches", "POST", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
 };
