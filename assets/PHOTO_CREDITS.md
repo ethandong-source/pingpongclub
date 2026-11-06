@@ -12,3 +12,5 @@ The home-page slideshow uses all eight club photos supplied by the user in Photo
 - `assets/club-photo-08.webp`: `PXL_20261015_213251348.MP.jpg`
 
 GroupMe button image: supplied by the user. GroupMe is a trademark of its owner.
+
+The two group photos in the Meet the club section were supplied by the user.

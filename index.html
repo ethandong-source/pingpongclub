@@ -41,6 +41,12 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 @media(max-width:850px){.hero-copy{padding:52px 28px}.hero-gallery{min-height:620px}.hero .grid{gap:12px}.hero .stat-title{font-size:14px}.hero .stat-card{padding-left:10px}.hero h1{font-size:42px}}
 @media(max-width:600px){.hero-container{grid-template-columns:1fr}.hero-copy{padding:48px 24px}.hero-gallery{min-height:360px}.hero .grid{gap:18px}.hero .stat-value{font-size:35px}.hero h1{font-size:42px}.photo-slide img{object-position:center 55%}}
 @media(prefers-reduced-motion:reduce){.photo-track{transition:none}}
+
+.club-gallery{margin:44px 0 0;padding:24px;border:1px solid var(--line);border-radius:20px;background:#fff}
+.club-gallery h2{margin:0 0 6px}.club-gallery p{margin:0 0 20px}.club-gallery-photos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.club-gallery figure{margin:0}.club-gallery img{display:block;width:100%;height:auto;border-radius:12px}
+.player-link{font-weight:800;color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}.player-link:hover{text-decoration-thickness:2px}.player-link:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media(max-width:600px){.club-gallery{padding:16px}.club-gallery-photos{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -155,6 +161,14 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         </table>
       </div>
     </div>
+    <section class="club-gallery" aria-labelledby="clubGalleryTitle">
+      <h2 id="clubGalleryTitle">Meet the club</h2>
+      <p class="muted">Carroll Ping Pong Club, together at the courtyard table.</p>
+      <div class="club-gallery-photos">
+        <figure><img src="/assets/club-group-01.webp" alt="Club members posing together with their paddles in the courtyard" width="1280" height="964" loading="lazy" decoding="async"></figure>
+        <figure><img src="/assets/club-group-02.webp" alt="Club members standing on both sides of the outdoor ping-pong table" width="1280" height="964" loading="lazy" decoding="async"></figure>
+      </div>
+    </section>
     <div class="faq">
       <div><h2>Club FAQ</h2><p class="muted">A few things to know before your next game.</p></div>
       <div>
@@ -238,7 +252,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <div>
           <h2>Club roster</h2>
           <div class="muted" style="font-size:15px; margin-top:3px;">
-            Select a player to see their match history.
+            Select a player to see their rating chart and match history.
           </div>
         </div>
         <input
@@ -297,6 +311,7 @@ const statAnimations = new Map();
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const profileLink = name => `<a class="player-link" href="/player.html?name=${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
 const matchTeams = match => ClubRatings.matchTeams(match);
 const isDoubles = () => $("matchType").value === "doubles";
 const activePlayers = () => clubState.players.filter(p => !p.archived);
@@ -323,7 +338,17 @@ function showSection(id) {
   document.querySelectorAll("main .section").forEach(section => section.classList.toggle("active", section.id === id));
   document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
 }
-document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => showSection(button.dataset.section));
+function sectionFromUrl() {
+  const section = location.hash.slice(1);
+  showSection(["players","matches"].includes(section) ? section : "home");
+}
+document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => {
+  const id = button.dataset.section;
+  if (location.hash !== (id === "home" ? "" : "#"+id)) history.pushState(null,"",id === "home" ? location.pathname : "#"+id);
+  showSection(id);
+});
+window.addEventListener("popstate",sectionFromUrl);
+sectionFromUrl();
 function renderPodium() {
   const leaders = sortedPlayers().slice(0, 3);
   $("podiumPlaces").innerHTML = [0, 1, 2].map(index => {
@@ -342,26 +367,14 @@ function renderLeaderboard() {
   const search = $("leaderboardSearch").value.toLowerCase();
   $("leaderboardBody").innerHTML = sortedPlayers().map((p, i) => ({ p, rank: i+1 })).filter(({p}) => p.name.toLowerCase().includes(search)).map(({p,rank}) => {
     const total = p.wins + p.losses;
-    return `<tr class="${rank <= 3 ? "leader-row" : ""}"><td>${rank}</td><td><strong>${escapeHtml(p.name)}</strong></td><td>${p.elo}</td><td>${total}</td><td>${p.wins}-${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td></tr>`;
+    return `<tr class="${rank <= 3 ? "leader-row" : ""}"><td>${rank}</td><td>${profileLink(p.name)}</td><td>${p.elo}</td><td>${total}</td><td>${p.wins}-${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td></tr>`;
   }).join("") || '<tr><td colspan="6">No players found. The admin can add names to the roster.</td></tr>';
 }
 function renderPlayersTable() {
-  const open = new Set([...$("playersBody").querySelectorAll("details[open]")].map(el => el.dataset.player));
   const search = $("playersSearch").value.toLowerCase();
   $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
     const total = p.wins+p.losses;
-    const matches = [...clubState.matches].reverse().filter(m => matchTeams(m).flat().includes(p.name));
-    const history = matches.map(m => {
-      const teams = matchTeams(m), won = teams[0].includes(p.name), side = won ? 0 : 1;
-      const opponent = teams[1-side].join(" & ");
-      const teammate = teams[side].filter(n => n !== p.name).join(" & ");
-      const delta = m.type === "doubles" ? (won ? m.winnerChanges : m.loserChanges)[teams[side].indexOf(p.name)] : (won ? m.winnerChange : m.loserChange);
-      const parts = String(m.score).split(/\s*[-–:]\s*/);
-      const score = won || parts.length !== 2 ? m.score : parts.reverse().join("–");
-      const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleDateString() : "Date not recorded";
-      return `<li><span class="history-result ${won ? "" : "loss"}">${won ? "W" : "L"}</span>${teammate ? `with ${escapeHtml(teammate)} · ` : ""}vs ${escapeHtml(opponent)} · ${escapeHtml(score)}<span class="history-meta">${escapeHtml(date)} · ${won ? "+" : "−"}${Number(delta) || 0} rating</span></li>`;
-    }).join("") || '<li class="muted">No matches played yet.</li>';
-    return `<tr class="${p.archived ? "archived" : ""}"><td><details class="player-history" data-player="${escapeHtml(p.name)}" ${open.has(p.name) ? "open" : ""}><summary>${escapeHtml(p.name)}<span class="history-count">${matches.length} ${matches.length === 1 ? "match" : "matches"}</span></summary><ul>${history}</ul></details></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
+    return `<tr class="${p.archived ? "archived" : ""}"><td>${profileLink(p.name)}</td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
   }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
   document.querySelectorAll(".admin-column").forEach(el => el.classList.toggle("hidden", !admin));
   $("playersBody").querySelectorAll("button").forEach(b => b.disabled = busy);
