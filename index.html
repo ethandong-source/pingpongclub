@@ -51,7 +51,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 
 .player-combobox{position:relative}.player-options{position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;max-height:250px;overflow-y:auto;overscroll-behavior:contain;list-style:none;margin:0;padding:6px;background:white;border:1px solid #b8c9bc;border-radius:14px;box-shadow:0 12px 28px #19342a20}.player-options[hidden]{display:none}.player-option{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:11px 12px;text-align:left;background:white;border:0;border-radius:9px;color:var(--ink);font-size:16px;line-height:1.4}.player-option:hover,.player-options [aria-selected="true"]{background:#edf4ee;color:var(--green)}.player-option-rating{font-size:14px;color:var(--muted);white-space:nowrap}.player-no-match{padding:12px;color:var(--muted);font-size:15px}.player-combobox input{padding-right:34px}.player-combobox:after{content:"⌄";position:absolute;right:13px;top:10px;color:var(--muted);pointer-events:none}
 
-.leaderboard-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px}.leaderboard-footer p{margin:0;color:var(--muted);font-size:15px}.rating-trends{margin-top:24px}.trend-toolbar{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px}.trend-toolbar p{margin:0;color:var(--muted);font-size:15px}.trend-range{display:flex;align-items:center;gap:10px;font-size:15px;white-space:nowrap}.trend-range label{margin:0}.trend-range select{width:auto;font-size:15px}.rating-trend-chart svg{display:block;width:100%;height:auto;touch-action:pan-y}.trend-inspection{padding:16px 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px}.trend-inspection label{margin-bottom:8px}.trend-inspection input{padding:0;accent-color:var(--green);width:100%}.trend-inspection output{display:block;font-size:15px;color:var(--muted);margin-top:8px}.trend-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px 20px}.trend-player{display:flex;align-items:center;gap:8px;padding:9px 0;margin:0;font-size:15px;font-weight:500;cursor:pointer;min-width:0}.trend-player input{width:17px;height:17px;padding:0;accent-color:var(--green);flex-shrink:0}.trend-swatch{width:20px;border-top:3px solid;flex-shrink:0}.trend-player-name{flex:1;overflow-wrap:anywhere}.trend-player-value{font-variant-numeric:tabular-nums;font-weight:700;min-width:38px;text-align:right}.trend-player:has(input:not(:checked)){opacity:.5}.trend-legend-actions{display:flex;gap:10px}.trend-empty{padding:48px 16px;text-align:center;color:var(--muted);background:#f4f7f1;border-radius:14px}.trend-empty[hidden],.rating-trend-chart[hidden],.trend-inspection[hidden]{display:none}
+.leaderboard-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:20px}.leaderboard-footer p{margin:0;color:var(--muted);font-size:15px}
 </style>
 </head>
 
@@ -167,15 +167,6 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
       </div>
       <div class="leaderboard-footer"><p id="leaderboardCount" role="status"></p><button id="viewAllPlayers" class="small-btn secondary" type="button" aria-expanded="false" aria-controls="leaderboardBody">View all players</button></div>
     </div>
-    <section class="card rating-trends" id="ratingTrends" aria-labelledby="ratingTrendsTitle">
-      <div class="card-header"><div><h2 id="ratingTrendsTitle">Club rating trends</h2><p class="muted" style="margin:6px 0 0">Everyone’s rating, over time. Toggle names to compare players.</p></div><div class="trend-range"><label for="ratingTrendRange">Time range</label><select id="ratingTrendRange"><option value="all">All time</option><option value="30">Last 30 days</option><option value="7">Last 7 days</option></select></div></div>
-      <div class="trend-toolbar"><p id="ratingTrendCount"></p><div class="trend-legend-actions"><button class="small-btn secondary" id="ratingTrendShowAll" type="button">Show all players</button><button class="small-btn secondary" id="ratingTrendClear" type="button">Clear selection</button></div></div>
-      <p id="ratingTrendEmpty" class="trend-empty" hidden>Select at least one player below to see their rating trend.</p>
-      <div id="ratingTrendChart" class="rating-trend-chart"></div>
-      <div class="trend-inspection" id="ratingTrendInspection"><label for="ratingTrendDate">Explore a date</label><input id="ratingTrendDate" type="range" min="0" max="0" step="1" value="0"><output for="ratingTrendDate" id="ratingTrendReadout"></output></div>
-      <div id="ratingTrendLegend" class="trend-legend" role="group" aria-label="Players shown in rating chart"></div>
-      <p class="muted" style="font-size:14px;margin:18px 0 0">Lines use saved match ratings, including singles and doubles. Values beside each name follow the date slider. Archived members are included; a dash means no rating was recorded yet.</p>
-    </section>
     <section class="club-gallery" aria-labelledby="clubGalleryTitle">
       <h2 id="clubGalleryTitle">Meet the club</h2>
       <p class="muted">Carroll Ping Pong Club, together at the courtyard table.</p>
@@ -315,8 +306,6 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 <script src="/ratings.js"></script>
 <script src="/club-actions.js"></script>
 <script src="/player-picker.js"></script>
-<script src="/player-stats.js"></script>
-<script src="/rating-trends.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
@@ -326,7 +315,6 @@ let cloud;
 const playerPickers = new Map();
 let showAllMatches = false;
 let showAllLeaderboard = false;
-let ratingTrends = null;
 let statsInitialized = false;
 const statAnimations = new Map();
 
@@ -489,7 +477,6 @@ function render(animateStats = false) {
   $("logoutBtn").disabled = busy;
   $("backupBtn").disabled = busy || !Number.isSafeInteger(clubState.revision);
   renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
-  ratingTrends?.update(clubState);
 }
 function applyState(data) {
   if (data.revision < clubState.revision) return;
@@ -617,7 +604,6 @@ setInterval(() => {
 for (const id of ["winner","loser","winnerPartner","loserPartner"]) {
   playerPickers.set(id, PlayerPicker.mount($(id), {onChange:updateEloPreview}));
 }
-ratingTrends = RatingTrends.mount($("ratingTrends"));
 render(); connectClub();
 </script>
 </body>

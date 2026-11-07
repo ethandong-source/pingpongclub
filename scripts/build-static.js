@@ -13,7 +13,7 @@ async function build() {
   if (!editorCode?.trim()) throw new Error("Set CLUB_EDIT_CODE to the public editor password. Do not reuse a private password.");
   const databaseId = process.env.FIREBASE_DATABASE_ID || "(default)";
   // Only these public files are copied. Server code, seed data and credentials stay outside dist.
-  const files = ["index.html","player.html","player.css","player.js","player-stats.js","ratings.js","club-actions.js","static-club.mjs","player-picker.js","rating-trends.js"];
+  const files = ["index.html","player.html","player.css","player.js","player-stats.js","ratings.js","club-actions.js","static-club.mjs","player-picker.js"];
   const images = (await fs.readdir(path.join(root,"assets"),{withFileTypes:true}))
     .filter(f => f.isFile() && /\.(png|jpe?g|webp)$/i.test(f.name)).map(f => "assets/"+f.name);
   await fs.rm(dist,{recursive:true,force:true});
