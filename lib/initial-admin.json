@@ -1,0 +1,5 @@
+{
+  "username": "admin",
+  "passwordSalt": "71d5bc538134860e354462ed98b153fe",
+  "passwordHash": "e1b08104d38a92e03601d9a7cb1dd49e281a15305d9d857f743c995a93ecb3bafc35ff485f05a969c1afd52af27c207406364bfd7c6d078b9a1818a38e392bba"
+}

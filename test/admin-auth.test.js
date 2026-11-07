@@ -1,0 +1,35 @@
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const { fakeFirestore } = require("./mock-firestore.cjs");
+const { makeAdmin, verifyPassword } = require("../lib/admin-auth");
+const { createStore } = require("../lib/firestore-storage");
+test("admin details persist as a hashed password in the same club document", async () => {
+  const admin = await makeAdmin("admin", "my-password");
+  assert.equal(admin.username, "admin"); assert.equal(admin.password, undefined);
+  assert.equal(await verifyPassword("my-password", admin), true);
+  assert.equal(await verifyPassword("wrong", admin), false);
+  const firestore = fakeFirestore(); const store = createStore(firestore, "clubs/test");
+  const value = await store.read(); value.db.admin = admin;
+  await store.write(value.db, value.revision);
+  const saved = await store.read(); assert.deepEqual(saved.db.admin, admin);
+  assert.equal(saved.revision, 1);
+  await store.read(); assert.equal((await store.read()).revision, 1);
+  assert.equal(firestore.records.get("clubs/test").admin.passwordHash, admin.passwordHash);
+});
+test("initial admin is created without environment settings and never replaces an existing login or club data", async () => {
+  const { database } = require("./mock-firestore.cjs");
+  const { getAdmin } = require("../lib/admin-auth");
+  const initial = require("../lib/initial-admin.json");
+  Object.assign(process.env, { FIREBASE_PROJECT_ID: "demo-club", FIRESTORE_EMULATOR_HOST: "127.0.0.1:8080", NODE_ENV: "test" });
+  for (const key of ["ADMIN_USERNAME", "ADMIN_PASSWORD", "SESSION_SECRET", "RENDER", "VERCEL"]) delete process.env[key];
+  const players = [{ name: "Alex", elo: 1100, wins: 3, losses: 2, archived: false, rd: 350, lastRatedAt: null }];
+  database.records.set("clubs/carroll-pingpong", { version: 2, players, matches: [], ratingSystem: require("../lib/glicko").ratingSystem(), revision: 4 });
+  const admin = await getAdmin();
+  assert.equal(admin.username, initial.username); assert.equal(admin.passwordHash, initial.passwordHash);
+  assert.deepEqual(database.records.get("clubs/carroll-pingpong").players, players);
+  assert.equal(database.records.get("clubs/carroll-pingpong").revision, 5);
+  const replacement = await makeAdmin("replacement", "different-password");
+  database.records.get("clubs/carroll-pingpong").admin = replacement;
+  assert.deepEqual(await getAdmin(), replacement);
+});

@@ -42,3 +42,16 @@ test('live schema update increments revision and preserves update-time field typ
     return { ok: true, json: async () => ({ fields }) };
   }, result.schema);
 });
+
+test('Firestore replay writes doubles deltas and all four undo snapshots', () => {
+  const players = ['A','B','C','D'].map(name => ({ name, elo:1000 }));
+  const matches = [{ type:'doubles', winnerNames:['A','B'], loserNames:['C','D'], date:'2026-11-05T17:00:00Z', score:'11-9' }];
+  const result = prepare({players,matches});
+  const patch = replacement({ fields:{ players:encode(players), matches:encode(matches) } },result.database,result.schema);
+  const [saved] = decode(patch.fields.matches);
+  assert.deepEqual(saved,result.database.matches[0]);
+  assert.equal(saved.before.winners.length,2);
+  assert.equal(saved.before.losers.length,2);
+  assert.equal(saved.winnerChanges.length,2);
+  assert.equal(saved.loserChanges.length,2);
+});

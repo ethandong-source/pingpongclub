@@ -7,7 +7,7 @@ const firestore = require('./firestore');
 
 async function main() {
   // Node 24 must explicitly use the cloud HTTPS proxy for native fetch.
-  if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY) require('node:http').setGlobalProxyFromEnv();
+  if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY) require('node:http').setGlobalProxyFromEnv?.();
   const args = process.argv.slice(2), options = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--apply') { options.apply = true; continue; }
@@ -47,9 +47,9 @@ async function main() {
     if (!original.fields?.players?.arrayValue || !original.fields?.matches?.arrayValue) {
       throw new Error(`Unsupported live schema. Expected players/matches arrays; available field names: ${Object.keys(original.fields || {}).join(', ')}. Inspect before migration.`);
     }
-    database = { players: firestore.decode(original.fields.players), matches: firestore.decode(original.fields.matches) };
+    database = { players: firestore.decode(original.fields.players), matches: firestore.decode(original.fields.matches), ...(original.fields.ratingSystem ? { ratingSystem: firestore.decode(original.fields.ratingSystem) } : {}) };
   }
-  const config = options['starting-rating'] === undefined ? {} : { startingRating: Number(options['starting-rating']) };
+  const config = { ...database.ratingSystem, ...(options['starting-rating'] === undefined ? {} : { startingRating: Number(options['starting-rating']) }) };
   const result = prepare(database, config);
   const report = {
     appliedMatches: result.appliedMatches, pendingMatches: result.pendingMatches,

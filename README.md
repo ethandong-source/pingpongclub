@@ -1,93 +1,52 @@
-# Carroll Ping Pong Club — Elo & Match Tracker
+# Carroll Ping Pong Club
 
-A responsive full-stack web application for Carroll High School Ping Pong Club to track player rankings, match histories, and calculate Elo ratings with a secure dual-confirmation verification system that **syncs in real time across all devices**.
+A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately. Ratings use Glicko-1 from the shared ratings.js module for the backend and browser preview. Each match is one rating period; new players start at 1000 with RD 350. Inactivity raises RD using c = sqrt((350² − 50²) / 100). Both participants update from their pre-match states, with whole-number ratings and unrounded RD. Changes may differ and are not capped at 30; point margin does not affect Glicko. There is no participant confirmation step.
 
-## Features
+## Admin setup and deployment
 
-- **Cross-Device Persistent Storage**: Accounts, player ratings, and match records are stored centrally and synchronized in real time across all devices and phones.
-- **Dedicated Create Account & Login**: Distinct views to easily create a new player profile or sign in.
-- **Delete Account**: One-click account deletion to permanently remove profile and cleanup match data.
-- **Fresh Slate Initial State**: Starts with zero accounts, zero players, and zero matches.
-- **Glicko Rating Engine**: Uses published Glicko-1 equations with a baseline rating of 1000 and initial rating deviation (RD) of 350. Each confirmed match is a rating period. Ratings and match changes are rounded to whole numbers after every match, with no 2× multiplier or rating floor.
-- **Dual-Confirmation Verification**: Reported matches remain pending until both participants verify the result, preventing fraudulent or erroneous rating changes.
-- **Dynamic Leaderboard**: Real-time club rankings sorted by Elo, matches played, win-loss records, and win percentages.
-- **Vercel-Ready**: Pre-configured for seamless 1-click deployment on Vercel with Vercel Serverless Functions and Vercel KV / Upstash Redis support.
+Deploy `main` on Render or Vercel. The existing `betterLogging` deployment can continue using the same Firebase settings. Keep the existing Firebase environment variables. No admin environment variables are needed. On startup (or the first Vercel status/login request), the backend automatically creates the requested initial admin login in Firestore if there is no admin record. The repository contains only a salted password hash for that initial login. The session secret is generated privately at runtime.
 
-## Deploying to Vercel (Step-by-Step)
+An existing Firestore admin record is never replaced by deployment. The web interface does not edit admin credentials. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
 
-### 1. Import Project into Vercel
-1. Go to [Vercel.com](https://vercel.com) and click **Add New...** > **Project**.
-2. Select your GitHub repository (`pingpongclub`).
-3. Click **Deploy**.
+Keep Firebase keys in hosting settings, never frontend code or GitHub. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
 
-### 2. Enable Persistent Cross-Device Storage (Vercel KV)
-Because serverless functions on Vercel are stateless, add free persistent storage in 1 click:
-1. In your Vercel Project Dashboard, click the **Storage** tab.
-2. Click **Create Database** and choose **KV** (or Upstash Redis).
-3. Connect it to your project. Vercel automatically injects the environment variables (`KV_REST_API_URL` and `KV_REST_API_TOKEN`).
-4. Redeploy (or push a new commit) — your app is now 100% persistent across all devices globally!
+Admins can download a backup or undo the latest newly entered match. Undo restores the saved prior ratings exactly. Existing legacy results cannot be undone because they lack prior-rating snapshots. Stale submissions are rejected using a document revision, protecting against duplicate clicks and conflicting admins.
 
-## Local Development
+## Firestore data
 
-```bash
-npm start
-# or
-node server.js
+Both backends use project `carrollpingpongclub`, database `(default)`, document `clubs/carroll-pingpong`. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md). This is a native object with `version`, `players`, `matches`, `admin`, `revision` and `updatedAt`. No player/account IDs, match IDs, account passwords or confirmation fields are stored. The `admin` object stores admin login information in Firestore. Public views and club backups exclude it.
+
+The first database read automatically migrates existing version 1 data, preserving player names and completed matches, then rebuilding ratings and win/loss records with Glicko from full history. Obsolete player accounts and confirmation metadata are removed. Old unconfirmed results are removed without changing ratings: they were never applied. Download a backup from the old deployment before deploying if you need to retain that obsolete data. The supplied club backup contains 10 players and 32 completed matches, all of which migrate.
+
+## Local development
+
+```sh
+npm ci
+# Copy .env.example to .env and configure credentials locally.
+node --env-file=.env server.js
+npm test
 ```
 
-Open `http://localhost:8000` in your browser.
+Tests use an isolated Firestore double and do not contact the real Firebase project. Backend APIs and environment files are never served as static files.
 
-## Rating replay and Firestore migration
+Admins can delete a player from the roster. Recorded matches and opponents’ ratings remain intact. Names in historical matches cannot be reused for new players or renames, so different people do not share one history. A match involving a deleted player cannot be undone. Admin login editing is removed; the existing Firestore login remains unchanged.
 
-Chess.com uses the Glicko family of rating systems. This club implements published
-Glicko-1, not a claim of Chess.com’s exact private production configuration.
-New players start at 1000 with RD 350. Each confirmed match is one rating period;
-both players are updated from their pre-match ratings and RD. Daily inactivity
-increases RD by `sqrt(RD² + c² × elapsedDays)`, capped at 350, with
-`c = sqrt((350² − 50²) / 100)`. These club defaults are stored with the replay.
-Stored ratings and match changes are rounded to the nearest whole number after each match, before the next match is calculated. Rating deviation (RD) retains full precision as an internal uncertainty measure.
+## Glicko deployment and recovery
 
-All official matches (`eloApplied: true`) are replayed by `date`, then numeric-aware
-match ID for ties. Pending matches do not affect ratings. Account data is preserved.
-Deleted participants are reconstructed from their historical IDs and the same baseline,
-without recreating their accounts. A replay requires complete history from each player’s
-starting rating; partial imports or prior nonstandard initial ratings require review.
-Confirmation and removal of historical matches replay the remaining history.
+The Firestore backend preserves RD, lastRatedAt, rating-system configuration, and pre-match undo snapshots in native fields. If rating metadata was stripped by an older deployment, the first read transaction replays the complete dated match history from 1000 and saves the recovered states under a revision check. Missing or invalid historical dates stop recovery instead of silently guessing. Deleted participants are replayed without restoring them to the roster. After migration, normal reads do not replay or change ratings. Undo restores rating, RD, last-rated date and counters. Existing admin credentials and roster names remain unchanged.
 
-Run `node --test tests/*.test.js` to validate the worked Glicko example, both backend
-confirmation/removal flows, previews, replay, and Firestore update safeguards.
+## Doubles matches
 
-Prepare a local export without modifying its source or any live service:
+Admins can choose Singles (1 vs 1) or Doubles (2 vs 2). Doubles requires four distinct active players. One team score is entered, and each participant receives one win/loss and an individual update to their existing club rating. This is a club adaptation of Glicko-1 for teams, not a separate doubles leaderboard: both team means determine expected performance, while each player's own RD controls the size of their adjustment. For a player on team A, the virtual opponent has rating `player rating + mean(B) - mean(A)` and RD `sqrt(RD_B1² + RD_B2²) / 2`. All four updates use pre-match values simultaneously; points remain informational, as in singles.
 
-```bash
-node scripts/recalibrate.js --input backup.json --plan-dir /tmp/local-glicko-plan
+Doubles records store ordered winner/loser name arrays, corresponding individual rating changes, and all four pre-match snapshots. Firestore normalization, backups, history, replay, renaming, deletion protection, and latest-match undo support both match shapes. Replay reconstructs deleted historical opponents without restoring their roster entries. Undo refuses to change any ratings if a participant has since been deleted. Existing singles records and ratings are preserved without replay when their Glicko metadata is complete.
+
+## Rating replay utility
+
+The optional `scripts/recalibrate.js` utility prepares a rating report and private backup from a local export or Firestore. It uses the same Glicko calculations as the app for singles and doubles. To preview a local export without writing to Firestore:
+
+```sh
+node scripts/recalibrate.js --input backup.json --plan-dir /tmp/club-rating-plan
 ```
 
-For `carrollpingpongclub` → `(default)` → `clubs/carroll-pingpong`, allow the network destination below. If access requires authentication, configure
-`FIRESTORE_ACCESS_TOKEN` securely with read/update access to that document. Allow
-`firestore.googleapis.com`. Never put token values in source files or chat.
-Prepare from the live document:
-
-```bash
-node scripts/recalibrate.js --plan-dir /tmp/firestore-glicko-plan
-```
-
-The document must contain `players` and `matches` arrays. Both the repository’s
-ID/confirmation schema and the live name-based completed-match schema are supported.
-Other schemas stop preparation and require an adapter. Preparation
-creates a private original backup, recalculated data, rating-change report, and plan.
-Review the report, then apply the same plan:
-
-```bash
-node scripts/recalibrate.js --plan-dir /tmp/firestore-glicko-plan --apply
-```
-
-The update changes rating/counter fields inside players and official matches,
-rebuilds live undo snapshots, adds rating-system metadata, and advances revision/updatedAt when present. It preserves other fields and Firestore timestamps.
-A document update-time precondition rejects concurrent changes, requiring a new plan.
-A local export plan cannot be applied directly to Firestore. The app’s existing runtime
-storage adapters remain file/PostgreSQL/KV; this migration tool does not deploy the app
-or switch its live runtime to Firestore. The live migration was applied and verified on 2026-10-13: 14 players and 49 matches,
-using the 1000 baseline, RD 350, and the documented inactivity setting. Revision advanced
-from 29 to 30. No token was needed for these operations through the configured proxy.
-This does not establish that the production website has deployed the new calculation code.
+A live Firestore plan requires credentials authorized for that document. Applying a prepared live plan requires a separate explicit `--apply`; the tool refuses to overwrite a document that changed since the plan was prepared. Normal deployments do not run the utility.

@@ -56,12 +56,13 @@ function replacement(original, replayed, schema = 'id-confirmed') {
     players: { arrayValue: { values: patch(players, playerById, ['elo', 'rd', 'lastRatedAt', 'wins', 'losses']) } },
     matches: { arrayValue: { values: matches.map((entry, i) => {
       const record = matchById.get(String(schema === 'named-history' ? i : decode(entry.mapValue.fields.id)));
-      if (schema === 'named-history') {
-        const copy = JSON.parse(JSON.stringify(entry));
-        for (const key of ['winnerChange', 'loserChange', 'ratingSystem', 'before']) copy.mapValue.fields[key] = encode(record[key]);
-        return copy;
-      }
-      return record.eloApplied ? patch([entry], matchById, ['winnerChange', 'loserChange', 'ratingSystem'])[0] : entry;
+      if (!record) throw new Error(`Replay lost a match at index ${i}`);
+      if (schema !== 'named-history' && !record.eloApplied) return entry;
+      const copy = JSON.parse(JSON.stringify(entry));
+      const changes = record.type === 'doubles' ? ['winnerChanges','loserChanges'] : ['winnerChange','loserChange'];
+      const keys = [...changes, 'ratingSystem', ...(record.before ? ['before'] : [])];
+      for (const key of keys) copy.mapValue.fields[key] = encode(record[key]);
+      return copy;
     }) } },
     ratingSystem: encode(replayed.ratingSystem)
   } };

@@ -3,638 +3,144 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carroll Ping Pong Club — Elo & Match Tracker</title>
+  <title>Carroll Ping Pong Club — Glicko & Match Tracker</title>
 
   <style>
-    :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --text: #172033;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --accent-soft: #eff6ff;
-      --accent2: #0f172a;
-      --green: #15803d;
-      --green-bg: #dcfce7;
-      --green-border: #86efac;
-      --red: #b91c1c;
-      --red-bg: #fee2e2;
-      --red-border: #fca5a5;
-      --amber: #b45309;
-      --amber-bg: #fef3c7;
-      --amber-border: #fcd34d;
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-      --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    /* NAVIGATION */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 6%;
-      gap: 15px;
-    }
-
-    .brand {
-      font-weight: 900;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      user-select: none;
-    }
-
-    .brand-icon { font-size: 22px; }
-    .brand span { color: #2e7d32; }
-
-    nav .links {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    nav button {
-      background: none;
-      border: 0;
-      padding: 8px 14px;
-      font-weight: 700;
-      font-size: 14px;
-      color: #4b5563;
-      cursor: pointer;
-      border-radius: var(--radius-sm);
-      transition: all 0.15s ease;
-    }
-
-    nav button:hover { background: #f1f5f9; color: var(--accent2); }
-    nav button.active { background: #eef2ff; color: var(--accent); }
-
-    .nav-actions { display: flex; align-items: center; gap: 8px; }
-
-    .live-dot {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 700;
-      color: #166534;
-      background: #dcfce7;
-      border: 1px solid #bbf7d0;
-      padding: 3px 8px;
-      border-radius: 999px;
-    }
-
-    .live-dot::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #16a34a;
-      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
-      animation: pulseDot 2s infinite;
-    }
-
-    @keyframes pulseDot {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
-    }
-
-    /* HERO */
-    .hero {
-      padding: 60px 6% 44px;
-      background: linear-gradient(135deg, #14201a 0%, #1e3a2b 50%, #2e7d32 100%);
-      color: white;
-      position: relative;
-    }
-
-    .hero-container { max-width: 1180px; margin: 0 auto; }
-
-    .hero-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      backdrop-filter: blur(4px);
-    }
-
-    .hero h1 {
-      font-size: clamp(32px, 5vw, 52px);
-      line-height: 1.15;
-      margin: 0 0 14px;
-      font-weight: 900;
-      letter-spacing: -0.02em;
-    }
-
-    .hero p {
-      font-size: 17px;
-      max-width: 680px;
-      color: rgba(255, 255, 255, 0.92);
-      margin: 0 0 24px;
-    }
-
-    .hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
-
-    /* BUTTONS */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border: 0;
-      border-radius: 10px;
-      padding: 11px 18px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-decoration: none;
-    }
-
-    .btn:hover { transform: translateY(-1px); }
-    .btn.primary { background: white; color: #14532d; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
-    .btn.primary:hover { background: #f0fdf4; }
-    .btn.dark { background: #172033; color: white; }
-    .btn.dark:hover { background: #0f172a; }
-    .btn.accent { background: var(--accent); color: white; }
-    .btn.accent:hover { background: var(--accent-hover); }
-    .btn.outline { background: transparent; border: 1px solid rgba(255, 255, 255, 0.6); color: white; }
-    .btn.outline:hover { background: rgba(255, 255, 255, 0.15); border-color: white; }
-
-    .small-btn {
-      border: 0;
-      border-radius: 7px;
-      padding: 6px 11px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.12s ease;
-    }
-
-    .small-btn.primary { background: #2563eb; color: white; }
-    .small-btn.success { background: #16a34a; color: white; }
-    .small-btn.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-    .small-btn.danger:hover { background: #fecaca; }
-    .small-btn.secondary { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
-
-    /* MAIN CONTAINER */
-    main { max-width: 1180px; margin: auto; padding: 32px 6% 70px; }
-    .section { display: none; animation: fadeIn 0.2s ease-in-out; }
-    .section.active { display: block; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* CARDS & GRID */
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .grid-2 { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .card-header h2 { margin: 0; font-size: 20px; font-weight: 800; }
-
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .stat-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .stat-value { font-size: 32px; font-weight: 900; color: var(--text); line-height: 1; }
-    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-    .muted { color: var(--muted); }
-
-    /* TABLES */
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      background: white;
-    }
-
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    .table-wrap table { min-width: 580px; }
-
-    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
-    th {
-      background: #f8fafc;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-
-    tr:last-child td { border-bottom: 0; }
-    tr.highlight-row { background: #f0fdf4; }
-
-    .rank { font-weight: 900; width: 50px; color: var(--muted); }
-    .rank-1 { color: #d97706; font-weight: 900; }
-    .rank-2 { color: #64748b; font-weight: 900; }
-    .rank-3 { color: #b45309; font-weight: 900; }
-
-    .elo-pill {
-      display: inline-block;
-      font-weight: 800;
-      background: #f1f5f9;
-      color: #1e293b;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-
-    /* FORMS */
-    form { display: grid; gap: 14px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    label { font-size: 13px; font-weight: 700; color: #374151; }
-
-    input, select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: var(--radius-sm);
-      background: white;
-      font: inherit;
-      font-size: 14px;
-      color: var(--text);
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    }
-
-    /* NOTICES & ALERTS */
-    .notice {
-      padding: 12px 14px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius-sm);
-      color: #1e40af;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .notice.warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
-    .notice.danger { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-    .notice.success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-
-    /* MATCH HISTORY */
-    .match-list { display: flex; flex-direction: column; gap: 10px; }
-
-    .match-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 16px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      background: white;
-      transition: box-shadow 0.12s ease;
-    }
-
-    .match-item:hover { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); }
-    .match-item.is-pending { border-left: 4px solid #f59e0b; background: #fffdfa; }
-    .match-item.is-official { border-left: 4px solid #16a34a; }
-    .match-main { flex: 1; }
-
-    .match-headline {
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .match-meta {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 4px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .match-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .badge-official { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-
-    .confirm-status { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-
-    .confirm-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #f1f5f9;
-      color: #475569;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .confirm-chip.done { background: #dcfce7; color: #166534; }
-
-    /* ACCOUNT PANEL */
-    .user-pill {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-      background: #eef2ff;
-      color: #3730a3;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .account-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      margin-top: 14px;
-      background: #fafafa;
-    }
-
-    .auth-toggle-group {
-      display: flex;
-      background: #f1f5f9;
-      padding: 4px;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      gap: 4px;
-    }
-
-    .auth-toggle-btn {
-      flex: 1;
-      border: 0;
-      background: transparent;
-      padding: 9px 12px;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--muted);
-      cursor: pointer;
-      border-radius: 7px;
-      transition: all 0.15s ease;
-      text-align: center;
-    }
-
-    .auth-toggle-btn.active {
-      background: white;
-      color: var(--text);
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-    }
-
-    /* TABS */
-    .tabs {
-      display: flex;
-      gap: 6px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 16px;
-      padding-bottom: 6px;
-    }
-
-    .tab-btn {
-      background: none;
-      border: 0;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--muted);
-      cursor: pointer;
-      border-radius: var(--radius-sm);
-    }
-
-    .tab-btn.active { background: #eef2ff; color: var(--accent); }
-    .hidden { display: none !important; }
-
-    .elo-preview-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      font-size: 13px;
-      color: #334155;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    footer {
-      text-align: center;
-      color: var(--muted);
-      padding: 30px 6%;
-      border-top: 1px solid var(--line);
-      font-size: 13px;
-      background: white;
-    }
-
-    @media (max-width: 860px) {
-      .grid { grid-template-columns: 1fr; }
-      .grid-2 { grid-template-columns: 1fr; }
-      .form-grid { grid-template-columns: 1fr; }
-      nav { flex-direction: column; align-items: stretch; padding: 10px 4%; }
-      nav .links { overflow-x: auto; padding-bottom: 4px; width: 100%; }
-      .match-item { flex-direction: column; align-items: flex-start; }
-      .match-actions { width: 100%; justify-content: flex-end; margin-top: 8px; }
-    }
-  </style>
+:root{--ink:#19342a;--muted:#607068;--green:#18583c;--gold:#d5a440;--line:#d8e1d9;--paper:#f6f8f5;--accent:var(--green)}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Avenir Next","Trebuchet MS",sans-serif;font-size:15px;line-height:1.55}button,input,select{font:inherit}button,summary{cursor:pointer}button:disabled,fieldset:disabled{opacity:.55;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:4px}h1,h2,p{margin-top:0}h2{font-size:25px;line-height:1.25;letter-spacing:-.7px;margin-bottom:12px}.muted{color:var(--muted)}.hidden{display:none!important}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 6%;background:white;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:8px;font-size:23px;font-weight:900;letter-spacing:-1px}.brand span:not(.brand-icon){color:var(--green)}nav .links{display:flex;gap:22px}nav button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 2px;color:var(--muted);font-weight:700}nav button.active{color:var(--green);border-color:var(--gold)}nav button:hover{color:var(--green)}
+.hero{padding:60px 6% 0;background:#1e5138;color:white}.hero-container{max-width:1180px;margin:auto;display:grid;grid-template-columns:1.15fr 1fr;align-items:stretch;gap:40px}.hero-copy{min-width:0;align-self:center;padding-bottom:44px}.hero h1{font-size:clamp(34px,4vw,56px);line-height:1.08;letter-spacing:-2px;margin-bottom:22px;max-width:600px}.hero p{max-width:550px;color:#e0eae3;font-size:17px;line-height:1.65;margin:0}.podium{margin:0;min-width:0;align-self:end}.podium-places{list-style:none;padding:0;margin:0;display:flex;align-items:flex-end}.podium-place{flex:1;min-width:0;text-align:center}.podium-place-1{order:2;--medal:#ffd335;--edge:#eab91c;--column:#153b2a;--height:230px}.podium-place-2{order:1;--medal:#c6cdd2;--edge:#98a4ac;--column:#236248;--height:155px}.podium-place-3{order:3;--medal:#ed982d;--edge:#ce7717;--column:#28704f;--height:118px}.podium-name{display:block;font-size:15px;font-weight:800;margin:0 5px 16px;overflow-wrap:anywhere}.podium-step{height:calc(var(--height) + 44px);background:var(--column);border-radius:5px 5px 0 0;display:flex;flex-direction:column;align-items:center;padding:18px 8px 0}.podium-medal{width:58px;height:58px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:var(--medal);border:3px solid var(--edge);box-shadow:inset 0 0 0 2px #ffffff80;color:#19342a;font-size:35px;line-height:1;font-weight:900}.podium-place-1 .podium-medal{width:72px;height:72px;font-size:44px}.podium-rating{font-size:21px;font-weight:900;margin-top:12px}.podium-rating-label{font-size:12px;color:#d8e9dd}
+main{max-width:1180px;margin:auto;padding:36px 24px 64px}.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);padding-bottom:25px;gap:30px}.stat-card{padding:0 20px;border-left:2px solid var(--gold)}.stat-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted)}.stat-value{font-size:38px;font-weight:800;letter-spacing:-1px;line-height:1.2;margin:7px 0}.stat-sub{font-size:12px;color:var(--muted)}.card{background:white;border:1px solid var(--line);border-radius:6px;padding:24px}.card-header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}.card-header h2{margin-bottom:6px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;text-align:left}th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 16px;border-bottom:2px solid var(--green);white-space:nowrap}td{padding:17px 16px;border-bottom:1px solid var(--line);vertical-align:top}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#f6f8f3}.leader-row td:first-child{color:#8c6519;font-weight:800}.leader-row{background:#fcfaf2}td:nth-child(3){font-weight:700}.grid-2{display:grid;grid-template-columns:1.2fr 1fr;gap:24px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-group{margin-bottom:18px}label{display:block;font-size:15px;font-weight:700;margin-bottom:7px}input,select{background:white;color:var(--ink);width:100%;padding:11px 12px;border:1px solid #b8c9bc;border-radius:4px}input:focus,select:focus{border-color:var(--green)}.btn,.small-btn{border:1px solid var(--green);border-radius:4px;background:var(--green);color:white;font-weight:700;padding:11px 18px}.btn{margin-top:14px}.small-btn{font-size:12px;padding:6px 9px}.secondary{background:white;color:var(--green)}.danger{color:#96382d;background:#fff3ef;border-color:#e4b5ab}.notice{padding:13px 16px;background:#edf4ee;border-left:3px solid var(--green);font-size:15px}.notice.warning{background:#fff9e7;border-color:var(--gold)}.notice.danger{border-color:#96382d}.elo-preview-box{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;background:#faf4df;color:#735616;border-left:3px solid var(--gold);font-size:15px}.match-list{display:grid}.match-item{padding:20px 0;display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}.match-item p{color:var(--muted);margin:5px 0;font-size:15px}.badge{font-size:11px;color:var(--green);font-weight:700}.faq{margin-top:48px;display:grid;grid-template-columns:1fr 2fr;gap:40px}.faq h2{font-size:32px}.faq details{border-bottom:1px solid var(--line);padding:18px 0}.faq details:first-child{border-top:2px solid var(--green)}.faq summary{font-weight:700;font-size:16px}.faq p{color:var(--muted);margin:14px 0 0}.faq code{font-size:12px;overflow-wrap:anywhere}.player-history summary{font-weight:700;white-space:nowrap}.history-count{font-weight:400;font-size:11px;color:var(--muted);display:block;margin-left:18px}.player-history ul{list-style:none;margin:14px 0 0;padding:0;min-width:250px;max-width:380px}.player-history li{padding:12px 0;border-top:1px solid var(--line);font-size:12px}.history-result{font-weight:800;color:var(--green);margin-right:8px}.history-result.loss{color:#97632c}.history-meta{display:block;color:var(--muted);margin-top:3px}.archived{color:var(--muted)}footer{border-top:1px solid var(--line);padding:28px 6%;font-size:12px;color:var(--muted);background:white}footer strong{color:var(--green)}
+@media(max-width:850px){.hero-container{grid-template-columns:1fr 1fr;gap:24px}.hero h1{font-size:38px}.hero p{font-size:15px}.grid-2{grid-template-columns:1fr}.faq{grid-template-columns:1fr;gap:8px}.podium-name{font-size:12px}.card{padding:20px}td,th{padding:14px 12px}}
+@media(max-width:600px){nav{flex-wrap:wrap;gap:10px;padding:14px 20px}nav .links{width:100%;gap:28px}.brand{font-size:22px}.hero{padding:32px 20px 0}.hero-container{grid-template-columns:1fr;gap:32px}.hero-copy{padding:0}.hero h1{font-size:40px;letter-spacing:-1.5px}.podium{width:100%;max-width:390px;justify-self:center}.podium-place-1{--height:185px}.podium-place-2{--height:115px}.podium-place-3{--height:80px}.podium-step{padding-top:14px}.podium-medal{width:48px;height:48px;font-size:29px}.podium-place-1 .podium-medal{width:60px;height:60px;font-size:36px}.podium-rating{font-size:19px;margin-top:8px}main{padding:26px 16px 40px}.grid{gap:10px}.stat-card{padding:0 10px}.stat-title{font-size:9px;letter-spacing:.7px}.stat-value{font-size:29px}.stat-sub{font-size:10px}.card-header{align-items:flex-start;flex-direction:column;gap:12px}.card-header input{max-width:100%!important}h2{font-size:23px}.card{padding:16px}.form-grid{grid-template-columns:1fr;gap:0}.match-item{align-items:flex-start;flex-direction:column}.faq{margin-top:32px}.faq h2{font-size:28px}footer{padding:24px 20px}}
+
+/* Opening photo and statistics; the podium belongs with the rankings. */
+.hero{padding-bottom:40px}.hero-container{align-items:center}.hero-copy{padding-bottom:0}.hero-photo{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:5px}.hero .grid{margin-top:32px;border-bottom:0;padding-bottom:0;gap:14px}.hero .stat-card{padding:0 12px}.hero .stat-title,.hero .stat-sub{color:#d8e9dd}.hero .stat-value{color:white;font-size:32px}.hero .stat-title{font-size:10px;letter-spacing:.8px}.hero .stat-sub{font-size:11px}#home>.podium{max-width:500px;margin:0 auto;color:var(--ink)}#home .podium-step{color:white}#homeLeaderboard{margin-top:0!important}.faq{grid-template-columns:1fr;gap:8px}.faq>div:first-child p{margin-bottom:12px}#viewAllMatches{margin-top:20px}
+@media(max-width:600px){.hero{padding-bottom:28px}.hero-container{gap:28px}.hero .stat-card{padding:0 8px}.hero .stat-value{font-size:28px}.hero .stat-sub{font-size:10px}.hero-photo{max-height:230px}#home>.podium{max-width:390px}}
+
+/* Softer surfaces and a gentler rhythm across the club pages. */
+.hero{border-radius:0;padding-top:52px;padding-bottom:48px}.hero-photo{border-radius:24px}.card{border-radius:20px;padding:28px}.table-wrap{border-radius:13px}input,select{border-radius:12px}.btn,.small-btn{border-radius:999px;transition:background-color .18s ease,transform .18s ease,box-shadow .18s ease}.btn:hover:not(:disabled),.small-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 12px #19342a15}nav button{border-radius:10px 10px 0 0;transition:color .18s ease}.notice,.elo-preview-box{border-radius:12px}.grid-2{gap:28px}.faq{gap:16px}.faq details{background:#ffffff80;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:10px}.faq details:first-child{border-top:1px solid var(--line)}.faq details[open]{background:white;border-color:#b5cdbd}.faq summary{line-height:1.5}.podium-step{border-radius:14px 14px 0 0}.stat-value{font-variant-numeric:tabular-nums;min-height:1.2em}.hero .stat-card{border-radius:0 8px 8px 0}main{padding-top:42px}footer{border-radius:28px 28px 0 0}.match-item{padding:24px 4px}
+@media(max-width:600px){.hero{border-radius:0;padding:32px 20px}.hero-photo{border-radius:18px}.card{padding:18px;border-radius:16px}.faq details{padding:16px}.hero .stat-title{font-size:9px}.hero .stat-sub{font-size:9px}main{padding-top:30px}}
+@media(prefers-reduced-motion:reduce){.btn,.small-btn,nav button{transition:none}.btn:hover:not(:disabled),.small-btn:hover:not(:disabled){transform:none}}
+
+/* Scoreboard numbers lead; labels follow. */
+body{font-size:17px}.hero .stat-card{display:flex;flex-direction:column;border-left:2px solid #d5a440;border-top:0;padding:0 0 0 14px;border-radius:0}.hero .stat-value{order:0;font-size:46px;margin:0 0 8px;letter-spacing:-1.5px}.hero .stat-title{order:1;font-size:15px;text-transform:none;letter-spacing:0;font-weight:600;color:#e1ede4;line-height:1.35}.hero .grid{gap:26px;margin-top:34px}.hero p{font-size:19px;line-height:1.65}.hero-photo{border:1px solid #ffffff30}.notice,.elo-preview-box,label,.small-btn,.match-item p,.badge,.history-count,.player-history li,.podium-rating-label,footer{font-size:15px}.faq code{font-size:14px}th{font-size:14px;text-transform:none;letter-spacing:0;white-space:nowrap}.faq summary{font-size:19px}.podium-name{font-size:17px}.card-header .muted{font-size:16px!important}.card-header input{font-size:16px!important;padding:11px 14px!important}.match-item{gap:24px}.history-meta{line-height:1.6}.faq p{max-width:70ch}.card{box-shadow:none}.leader-row td:first-child{font-size:21px}.podium-place-1 .podium-step{border-top:0}
+/* Home sections follow the normal page flow. */
+.home-view .hero{position:relative;transform:none;opacity:1}
+main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:48px 5% 64px;border-radius:36px 36px 0 0}main>.section,main>#appMessage{max-width:1180px;margin-left:auto;margin-right:auto}.home-view main{margin-top:0}nav{position:sticky;top:0;z-index:3}#home>.podium{margin-top:8px}.faq{margin-top:56px}.faq details{background:transparent;border-width:0 0 1px;border-radius:0;margin-bottom:0;padding:22px 4px}.faq details:first-child{border-top:2px solid var(--green)}.faq details[open]{background:transparent}.faq h2{margin-bottom:8px}footer{position:relative;z-index:1}
+@media(max-width:600px){body{font-size:16px}.hero p{font-size:17px}.hero .grid{gap:16px}.hero .stat-value{font-size:35px}.hero .stat-title{font-size:14px}.hero .stat-card{padding:0 0 0 10px}.podium-name{font-size:14px}main{padding:30px 16px 44px;border-radius:24px 24px 0 0}.home-view main{margin-top:0}th{font-size:13px}.notice,label,.small-btn,.badge,.history-count,.player-history li,footer{font-size:14px}.faq summary{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.home-view .hero{position:relative;transform:none;opacity:1}}
+
+/* A spacious, solid table-green opening section. */
+.hero{min-height:620px;display:flex;align-items:center;padding-top:84px;padding-bottom:84px;background:#1e5138}.hero-container{width:100%;gap:52px}.hero h1{font-size:clamp(40px,4.3vw,62px)}.hero-photo{min-height:340px}
+@media(max-width:850px){.hero{min-height:560px;padding-top:64px;padding-bottom:64px}.hero-container{gap:28px}.hero h1{font-size:42px}.hero-photo{min-height:260px}}
+@media(max-width:600px){.hero{min-height:0;padding:48px 20px}.hero-container{gap:38px}.hero h1{font-size:42px}.hero-photo{min-height:0;max-height:260px}}
+
+/* An open invitation beside a full-height club photo reel. */
+.hero{padding:0;min-height:0;display:block}.hero-container{max-width:none;display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}.hero-copy{padding:76px clamp(28px,5.5vw,84px);display:flex;flex-direction:column;justify-content:center}.hero h1{font-size:clamp(38px,4vw,60px);line-height:1.1}.hero p{margin-bottom:26px}.join-groupme{align-self:flex-start;display:inline-flex;align-items:center;gap:24px;background:#e8bb53;color:#173a2a;border:0;border-radius:999px;padding:17px 25px;font:inherit;font-weight:800;text-decoration:none}.groupme-logo{width:28px;height:28px;flex:none;border-radius:7px}.join-groupme{gap:14px;transition:background-color .2s ease}.join-groupme:hover{background:#f1ca6c}.join-groupme:focus-visible{outline:3px solid white;outline-offset:5px}.hero .grid{margin-top:42px;gap:20px}.hero .stat-value{font-size:clamp(32px,3.6vw,48px)}.hero-gallery{position:relative;overflow:hidden;min-height:650px;background:#174a39}.photo-track{display:flex;height:100%;position:absolute;inset:0;transition:transform 750ms cubic-bezier(.22,.61,.36,1)}.photo-track.resetting{transition:none}.photo-slide{flex:0 0 100%;height:100%;margin:0}.photo-slide img{display:block;width:100%;height:100%;object-fit:cover}
+@media(max-width:850px){.hero-copy{padding:52px 28px}.hero-gallery{min-height:620px}.hero .grid{gap:12px}.hero .stat-title{font-size:14px}.hero .stat-card{padding-left:10px}.hero h1{font-size:42px}}
+@media(max-width:600px){.hero-container{grid-template-columns:1fr}.hero-copy{padding:48px 24px}.hero-gallery{min-height:360px}.hero .grid{gap:18px}.hero .stat-value{font-size:35px}.hero h1{font-size:42px}.photo-slide img{object-position:center 55%}}
+@media(prefers-reduced-motion:reduce){.photo-track{transition:none}}
+
+.club-gallery{margin:44px 0 0;padding:24px;border:1px solid var(--line);border-radius:20px;background:#fff}
+.club-gallery h2{margin:0 0 6px}.club-gallery p{margin:0 0 20px}.club-gallery-photos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.club-gallery figure{margin:0}.club-gallery img{display:block;width:100%;height:auto;border-radius:12px}
+.player-link{font-weight:800;color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}.player-link:hover{text-decoration-thickness:2px}.player-link:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media(max-width:600px){.club-gallery{padding:16px}.club-gallery-photos{grid-template-columns:1fr}}
+</style>
 </head>
 
-<body>
+<body class="home-view">
 
-<!-- NAVIGATION -->
+<!-- =========================================
+     NAVIGATION
+========================================= -->
 <nav>
-  <div class="brand" onclick="showSection('home')">
+  <div class="brand">
     <span class="brand-icon">🏓</span>
     <div>Carroll<span>PingPong</span></div>
   </div>
 
   <div class="links">
     <button class="active" data-section="home">Home</button>
-    <button data-section="leaderboard">Leaderboard</button>
     <button data-section="matches">Matches</button>
-    <button data-section="players">Players</button>
-    <button data-section="rules">Rules & Elo</button>
+    <button data-section="players">Roster</button>
   </div>
 
-  <div class="nav-actions">
-    <span class="live-dot" title="Real-time shared sync across all devices">Sync Active</span>
-  </div>
 </nav>
 
-<!-- HERO -->
+<!-- =========================================
+     HERO
+========================================= -->
 <section class="hero">
   <div class="hero-container">
-    <div class="hero-tag">
-      <span>🏓</span>
-      <span>Carroll High School Ping Pong Club</span>
+    <div class="hero-copy">
+      <h1>Carroll Ping Pong Club</h1>
+      <p>
+        Find your next opponent. Play a game, tell the admin the score,
+        and see where you stand in the Carroll High School club.
+      </p>
+    <a id="groupmeJoin" class="join-groupme" href="https://groupme.com/join_group/115077106/UvZi2Lhy" target="_blank" rel="noopener noreferrer"><img class="groupme-logo" src="/assets/groupme.png" alt="" width="28" height="28"><span>Join GroupMe</span><span aria-hidden="true">↗</span></a>
+    <div class="grid">
+      <div class="stat-card">
+        <div class="stat-title">Active players</div>
+        <div class="stat-value" id="statPlayers">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-title">Official matches</div>
+        <div class="stat-value" id="statMatches">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-title">Matches this week</div>
+        <div class="stat-value" id="statWeek">0</div>
+      </div>
     </div>
-    <h1>Carroll Ping Pong Website</h1>
-    <p>
-      Create an account to join the club, report match scores, and verify outcomes with
-      two-player confirmations. All player ratings and match records sync across all devices.
-    </p>
-    <div class="actions">
-      <button class="btn primary" onclick="showSection('matches')">
-        🏓 Report / Join Club
-      </button>
-      <button class="btn outline" onclick="showSection('leaderboard')">
-        🏆 View Leaderboard
-      </button>
+    </div>
+    <div class="hero-gallery" role="region" aria-label="Ping-pong photo slideshow">
+      <div class="photo-track" id="photoTrack">
+        <figure class="photo-slide"><img src="/assets/club-photo-01.webp" alt="Club members playing table tennis in the school courtyard" width="964" height="1280" fetchpriority="high"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-02.webp" alt="Players gathering beside the courtyard ping-pong table" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-03.webp" alt="A player preparing a shot across the outdoor table" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-04.webp" alt="A club member returning a shot near the table net" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-05.webp" alt="A player following through on a courtyard ping-pong shot" width="720" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-06.webp" alt="Club members playing beside the school building" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-07.webp" alt="Players beside the table between games" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-08.webp" alt="A courtyard match viewed from behind a player" width="964" height="1280" decoding="async"></figure>
+        <figure class="photo-slide" aria-hidden="true"><img src="/assets/club-photo-01.webp" alt="" width="964" height="1280"></figure>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- MAIN CONTENT -->
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
 <main>
+  <div id="appMessage" role="status" aria-live="polite" class="notice hidden" style="margin-bottom:16px;"></div>
 
-  <!-- HOME SECTION -->
+  <!-- =========================================
+       HOME SECTION
+  ========================================= -->
   <section id="home" class="section active">
-    <div class="grid">
-      <div class="stat-card">
-        <div class="stat-title">Active Players</div>
-        <div class="stat-value" id="statPlayers">0</div>
-        <div class="stat-sub">Registered club members</div>
-      </div>
+    <figure class="podium" aria-label="Top three players by rating">
+      <ol id="podiumPlaces" class="podium-places"></ol>
+    </figure>
 
-      <div class="stat-card">
-        <div class="stat-title">Official Matches</div>
-        <div class="stat-value" id="statMatches">0</div>
-        <div class="stat-sub" id="statPendingSub">0 pending confirmation</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-title">Average Elo</div>
-        <div class="stat-value" id="statElo">1000</div>
-        <div class="stat-sub">Club baseline rating</div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-top: 20px;">
-      <div class="card">
-        <h2>How the Club Rating Works</h2>
-        <p>
-          Every registered player begins at a baseline of <strong>1000 ELO</strong>.
-          After every competitive match, the winner gains Elo and the loser’s rating decreases based on their rating uncertainty.
-        </p>
-        <p>
-          Beating a higher-rated player gains more Elo,
-          while winning against a lower-rated player rewards fewer Elo.
-        </p>
-        <div class="notice">
-          <strong>Dual-Confirmation Integrity:</strong> When a match is reported, ratings do not change immediately.
-          Both players must confirm the reported score from their accounts before it becomes official.
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Club Information</h2>
-        <p>
-          <strong>Club:</strong> Carroll High School Ping Pong Club<br>
-          <strong>Starting Rating:</strong> 1000 Elo<br>
-          <strong>Rating System:</strong> Glicko (rating + uncertainty)<br>
-          <strong>Match Format:</strong> Best of games to 11 points (win by 2)<br>
-          <strong>Cross-Device Sync:</strong> Website syncs across devices
-        </p>
-        <hr style="border:0; border-top:1px solid var(--line); margin: 16px 0;">
-        <p class="muted" style="font-size:13px; margin:0;">
-          Create an account on any device to join the club roster.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- LEADERBOARD SECTION -->
-  <section id="leaderboard" class="section">
-    <div class="card">
+    <div id="homeLeaderboard" class="card" style="margin-top:20px;scroll-margin-top:100px;">
       <div class="card-header">
         <div>
-          <h2>Club Leaderboard</h2>
-          <div class="muted" style="font-size:13px; margin-top:3px;">
-            Rankings update automatically when both players confirm match scores. Also Ethan Dong mogs all of you🏆.
+          <h2>Club leaderboard</h2>
+          <div class="muted" style="font-size:15px; margin-top:3px;">
+            Rankings update when the admin records a match. Also, Ethan Dong mogs all of you🏆
           </div>
         </div>
         <input
           id="leaderboardSearch"
           type="text"
-          placeholder="Search player..."
-          style="max-width: 220px; padding: 7px 10px; font-size: 13px;"
+          aria-label="Search leaderboard" placeholder="Search player..."
+          style="max-width: 220px; padding: 7px 10px; font-size: 15px;"
           oninput="renderLeaderboard()"
         >
       </div>
@@ -645,7 +151,7 @@
             <tr>
               <th style="width: 60px;">Rank</th>
               <th>Player</th>
-              <th>ELO Rating</th>
+              <th>Rating</th>
               <th>Matches</th>
               <th>Record (W-L)</th>
               <th>Win Rate</th>
@@ -655,235 +161,105 @@
         </table>
       </div>
     </div>
+    <section class="club-gallery" aria-labelledby="clubGalleryTitle">
+      <h2 id="clubGalleryTitle">Meet the club</h2>
+      <p class="muted">Carroll Ping Pong Club, together at the courtyard table.</p>
+      <div class="club-gallery-photos">
+        <figure><img src="/assets/club-group-01.webp" alt="Club members posing together with their paddles in the courtyard" width="1280" height="964" loading="lazy" decoding="async"></figure>
+        <figure><img src="/assets/club-group-02.webp" alt="Club members standing on both sides of the outdoor ping-pong table" width="1280" height="964" loading="lazy" decoding="async"></figure>
+      </div>
+    </section>
+    <div class="faq">
+      <div><h2>Club FAQ</h2><p class="muted">A few things to know before your next game.</p></div>
+      <div>
+        <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 rating and do not need an account.</p></details>
+        <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
+        <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
+        <details><summary>How do club ratings work?</summary><p>We use Glicko-1. Everyone starts at 1000, and each recorded match updates both players from their ratings before the game. Beating a stronger opponent earns more than an expected win.</p><p>New players have more uncertain ratings, so their first results can cause large changes. Ratings settle as they play more matches. Inactivity increases uncertainty. Each player’s uncertainty is tracked separately, so gains and losses can differ.</p><p>Glicko uses the win or loss, not the point margin. A 12–10 win and a 12–0 win have the same effect for the same players at the same time. Ratings are saved as whole numbers; this system has no 30-point cap.</p></details>
+        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. The admin selects two players per team, and all four receive an individual rating update plus one win or loss. Our doubles adaptation of Glicko uses each team’s average rating to estimate the result, with each player’s own uncertainty determining how far their rating moves. A stronger partner changes your team’s expected chance of winning. Singles and doubles share the same club rating.</p></details>
+        <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring every player’s previous rating and record. Matches involving a deleted player cannot be undone.</p></details>
+        <details><summary>Additional Questions?</summary><p>Ask the admins! we'll provide the answers for you.</p></details>
+      </div>
+    </div>
   </section>
 
-  <!-- MATCHES & ACCOUNT SECTION -->
+  <!-- =========================================
+       MATCHES & ADMIN SECTION
+  ========================================= -->
   <section id="matches" class="section">
     <div class="grid-2">
-
-      <!-- REPORT MATCH CARD -->
       <div class="card">
-        <div class="card-header">
-          <h2>Report Match Result</h2>
-        </div>
-
-        <div id="reportNoticeLoggedOut" class="notice warning" style="margin-bottom: 14px;">
-          ⚠️ <strong>Login Required:</strong> Please log in or create an account on the right to submit a match.
-        </div>
-
-        <div id="reportNoticeLoggedIn" class="notice hidden" style="margin-bottom: 14px;">
-          Submit your match result. <strong>ELO will update once both players confirm</strong> in Match History below.
-        </div>
-
-        <div id="reportNoticeNeedPlayers" class="notice danger hidden" style="margin-bottom: 14px;">
-          👥 At least two players must register before a match can be reported.
-        </div>
-
+        <h2>Record match result</h2>
+        <p id="reportNoticeLoggedOut" class="notice">The club admin can log in to record a result. Anyone can view match history below.</p>
+        <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save.</p>
+        <p id="reportNoticeNeedPlayers" class="notice warning hidden">Add at least two active players before recording a match.</p>
         <form id="matchForm">
-          <div id="quickRoleSelect" class="hidden" style="display:flex; gap:8px; align-items:center; margin-bottom: 4px;">
-            <span style="font-size:13px; font-weight:700;">I was the:</span>
-            <button type="button" class="small-btn primary" onclick="setReporterRole('winner')">🏆 Winner</button>
-            <button type="button" class="small-btn secondary" onclick="setReporterRole('loser')">🥈 Loser</button>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="winner">Winner</label>
-              <select id="winner" required onchange="updateEloPreview()">
-                <option value="" disabled selected>Select winner...</option>
-              </select>
+          <div class="form-group"><label for="matchType">Match type</label><select id="matchType" onchange="render()"><option value="singles">Singles · 1 vs 1</option><option value="doubles">Doubles · 2 vs 2</option></select></div>
+          <fieldset id="matchFields" disabled style="border:0;padding:0;margin:0;min-width:0;">
+            <div class="form-grid">
+              <div class="form-group"><label for="winner" id="winnerLabel">Winner</label><select id="winner" required onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="loser" id="loserLabel">Loser</label><select id="loser" required onchange="updateEloPreview()"></select></div>
             </div>
-
-            <div class="form-group">
-              <label for="loser">Loser</label>
-              <select id="loser" required onchange="updateEloPreview()">
-                <option value="" disabled selected>Select loser...</option>
-              </select>
+            <div class="form-grid hidden" id="doublesPartners">
+              <div class="form-group"><label for="winnerPartner">Winning partner</label><select id="winnerPartner" onchange="updateEloPreview()"></select></div>
+              <div class="form-group"><label for="loserPartner">Losing partner</label><select id="loserPartner" onchange="updateEloPreview()"></select></div>
             </div>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="winnerScore">Winner Score (Points/Sets)</label>
-              <input id="winnerScore" type="number" min="0" max="99" placeholder="e.g. 11" oninput="validateScoreInputs()">
+            <p id="playerWarning" class="notice danger hidden">Choose four different players.</p>
+            <div class="form-grid">
+              <div class="form-group"><label for="winnerScore">Winner score (points)</label><input id="winnerScore" type="number" min="1" max="99" step="1" required oninput="validateScoreInputs()"></div>
+              <div class="form-group"><label for="loserScore">Loser score (points)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
             </div>
-
-            <div class="form-group">
-              <label for="loserScore">Loser Score (Points/Sets)</label>
-              <input id="loserScore" type="number" min="0" max="99" placeholder="e.g. 7" oninput="validateScoreInputs()">
-            </div>
-          </div>
-
-          <div id="scoreWarning" class="notice danger hidden" style="padding: 8px 12px; font-size: 12px;">
-            Winner score must be greater than loser score.
-          </div>
-
-          <div id="eloPreview" class="elo-preview-box hidden">
-            <span>Projected Elo Change:</span>
-            <strong id="eloPreviewText" style="color:var(--green);">Calculated from ratings and uncertainty</strong>
-          </div>
-
-          <button id="submitMatchBtn" class="btn dark" type="submit">
-            Submit Match for Confirmation
-          </button>
+            <p id="scoreWarning" class="notice danger hidden">The winner's score must be higher than the loser's score.</p>
+            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected rating change:</span><strong id="eloPreviewText"></strong></div>
+            <button class="btn dark" type="submit">Save match result</button>
+          </fieldset>
         </form>
       </div>
-
-      <!-- PLAYER ACCOUNT CARD -->
       <div class="card">
-        <div class="card-header">
-          <h2 id="accountCardTitle">Player Account</h2>
+        <h2>Club admin</h2>
+        <div id="adminLoggedOut">
+          <p class="muted">Players do not need accounts. The admin manages names and match results.</p>
+          <form id="loginForm">
+            <div class="form-group"><label for="loginUsername">Admin username</label><input id="loginUsername" required autocomplete="username"></div>
+            <div class="form-group"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div>
+            <button class="btn dark" type="submit">Log in as admin</button>
+          </form>
         </div>
-
-        <!-- LOGGED OUT VIEW -->
-        <div id="accountLoggedOut">
-          <div class="auth-toggle-group">
-            <button id="authTabSignup" class="auth-toggle-btn active" onclick="switchAuthView('signup')">
-              📝 Create New Account
-            </button>
-            <button id="authTabLogin" class="auth-toggle-btn" onclick="switchAuthView('login')">
-              🔑 Log In
-            </button>
-          </div>
-
-          <!-- SIGNUP FORM -->
-          <div id="signupView">
-            <div class="muted" style="font-size:13px; margin-bottom: 12px;">
-              Join the club to get your starting <strong>1000 Elo</strong> rating and start tracking matches.
-            </div>
-
-            <form id="signupForm">
-              <div class="form-group">
-                <label for="signupName">Full Player Name</label>
-                <input id="signupName" placeholder="e.g. Alex Smith" required autocomplete="name">
-              </div>
-
-              <div class="form-group">
-                <label for="signupUsername">Username</label>
-                <input id="signupUsername" placeholder="e.g. alexsmith" required autocomplete="username">
-              </div>
-
-              <div class="form-group">
-                <label for="signupPassword">Password</label>
-                <input id="signupPassword" type="password" minlength="4" placeholder="At least 4 characters" required autocomplete="new-password">
-              </div>
-
-              <button class="btn accent" type="submit" style="width: 100%; margin-top: 4px;">
-                Create Account & Join Roster
-              </button>
-            </form>
-
-            <div style="text-align: center; margin-top: 14px; font-size: 13px;">
-              <span class="muted">Already registered?</span>
-              <a href="javascript:void(0)" onclick="switchAuthView('login')" style="color: var(--accent); font-weight: 700; margin-left: 4px; text-decoration: none;">
-                Log in here
-              </a>
-            </div>
-          </div>
-
-          <!-- LOGIN FORM -->
-          <div id="loginView" class="hidden">
-            <div class="muted" style="font-size:13px; margin-bottom: 12px;">
-              Sign in to report match scores or confirm results reported by other players.
-            </div>
-
-            <form id="loginForm">
-              <div class="form-group">
-                <label for="loginUsername">Username</label>
-                <input id="loginUsername" placeholder="e.g. alexsmith" required autocomplete="username">
-              </div>
-
-              <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <input id="loginPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
-              </div>
-
-              <button class="btn dark" type="submit" style="width: 100%; margin-top: 4px;">
-                Log In to Account
-              </button>
-            </form>
-
-            <div style="text-align: center; margin-top: 14px; font-size: 13px;">
-              <span class="muted">Need an account?</span>
-              <a href="javascript:void(0)" onclick="switchAuthView('signup')" style="color: var(--accent); font-weight: 700; margin-left: 4px; text-decoration: none;">
-                Create an account here
-              </a>
-            </div>
+        <div id="adminLoggedIn" class="hidden">
+          <p>Signed in as <strong id="adminName"></strong>.</p>
+          <form id="playerForm">
+            <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
+            <button class="btn primary" type="submit">Add player</button>
+          </form>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+            <button id="backupBtn" type="button" class="small-btn secondary">Download data backup</button>
+            <button id="logoutBtn" type="button" class="small-btn secondary">Log out</button>
           </div>
         </div>
-
-        <!-- LOGGED IN VIEW -->
-        <div id="accountLoggedIn" class="hidden">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div class="user-pill">
-              👤 <span id="currentUserName"></span>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-              <button id="logoutBtn" class="small-btn secondary">Log Out</button>
-              <button id="deleteAccountBtn" class="small-btn danger">Delete Account</button>
-            </div>
-          </div>
-
-          <div class="account-card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <div class="muted" style="font-size:12px;">Your Rating</div>
-                <div style="font-size:24px; font-weight:900;" id="userEloDisplay">1000</div>
-              </div>
-              <div>
-                <div class="muted" style="font-size:12px;">Your Record</div>
-                <div style="font-size:18px; font-weight:800;" id="userRecordDisplay">0-0</div>
-              </div>
-              <div>
-                <div class="muted" style="font-size:12px;">Club Rank</div>
-                <div style="font-size:18px; font-weight:800;" id="userRankDisplay">#1</div>
-              </div>
-            </div>
-          </div>
-
-          <div id="userPendingAlert" class="notice warning hidden" style="margin-top: 12px; font-size: 13px;">
-            🔔 <strong>Action Needed:</strong> You have match results awaiting your confirmation below!
-          </div>
-        </div>
-
       </div>
     </div>
-
-    <!-- RECENT MATCHES SECTION -->
-    <div class="card" style="margin-top: 20px;">
-      <div class="card-header">
-        <div>
-          <h2>Match History & Verification</h2>
-          <div class="muted" style="font-size:13px; margin-top:2px;">
-            Matches require dual player confirmation to become official.
-          </div>
-        </div>
-        <div class="tabs" style="margin:0; border:0; padding:0;">
-          <button class="tab-btn active" id="filterMatchesAll" onclick="setMatchFilter('all')">All Matches</button>
-          <button class="tab-btn" id="filterMatchesPending" onclick="setMatchFilter('pending')">Pending</button>
-          <button class="tab-btn" id="filterMatchesOfficial" onclick="setMatchFilter('official')">Official</button>
-        </div>
-      </div>
-
+    <div class="card" style="margin-top:20px;">
+      <h2>Recent match history</h2>
+      <p class="muted">Results recorded by the admin. To correct a result, the admin can undo the latest match and enter it again.</p>
       <div id="recentMatches" class="match-list"></div>
+      <button id="viewAllMatches" type="button" class="small-btn secondary hidden" aria-expanded="false" aria-controls="recentMatches">View all matches</button>
     </div>
   </section>
 
-  <!-- PLAYERS ROSTER SECTION -->
   <section id="players" class="section">
     <div class="card">
       <div class="card-header">
         <div>
-          <h2>Active Club Roster</h2>
-          <div class="muted" style="font-size:13px; margin-top:3px;">
-            All registered members of Carroll Ping Pong Club.
+          <h2>Club roster</h2>
+          <div class="muted" style="font-size:15px; margin-top:3px;">
+            Select a player to see their rating chart and match history.
           </div>
         </div>
         <input
           id="playersSearch"
           type="text"
-          placeholder="Search roster..."
-          style="max-width: 220px; padding: 7px 10px; font-size: 13px;"
+          aria-label="Search roster" placeholder="Search roster..."
+          style="max-width: 220px; padding: 7px 10px; font-size: 15px;"
           oninput="renderPlayersTable()"
         >
       </div>
@@ -893,11 +269,11 @@
           <thead>
             <tr>
               <th>Player Name</th>
-              <th>Username</th>
-              <th>Current ELO</th>
+
+              <th>Rating</th>
               <th>Wins</th>
               <th>Losses</th>
-              <th>Win %</th>
+              <th>Win %</th><th class="admin-column hidden">Admin actions</th>
             </tr>
           </thead>
           <tbody id="playersBody"></tbody>
@@ -906,1005 +282,320 @@
     </div>
   </section>
 
-  <!-- RULES SECTION -->
-  <section id="rules" class="section">
-    <div class="grid-2">
-      <div class="card">
-        <h2>Club Rules & Guidelines</h2>
-        <ol style="padding-left: 20px; line-height: 1.8; margin: 0 0 16px;">
-          <li><strong>Baseline:</strong> Every registered club player starts at <strong>1000 ELO</strong>.</li>
-          <li><strong>Match Length:</strong> Standard matches are played to 11 points (must win by at least 2 points).</li>
-          <li><strong>Match Reporting:</strong> Either participant may report the match result immediately following play.</li>
-          <li><strong>Two-Player Confirmation:</strong> ELO ratings do not change until <em>both</em> the winner and the loser log in and confirm the result.</li>
-          <li><strong>Dispute / Rejection:</strong> If a match was reported mistakenly or with incorrect score, either player can reject/cancel the pending report.</li>
-          <li><strong>Have Fun:</strong> No disrespect pls!</li>
-        </ol>
-      </div>
-
-      <div class="card">
-        <h2>Glicko Ratings</h2>
-        <p>We use the published <strong>Glicko-1</strong> algorithm, the rating-system family used by Chess.com.</p>
-        <p>Each player has a rating and a rating deviation (RD), which measures uncertainty. New players start at 1000 with RD 350. Ratings stabilize as players complete matches, and uncertainty increases during inactivity.</p>
-        <div class="notice">Ratings and changes are saved as whole numbers after each match. Confirmed matches are replayed in date order. Both ratings use pre-match values; gains and losses may differ. The club uses one match per rating period and configurable daily uncertainty growth, rather than Chess.com’s unpublished production settings.</div>
-      </div>
-    </div>
-
-    <!-- DATA PERSISTENCE & BACKUP MANAGEMENT -->
-    <div class="card" style="margin-top: 20px;">
-      <div class="card-header">
-        <div>
-          <h2>💾 Cloud Persistence & Data Backup</h2>
-          <div class="muted" style="font-size:13px; margin-top:2px;">
-            Export backups, restore previous club records, or check database connection status.
-          </div>
-        </div>
-        <div id="storageStatusBadge" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid #e2e8f0; background:#f8fafc; color:#475569;">
-          Checking status...
-        </div>
-      </div>
-
-      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px;">
-        <button class="small-btn secondary" style="padding: 9px 14px; font-size: 13px; font-weight:700;" onclick="downloadBackup()">
-          📥 Export Club Backup (.json)
-        </button>
-        <button class="small-btn secondary" style="padding: 9px 14px; font-size: 13px; font-weight:700;" onclick="document.getElementById('backupFileInput').click()">
-          📤 Upload Backup File (.json)
-        </button>
-        <button class="small-btn secondary" style="padding: 9px 14px; font-size: 13px; font-weight:700;" onclick="toggleRestoreTextBox()">
-          📋 Paste Backup JSON Text
-        </button>
-        <input type="file" id="backupFileInput" accept=".json" style="display: none;" onchange="handleRestoreFile(event)">
-      </div>
-
-      <!-- EXPORT JSON TEXT BOX (GREAT FOR IPAD / MOBILE) -->
-      <div id="exportTextWrap" class="hidden" style="margin-top: 14px; padding: 14px; background: white; border: 1px solid #cbd5e1; border-radius: 8px;">
-        <label for="exportTextInput" style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 6px;">
-          Your Club Backup JSON:
-        </label>
-        <textarea id="exportTextInput" rows="5" readonly style="width: 100%; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background:#f8fafc;"></textarea>
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button class="btn accent" style="padding: 8px 16px; font-size: 13px;" onclick="copyExportText()">
-            📋 Copy to Clipboard
-          </button>
-          <button class="small-btn secondary" onclick="document.getElementById('exportTextWrap').classList.add('hidden')">
-            Close
-          </button>
-        </div>
-      </div>
-
-      <!-- PASTE JSON TEXT BOX (GREAT FOR IPAD / MOBILE) -->
-      <div id="restoreTextWrap" class="hidden" style="margin-top: 14px; padding: 14px; background: white; border: 1px solid #cbd5e1; border-radius: 8px;">
-        <label for="restoreTextInput" style="font-weight: 700; font-size: 13px; display: block; margin-bottom: 6px;">
-          Paste your JSON backup text below:
-        </label>
-        <textarea id="restoreTextInput" rows="5" placeholder='{"data":{"accounts":[...],"players":[...],"matches":[...]}}' style="width: 100%; font-family: monospace; font-size: 12px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button class="btn accent" style="padding: 8px 16px; font-size: 13px;" onclick="handleRestoreText()">
-            Restore Club Data from Text
-          </button>
-          <button class="small-btn secondary" onclick="toggleRestoreTextBox()">
-            Cancel
-          </button>
-        </div>
-      </div>
-
-      <div style="margin-top: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; line-height: 1.6;">
-        <strong>💡 Dont mind this, this is just for me.
-        <ol style="margin: 6px 0 0 18px; padding: 0;">
-         
-          <li>This is just for me and the presidents, ignore this.</li>
-        </ol>
-      </div>
-    </div>
-  </section>
-
+  <!-- =========================================
+       RULES & ELO CALCULATOR SECTION
+  ========================================= -->
 </main>
 
-<!-- FOOTER -->
+<!-- =========================================
+     FOOTER
+========================================= -->
 <footer>
   <strong>Carroll High School — Ping Pong Club</strong><br>
-  <span class="muted">Founders: Ethan Dong👑, Cody Li, Liang Sun, and Ethan Mugilan</span>
+  <span class="muted">Founders: Ethan Dong👑, Liang Sun👑, Ethan Mugilan, Cody Li👑</span>
 </footer>
 
-<!-- JAVASCRIPT LOGIC -->
+<!-- =========================================
+     JAVASCRIPT CLIENT & SYNC
+========================================= -->
 <script src="/ratings.js"></script>
 <script>
-const API_BASE = "";
-const SESSION_STORAGE_KEY = "carroll_pingpong_user_session_v6";
-const CLUB_CACHE_KEY = "carroll_pingpong_club_cache_v6";
-const AUTH_CRED_KEY = "carroll_pingpong_user_cred_v6";
-
-// Load initial club state from device cache so data is never lost on refresh/reopen
+"use strict";
 let clubState = { players: [], matches: [] };
-try {
-  const cached = localStorage.getItem(CLUB_CACHE_KEY);
-  if (cached) {
-    const parsed = JSON.parse(cached);
-    if (parsed && Array.isArray(parsed.players)) {
-      clubState = parsed;
-    }
-  }
-} catch (e) {}
+let admin = null;
+let busy = false;
+let refreshing = false;
+let showAllMatches = false;
+let statsInitialized = false;
+const statAnimations = new Map();
 
-let currentUser = null;
-let activeMatchFilter = "all";
-
-try {
-  const savedUser = localStorage.getItem(SESSION_STORAGE_KEY);
-  if (savedUser) currentUser = JSON.parse(savedUser);
-} catch (e) {
-  currentUser = null;
+const $ = id => document.getElementById(id);
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const profileLink = name => `<a class="player-link" href="/player.html?name=${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
+const matchTeams = match => ClubRatings.matchTeams(match);
+const isDoubles = () => $("matchType").value === "doubles";
+const activePlayers = () => clubState.players.filter(p => !p.archived);
+const sortedPlayers = () => [...activePlayers()].sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
+function message(text, error = false) {
+  $("appMessage").textContent = text;
+  $("appMessage").className = `notice${error ? " danger" : ""}${text ? "" : " hidden"}`;
 }
-
-function persistLocalCache() {
-  try {
-    localStorage.setItem(CLUB_CACHE_KEY, JSON.stringify(clubState));
-  } catch (e) {}
-}
-
-async function checkStorageStatus() {
-  const badge = document.getElementById("storageStatusBadge");
-  if (!badge) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/status`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    if (data.persistent) {
-      badge.textContent = `⚡ Persistent Cloud DB (${data.storage.toUpperCase()})`;
-      badge.style.background = "#dcfce7";
-      badge.style.color = "#166534";
-      badge.style.borderColor = "#bbf7d0";
-    } else {
-      badge.textContent = `⚠️ Ephemeral (${data.storage}) — Attach PostgreSQL for 24/7 permanence`;
-      badge.style.background = "#fef3c7";
-      badge.style.color = "#92400e";
-      badge.style.borderColor = "#fde68a";
-    }
-  } catch (e) {
-    badge.textContent = "Offline / Local Cache";
-    badge.style.background = "#f1f5f9";
-    badge.style.color = "#475569";
-    badge.style.borderColor = "#cbd5e1";
-  }
-}
-
-async function downloadBackup() {
-  let dataToExport = null;
-  try {
-    const res = await fetch(`${API_BASE}/api/backup`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.data) dataToExport = json.data;
-    }
-  } catch (e) {}
-
-  // Fallback to local device cache if server is offline or waking up
-  if (!dataToExport || !dataToExport.players || dataToExport.players.length === 0) {
-    let savedCred = null;
-    try { savedCred = JSON.parse(localStorage.getItem(AUTH_CRED_KEY)); } catch (e) {}
-    dataToExport = {
-      version: 1,
-      accounts: savedCred ? [{
-        id: savedCred.id,
-        name: savedCred.name,
-        username: savedCred.username,
-        password: savedCred.password,
-        createdAt: new Date().toISOString()
-      }] : [],
-      players: clubState.players || [],
-      matches: clubState.matches || []
-    };
-  }
-
-  const jsonStr = JSON.stringify(dataToExport, null, 2);
-
-  // Show in text box for easy copying on iPad / Mobile
-  const exportBox = document.getElementById("exportTextWrap");
-  const exportInput = document.getElementById("exportTextInput");
-  if (exportBox && exportInput) {
-    exportInput.value = jsonStr;
-    exportBox.classList.remove("hidden");
-    exportInput.select();
-  }
-
-  // Also trigger file download for desktop/supported browsers
-  try {
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const downloadAnchor = document.createElement("a");
-    const dateStr = new Date().toISOString().slice(0, 10);
-    downloadAnchor.href = url;
-    downloadAnchor.download = `carroll_pingpong_backup_${dateStr}.json`;
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    setTimeout(() => {
-      downloadAnchor.remove();
-      URL.revokeObjectURL(url);
-    }, 1000);
-  } catch (err) {}
-}
-
-function copyExportText() {
-  const exportInput = document.getElementById("exportTextInput");
-  if (!exportInput) return;
-  exportInput.select();
-  exportInput.setSelectionRange(0, 99999);
-  navigator.clipboard.writeText(exportInput.value).then(() => {
-    alert("Copied club backup to clipboard!");
-  }).catch(() => {
-    alert("Backup JSON selected! You can now copy it.");
+async function api(route, method = "GET", body) {
+  const res = await fetch(route, {
+    method, credentials: "same-origin", cache: "no-store",
+    ...(method !== "GET" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) } : {})
   });
-}
-
-async function handleRestoreFile(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-
-  const confirmed = confirm("Are you sure you want to restore this club database? This will merge and update all accounts, players, and match records.");
-  if (!confirmed) {
-    event.target.value = "";
-    return;
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 401 && route !== "/api/admin/login") { admin = null; render(); }
+    throw new Error(data.error || "Request failed. Please try again.");
   }
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      const res = await fetch(`${API_BASE}/api/restore`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: parsed })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(data.error || "Failed to restore backup.");
-        return;
-      }
-
-      await fetchClubData();
-      alert(`Success! ${data.message || "Database restored successfully."}`);
-    } catch (err) {
-      alert("Invalid JSON backup file or network error: " + err.message);
-    } finally {
-      event.target.value = "";
-    }
-  };
-  reader.readAsText(file);
+  return data;
 }
-
-function toggleRestoreTextBox() {
-  const wrap = document.getElementById("restoreTextWrap");
-  if (wrap) wrap.classList.toggle("hidden");
-}
-
-async function handleRestoreText() {
-  const input = document.getElementById("restoreTextInput");
-  if (!input) return;
-  const raw = input.value.trim();
-  if (!raw) {
-    alert("Please paste your backup JSON text first.");
-    return;
-  }
-
-  try {
-    let parsed = JSON.parse(raw);
-    if (parsed.data) parsed = parsed.data;
-
-    const res = await fetch(`${API_BASE}/api/restore`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: parsed })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Failed to restore backup.");
-      return;
-    }
-
-    await fetchClubData();
-    alert(`Success! ${data.message || "Database restored successfully."}`);
-    toggleRestoreTextBox();
-    input.value = "";
-  } catch (err) {
-    alert("Invalid JSON text: " + err.message);
-  }
-}
-
-async function fetchClubData() {
-  try {
-    const res = await fetch(`${API_BASE}/api/data`);
-    if (!res.ok) throw new Error("Failed to fetch club data");
-    const json = await res.json();
-    if (json.success) {
-      const serverPlayers = json.players || [];
-      const serverMatches = json.matches || [];
-      clubState.ratingSystem = json.ratingSystem || {};
-
-      let savedCred = null;
-      try {
-        savedCred = JSON.parse(localStorage.getItem(AUTH_CRED_KEY));
-      } catch (e) {}
-
-      const userToSync = savedCred ? {
-        id: savedCred.id,
-        name: savedCred.name,
-        username: savedCred.username,
-        password: savedCred.password
-      } : currentUser;
-
-      // If server is empty but client has cached players/matches, rehydrate the server
-      if (serverPlayers.length === 0 && (clubState.players.length > 0 || userToSync)) {
-        try {
-          const syncRes = await fetch(`${API_BASE}/api/sync`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user: userToSync,
-              players: clubState.players,
-              matches: clubState.matches
-            })
-          });
-          const syncJson = await syncRes.json();
-          if (syncJson.success) {
-            clubState.players = syncJson.players || clubState.players;
-            clubState.matches = syncJson.matches || clubState.matches;
-          }
-        } catch (syncErr) {}
-      } else {
-        clubState.players = serverPlayers;
-        clubState.matches = serverMatches;
-      }
-
-      persistLocalCache();
-
-      // Update current user profile from server data
-      if (currentUser) {
-        const matchingPlayer = clubState.players.find(p => String(p.id) === String(currentUser.id));
-        if (matchingPlayer) {
-          currentUser.name = matchingPlayer.name;
-          currentUser.elo = matchingPlayer.elo;
-          currentUser.wins = matchingPlayer.wins;
-          currentUser.losses = matchingPlayer.losses;
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-        }
-      }
-
-      syncSessionUI();
-      render();
-      checkStorageStatus();
-    }
-  } catch (err) {
-    // If offline or server is waking up, render from local cache
-    render();
-    checkStorageStatus();
-  }
-}
-
-// Start real-time sync polling (every 3 seconds)
-setInterval(fetchClubData, 3000);
-window.addEventListener("focus", fetchClubData);
-
 function showSection(id) {
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  const target = document.getElementById(id);
-  if (target) target.classList.add("active");
-
-  document.querySelectorAll("nav button").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.section === id);
-  });
-
-  render();
-  window.scrollTo({
-    top: document.querySelector("main").offsetTop - 70,
-    behavior: "smooth"
-  });
+  document.body.classList.toggle("home-view", id === "home");
+  document.querySelector(".hero").classList.toggle("hidden", id !== "home");
+  document.querySelectorAll("main .section").forEach(section => section.classList.toggle("active", section.id === id));
+  document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
 }
-
-document.querySelectorAll("nav button").forEach(button => {
-  button.onclick = () => showSection(button.dataset.section);
+function sectionFromUrl() {
+  const section = location.hash.slice(1);
+  showSection(["players","matches"].includes(section) ? section : "home");
+}
+document.querySelectorAll("nav [data-section]").forEach(button => button.onclick = () => {
+  const id = button.dataset.section;
+  if (location.hash !== (id === "home" ? "" : "#"+id)) history.pushState(null,"",id === "home" ? location.pathname : "#"+id);
+  showSection(id);
 });
-
-function switchAuthView(view) {
-  const isSignup = view === "signup";
-  document.getElementById("authTabSignup").classList.toggle("active", isSignup);
-  document.getElementById("authTabLogin").classList.toggle("active", !isSignup);
-  document.getElementById("signupView").classList.toggle("hidden", !isSignup);
-  document.getElementById("loginView").classList.toggle("hidden", isSignup);
+window.addEventListener("popstate",sectionFromUrl);
+sectionFromUrl();
+function renderPodium() {
+  const leaders = sortedPlayers().slice(0, 3);
+  $("podiumPlaces").innerHTML = [0, 1, 2].map(index => {
+    const player = leaders[index];
+    return `<li class="podium-place podium-place-${index+1}" aria-label="Rank ${index+1}${player ? `: ${escapeHtml(player.name)}, ${player.elo} rating` : ": No player yet"}">
+      <span class="podium-name">${player ? escapeHtml(player.name) : "No player yet"}</span>
+      <div class="podium-step" aria-hidden="true">
+        <span class="podium-medal">${index+1}</span>
+        <span class="podium-rating">${player ? player.elo : "—"}</span>
+        <span class="podium-rating-label">Rating</span>
+      </div>
+    </li>`;
+  }).join("");
 }
-
-function setMatchFilter(filter) {
-  activeMatchFilter = filter;
-  document.getElementById("filterMatchesAll").classList.toggle("active", filter === "all");
-  document.getElementById("filterMatchesPending").classList.toggle("active", filter === "pending");
-  document.getElementById("filterMatchesOfficial").classList.toggle("active", filter === "official");
-  renderRecentMatches();
+function renderLeaderboard() {
+  const search = $("leaderboardSearch").value.toLowerCase();
+  $("leaderboardBody").innerHTML = sortedPlayers().map((p, i) => ({ p, rank: i+1 })).filter(({p}) => p.name.toLowerCase().includes(search)).map(({p,rank}) => {
+    const total = p.wins + p.losses;
+    return `<tr class="${rank <= 3 ? "leader-row" : ""}"><td>${rank}</td><td>${profileLink(p.name)}</td><td>${p.elo}</td><td>${total}</td><td>${p.wins}-${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td></tr>`;
+  }).join("") || '<tr><td colspan="6">No players found. The admin can add names to the roster.</td></tr>';
 }
-
-function esc(str) {
-  if (str === null || str === undefined) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function renderPlayersTable() {
+  const search = $("playersSearch").value.toLowerCase();
+  $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
+    const total = p.wins+p.losses;
+    return `<tr class="${p.archived ? "archived" : ""}"><td>${profileLink(p.name)}</td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
+  }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
+  document.querySelectorAll(".admin-column").forEach(el => el.classList.toggle("hidden", !admin));
+  $("playersBody").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
-
-document.getElementById("signupForm").onsubmit = async event => {
-  event.preventDefault();
-  const name = document.getElementById("signupName").value.trim();
-  const username = document.getElementById("signupUsername").value.trim().toLowerCase();
-  const password = document.getElementById("signupPassword").value;
-
-  if (!name || !username || !password) {
-    alert("Please fill out all fields.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Failed to create account.");
-      return;
-    }
-
-    currentUser = data.user;
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-    localStorage.setItem(AUTH_CRED_KEY, JSON.stringify({
-      id: currentUser.id,
-      name: currentUser.name,
-      username: currentUser.username,
-      password: password
-    }));
-
-    // Optimistically add to local state
-    if (!clubState.players.some(p => String(p.id) === String(currentUser.id))) {
-      clubState.players.push({
-        id: currentUser.id,
-        name: currentUser.name,
-        username: currentUser.username,
-        elo: 1000,
-        wins: 0,
-        losses: 0
-      });
-      persistLocalCache();
-    }
-
-    event.target.reset();
-    syncSessionUI();
-    await fetchClubData();
-    alert(`Welcome to Carroll Ping Pong Club, ${currentUser.name}! Your account has been created and synced.`);
-  } catch (err) {
-    alert("Connection error. Please ensure the server is reachable.");
-  }
-};
-
-document.getElementById("loginForm").onsubmit = async event => {
-  event.preventDefault();
-  const username = document.getElementById("loginUsername").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
-
-  if (!username || !password) {
-    alert("Please enter both username and password.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Invalid username or password.");
-      return;
-    }
-
-    currentUser = data.user;
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(currentUser));
-    localStorage.setItem(AUTH_CRED_KEY, JSON.stringify({
-      id: currentUser.id,
-      name: currentUser.name,
-      username: currentUser.username,
-      password: password
-    }));
-    event.target.reset();
-
-    syncSessionUI();
-    await fetchClubData();
-    alert(`Welcome back, ${currentUser.name}!`);
-  } catch (err) {
-    alert("Connection error. Please try again.");
-  }
-};
-
-document.getElementById("logoutBtn").onclick = () => {
-  currentUser = null;
-  localStorage.removeItem(SESSION_STORAGE_KEY);
-  localStorage.removeItem(AUTH_CRED_KEY);
-  syncSessionUI();
-  alert(`Logged out successfully.`);
-};
-
-document.getElementById("deleteAccountBtn").onclick = async () => {
-  if (!currentUser) return;
-
-  const confirmed = confirm(
-    `Are you sure you want to permanently delete your account (${currentUser.name})?\n\n` +
-    `• Your player profile will be removed from the club roster.\n` +
-    `• Any pending unconfirmed matches will be deleted.\n` +
-    `• This action cannot be undone.`
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/delete-account`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      alert(data.error || "Failed to delete account.");
-      return;
-    }
-
-    const deletedId = currentUser.id;
-    const deletedName = currentUser.name;
-
-    currentUser = null;
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    localStorage.removeItem(AUTH_CRED_KEY);
-
-    clubState.players = clubState.players.filter(p => String(p.id) !== String(deletedId));
-    persistLocalCache();
-
-    syncSessionUI();
-    await fetchClubData();
-    alert(`Account for ${deletedName} was permanently deleted.`);
-  } catch (err) {
-    alert("Connection error while deleting account.");
-  }
-};
-
-function syncSessionUI() {
-  const loggedIn = !!currentUser;
-
-  document.getElementById("accountLoggedOut").classList.toggle("hidden", loggedIn);
-  document.getElementById("accountLoggedIn").classList.toggle("hidden", !loggedIn);
-
-  document.getElementById("reportNoticeLoggedOut").classList.toggle("hidden", loggedIn);
-  document.getElementById("reportNoticeLoggedIn").classList.toggle("hidden", !loggedIn);
-  document.getElementById("quickRoleSelect").classList.toggle("hidden", !loggedIn);
-
-  if (loggedIn) {
-    document.getElementById("currentUserName").textContent = currentUser.name;
-
-    const player = clubState.players.find(p => String(p.id) === String(currentUser.id)) || currentUser;
-    document.getElementById("userEloDisplay").textContent = Math.round(player.elo || 1000);
-    document.getElementById("userRecordDisplay").textContent = `${player.wins || 0}-${player.losses || 0}`;
-
-    const sorted = [...clubState.players].sort((a, b) => b.elo - a.elo);
-    const rankIdx = sorted.findIndex(p => String(p.id) === String(currentUser.id));
-    document.getElementById("userRankDisplay").textContent = rankIdx >= 0 ? `#${rankIdx + 1}` : "#1";
-
-    const pendingForUser = clubState.matches.filter(m => {
-      if (m.eloApplied) return false;
-      const isInvolved = String(m.winnerId) === String(currentUser.id) || String(m.loserId) === String(currentUser.id);
-      const hasConfirmed = m.confirmations && m.confirmations[currentUser.id];
-      return isInvolved && !hasConfirmed;
-    });
-
-    document.getElementById("userPendingAlert").classList.toggle("hidden", pendingForUser.length === 0);
-  }
-
-  render();
+function renderRecentMatches() {
+  const latest = clubState.matches.at(-1);
+  const ordered = clubState.matches.map((match,index) => ({match,index})).sort((a,b) => {
+    const ad = Date.parse(a.match.date), bd = Date.parse(b.match.date);
+    return Number.isFinite(ad) && Number.isFinite(bd) && ad !== bd ? bd-ad : b.index-a.index;
+  }).map(item => item.match);
+  const visible = showAllMatches ? ordered : ordered.slice(0,5);
+  $("viewAllMatches").classList.toggle("hidden", ordered.length <= 5);
+  $("viewAllMatches").textContent = showAllMatches ? "Show fewer matches" : `View all ${ordered.length} matches`;
+  $("viewAllMatches").setAttribute("aria-expanded", String(showAllMatches));
+  $("recentMatches").innerHTML = visible.map(m => {
+    const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
+    const teams = matchTeams(m);
+    const changes = m.type === "doubles" ? teams.map((team,side) => team.map((name,i) => `${escapeHtml(name)} ${side === 0 ? "+" : "−"}${(side === 0 ? m.winnerChanges : m.loserChanges)[i]}`).join(" · ")).join(" / ") : `+${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0}`;
+    return `<div class="match-item is-official"><div><strong>${escapeHtml(teams[0].join(" & "))}</strong> defeated <strong>${escapeHtml(teams[1].join(" & "))}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">${m.type === "doubles" ? "Doubles" : "Singles"} · ${changes} rating</span></div>${admin && latest === m && m.before && teams.flat().every(name => clubState.players.some(p => p.name === name)) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
+  }).join("") || '<p class="muted">No completed matches yet.</p>';
+  $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
 }
-
-function setReporterRole(role) {
-  if (!currentUser) return;
-
-  const winnerSelect = document.getElementById("winner");
-  const loserSelect = document.getElementById("loser");
-
-  if (role === "winner") {
-    winnerSelect.value = currentUser.id;
-    if (loserSelect.value === String(currentUser.id)) winnerSelect.value = "";
-  } else {
-    loserSelect.value = currentUser.id;
-    if (winnerSelect.value === String(currentUser.id)) winnerSelect.value = "";
+$("viewAllMatches").onclick = () => { showAllMatches = !showAllMatches; renderRecentMatches(); };
+function renderSelectors() {
+  for (const id of ["winner", "loser", "winnerPartner", "loserPartner"]) {
+    const selected = $(id).value;
+    $(id).innerHTML = `<option value="">Select player…</option>` + [...activePlayers()].sort((a,b) => a.name.localeCompare(b.name)).map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)} (${p.elo})</option>`).join("");
+    $(id).value = selected;
   }
   updateEloPreview();
 }
-
-function validateScoreInputs() {
-  const wScore = document.getElementById("winnerScore").value;
-  const lScore = document.getElementById("loserScore").value;
-  const warn = document.getElementById("scoreWarning");
-
-  if (wScore !== "" && lScore !== "") {
-    const wNum = parseInt(wScore, 10);
-    const lNum = parseInt(lScore, 10);
-    if (!isNaN(wNum) && !isNaN(lNum) && wNum <= lNum) {
-      warn.classList.remove("hidden");
-      return false;
-    }
-  }
-  warn.classList.add("hidden");
-  return true;
+function clubDateKey(date) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const value = type => parts.find(p => p.type === type).value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
 }
-
-function updateEloPreview() {
-  const wId = document.getElementById("winner").value;
-  const lId = document.getElementById("loser").value;
-  const previewBox = document.getElementById("eloPreview");
-  const previewText = document.getElementById("eloPreviewText");
-
-  if (!wId || !lId || wId === lId) {
-    previewBox.classList.add("hidden");
-    return;
-  }
-
-  const winner = clubState.players.find(p => String(p.id) === String(wId));
-  const loser = clubState.players.find(p => String(p.id) === String(lId));
-
-  if (winner && loser) {
-    const next = ClubRatings.preview(winner, loser, new Date().toISOString(), clubState.ratingSystem || {});
-    previewText.textContent = `Winner +${Math.round(next.winnerChange)} / Loser -${Math.round(next.loserChange)} rating`;
-    previewBox.classList.remove("hidden");
-  } else {
-    previewBox.classList.add("hidden");
-  }
+function matchesThisWeek(matches, now = new Date()) {
+  const today = clubDateKey(now);
+  const monday = new Date(today + "T00:00:00Z");
+  monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7);
+  const start = monday.toISOString().slice(0,10);
+  return matches.filter(m => {
+    const date = new Date(m.date);
+    if (!m.date || !Number.isFinite(date.getTime()) || date > now) return false;
+    const key = clubDateKey(date);
+    return key >= start && key <= today;
+  }).length;
 }
-
-document.getElementById("matchForm").onsubmit = async event => {
-  event.preventDefault();
-
-  if (!currentUser) {
-    alert("Please log in or create an account to submit a match result.");
-    showSection("matches");
+function setStat(id, value, animate) {
+  const exact = value;
+  value = Math.round(value / 10) * 10;
+  const el = $(id), previous = statAnimations.get(id);
+  el.setAttribute("aria-label", `${exact} exactly`);
+  if (previous?.target === value) return;
+  if (previous) { cancelAnimationFrame(previous.frame); statAnimations.delete(id); }
+  if (!animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches || value === 0) {
+    el.textContent = `${value}+`;
     return;
   }
-
-  const winnerId = document.getElementById("winner").value;
-  const loserId = document.getElementById("loser").value;
-
-  if (!winnerId || !loserId) {
-    alert("Please select both a winner and a loser.");
-    return;
-  }
-
-  if (String(winnerId) === String(loserId)) {
-    alert("The winner and loser must be different players.");
-    return;
-  }
-
-  const wScoreRaw = document.getElementById("winnerScore").value.trim();
-  const lScoreRaw = document.getElementById("loserScore").value.trim();
-
-  if (wScoreRaw !== "" && lScoreRaw !== "") {
-    const wNum = parseInt(wScoreRaw, 10);
-    const lNum = parseInt(lScoreRaw, 10);
-    if (wNum <= lNum) {
-      alert("Invalid score: Winner score must be strictly greater than loser score.");
-      return;
-    }
-  }
-
-  const scoreText = (wScoreRaw !== "" && lScoreRaw !== "") ? `${wScoreRaw}-${lScoreRaw}` : "Score unrecorded";
-
+  const state = { target: value, frame: null, start: null };
+  statAnimations.set(id,state);
+  el.textContent = "0+";
+  const tick = time => {
+    if (state.start === null) state.start = time;
+    const progress = Math.min(1,(time-state.start)/3200);
+    el.textContent = `${Math.round(value * ((1-Math.cos(Math.PI*progress))/2))}+`;
+    if (progress < 1) state.frame = requestAnimationFrame(tick);
+    else statAnimations.delete(id);
+  };
+  state.frame = requestAnimationFrame(tick);
+}
+function render(animateStats = false) {
+  const players = activePlayers();
+  setStat("statPlayers",players.length,animateStats);
+  setStat("statMatches",clubState.matches.length,animateStats);
+  setStat("statWeek",matchesThisWeek(clubState.matches),animateStats);
+  $("adminLoggedOut").classList.toggle("hidden", !!admin);
+  $("adminLoggedIn").classList.toggle("hidden", !admin);
+  $("adminName").textContent = admin?.username || "";
+  $("reportNoticeLoggedOut").classList.toggle("hidden", !!admin);
+  $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
+  const requiredPlayers = isDoubles() ? 4 : 2;
+  $("doublesPartners").classList.toggle("hidden", !isDoubles());
+  for (const id of ["winnerPartner","loserPartner"]) { $(id).required = isDoubles(); $(id).disabled = !isDoubles(); }
+  $("winnerLabel").textContent = isDoubles() ? "Winning team · player 1" : "Winner";
+  $("loserLabel").textContent = isDoubles() ? "Losing team · player 1" : "Loser";
+  $("reportNoticeNeedPlayers").textContent = `Add at least ${requiredPlayers} active players before recording ${isDoubles() ? "doubles" : "a match"}.`;
+  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= requiredPlayers);
+  $("matchFields").disabled = !admin || busy || players.length < requiredPlayers;
+  $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
+  $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
+  $("logoutBtn").disabled = busy;
+  $("backupBtn").disabled = busy;
+  renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
+}
+async function refresh() {
+  if (refreshing || busy) return;
+  refreshing = true;
   try {
-    const res = await fetch(`${API_BASE}/api/matches`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        winnerId,
-        loserId,
-        reporterId: currentUser.id,
-        score: scoreText
-      })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to submit match result.");
-      return;
-    }
-
-    event.target.reset();
-    document.getElementById("eloPreview").classList.add("hidden");
-    document.getElementById("scoreWarning").classList.add("hidden");
-
-    await fetchClubData();
-    alert(`Match submitted! ${currentUser.name} confirmed their side.\n\nThe opponent can now log in on any device to confirm.`);
-  } catch (err) {
-    alert("Connection error while submitting match.");
+    const [data, session] = await Promise.all([api("/api/data"), api("/api/admin/session")]);
+    clubState = { players: data.players, matches: data.matches, revision: data.revision, ratingSystem: data.ratingSystem };
+    admin = session.admin;
+    render(!statsInitialized);
+    statsInitialized = true;
+  } catch (err) { message(err.message, true); }
+  finally { refreshing = false; }
+}
+async function action(callback, success) {
+  if (busy) return;
+  busy = true; render(); message("");
+  try { await callback(); message(success); }
+  catch (err) { message(err.message, true); }
+  finally { busy = false; render(); await refresh(); }
+}
+function validateScoreInputs() {
+  const w = $("winnerScore").value, l = $("loserScore").value;
+  const valid = w === "" || l === "" || Number(w) > Number(l);
+  $("scoreWarning").classList.toggle("hidden", valid);
+  updateEloPreview();
+  return valid;
+}
+function selectedTeams() {
+  const names = isDoubles() ? [[$("winner").value,$("winnerPartner").value],[$("loser").value,$("loserPartner").value]] : [[$("winner").value],[$("loser").value]];
+  return names.map(team => team.map(name => clubState.players.find(p => p.name === name && !p.archived)));
+}
+function updateEloPreview() {
+  const teams = selectedTeams(), players = teams.flat();
+  const complete = players.every(Boolean), distinct = complete && new Set(players.map(p => p.name)).size === players.length;
+  $("playerWarning").classList.toggle("hidden", !complete || distinct);
+  $("playerWarning").textContent = `Choose ${isDoubles() ? "four" : "two"} different players.`;
+  const ws = Number($("winnerScore").value), ls = Number($("loserScore").value);
+  const visible = distinct && $("winnerScore").value !== "" && $("loserScore").value !== "" && Number.isInteger(ws) && Number.isInteger(ls) && ws > ls && ls >= 0 && ws <= 99;
+  $("eloPreview").classList.toggle("hidden", !visible);
+  if (visible) {
+    try {
+      if (isDoubles()) {
+        const changes = ClubRatings.previewDoubles(...teams,new Date().toISOString(),clubState.ratingSystem);
+        $("eloPreviewText").textContent = teams.map((team,side) => team.map((p,i) => `${p.name} ${side === 0 ? "+" : "−"}${(side === 0 ? changes.winnerChanges : changes.loserChanges)[i]}`).join(" · ")).join(" / ");
+      } else {
+        const changes = ClubRatings.preview(teams[0][0],teams[1][0],new Date().toISOString(),clubState.ratingSystem);
+        $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
+      }
+    } catch { $("eloPreview").classList.add("hidden"); }
+  }
+}
+$("loginForm").onsubmit = event => {
+  event.preventDefault();
+  const body = { username: $("loginUsername").value.trim(), password: $("loginPassword").value };
+  action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
+};
+$("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; $("loginForm").reset(); }, "");
+$("playerForm").onsubmit = event => {
+  event.preventDefault();
+  const name = $("playerName").value.trim();
+  action(async () => { await api("/api/players", "POST", { name }); $("playerForm").reset(); }, "Player added at 1000 rating.");
+};
+$("matchForm").onsubmit = event => {
+  event.preventDefault();
+  if (!validateScoreInputs()) return;
+  const teams = selectedTeams();
+  if (teams.flat().some(p => !p) || new Set(teams.flat().map(p => p.name)).size !== teams.flat().length) return message("Choose a different active player for every position.",true);
+  const body = { winnerName: $("winner").value, loserName: $("loser").value, winnerScore: Number($("winnerScore").value), loserScore: Number($("loserScore").value) };
+  if (isDoubles()) { delete body.winnerName; delete body.loserName; body.type = "doubles"; body.winnerNames = teams[0].map(p => p.name); body.loserNames = teams[1].map(p => p.name); }
+  body.revision = clubState.revision;
+  action(async () => { await api("/api/matches", "POST", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
+};
+$("playersBody").onclick = event => {
+  const button = event.target.closest("button");
+  if (!button || busy || !admin) return;
+  const currentName = button.dataset.rename || button.dataset.archive || button.dataset.delete;
+  const player = clubState.players.find(p => p.name === currentName);
+  if (!player) return;
+  if (button.dataset.delete) {
+    if (!confirm(`Delete ${player.name} from the roster? Their recorded matches and opponents’ ratings will stay unchanged. This cannot be undone from the website.`)) return;
+    action(() => api("/api/players", "DELETE", { name: player.name, revision: clubState.revision }), "Player deleted. Match history preserved.");
+  } else if (button.dataset.rename) {
+    const name = prompt("Player name:", player.name);
+    if (name === null) return;
+    action(() => api("/api/players", "PATCH", { currentName: player.name, name }), "Player renamed. Match history updated.");
+  } else {
+    action(() => api("/api/players", "PATCH", { currentName: player.name, archived: !player.archived }), player.archived ? "Player reactivated." : "Player archived. Match history is preserved.");
   }
 };
-
-async function confirmMatch(matchId) {
-  if (!currentUser) {
-    alert("Please log in to confirm match results.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/api/matches/${matchId}/confirm`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to confirm match.");
-      return;
-    }
-
-    await fetchClubData();
-    if (json.eloApplied) {
-      alert(`Both players confirmed! The match is official and Elo ratings have updated across all devices.`);
-    } else {
-      alert("Your confirmation has been saved. Awaiting confirmation from opponent.");
-    }
-  } catch (err) {
-    alert("Connection error while confirming match.");
-  }
+$("recentMatches").onclick = event => {
+  const button = event.target.closest("[data-undo]");
+  if (!button || busy || !admin || !confirm("Undo the latest match and restore both players' previous ratings and records?")) return;
+  action(() => api("/api/matches/latest", "DELETE", { revision: clubState.revision }), "Latest match undone.");
+};
+$("backupBtn").onclick = () => action(async () => {
+  const backup = await api("/api/backup");
+  const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a"); link.href = url;
+  link.download = `pingpong-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}, "Data backup downloaded.");
+// Discard the old player login profile; only the server cookie grants admin access.
+localStorage.removeItem("carroll_pingpong_user_session_v5");
+const photoTrack = $("photoTrack");
+const photoSlides = [...photoTrack.children];
+const photoCount = photoSlides.length - 1; // Last slide repeats the first for a seamless loop.
+let photoIndex = 0;
+function resetPhotoLoop() {
+  if (photoIndex !== photoCount) return;
+  photoTrack.classList.add("resetting");
+  photoIndex = 0;
+  photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== 0)));
+  photoTrack.style.transform = "translateX(0)";
+  requestAnimationFrame(() => requestAnimationFrame(() => photoTrack.classList.remove("resetting")));
 }
-
-async function rejectOrCancelMatch(matchId) {
-  if (!currentUser) {
-    alert("Please log in to manage match results.");
-    return;
-  }
-
-  const match = clubState.matches.find(m => String(m.id) === String(matchId));
-  if (!match) return;
-
-  const promptMsg = match.eloApplied
-    ? `Void and remove this official match (${match.winnerName} def. ${match.loserName})? Elo ratings will be rolled back.`
-    : `Reject/Cancel this pending match report (${match.winnerName} vs ${match.loserName})?`;
-
-  if (!confirm(promptMsg)) return;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/matches/${matchId}/reject`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      alert(json.error || "Failed to remove match.");
-      return;
-    }
-
-    await fetchClubData();
-    alert("Match removed successfully.");
-  } catch (err) {
-    alert("Connection error while removing match.");
-  }
-}
-
-function render() {
-  renderHomeStats();
-  renderLeaderboard();
-  renderPlayersTable();
-  renderDropdowns();
-  renderRecentMatches();
-}
-
-function renderHomeStats() {
-  document.getElementById("statPlayers").textContent = clubState.players.length;
-
-  const officialMatches = clubState.matches.filter(m => m.eloApplied);
-  const pendingMatches = clubState.matches.filter(m => !m.eloApplied);
-
-  document.getElementById("statMatches").textContent = officialMatches.length;
-  document.getElementById("statPendingSub").textContent = `${pendingMatches.length} pending confirmation`;
-
-  const avgElo = clubState.players.length
-    ? Math.round(clubState.players.reduce((sum, p) => sum + p.elo, 0) / clubState.players.length)
-    : 1000;
-  document.getElementById("statElo").textContent = avgElo;
-}
-
-function renderLeaderboard() {
-  const searchTerm = (document.getElementById("leaderboardSearch")?.value || "").toLowerCase();
-  const sorted = [...clubState.players].sort((a, b) => {
-    if (b.elo !== a.elo) return b.elo - a.elo;
-    return (b.wins || 0) - (a.wins || 0);
-  });
-
-  const filtered = sorted.filter(p =>
-    p.name.toLowerCase().includes(searchTerm) ||
-    (p.username && p.username.toLowerCase().includes(searchTerm))
-  );
-
-  const tbody = document.getElementById("leaderboardBody");
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">
-          No players registered yet.<br>
-          <button class="small-btn primary" style="margin-top:10px;" onclick="showSection('matches')">
-            Create an Account to Join the Roster
-          </button>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map((player, idx) => {
-    const isCurrent = currentUser && String(currentUser.id) === String(player.id);
-    const totalMatches = (player.wins || 0) + (player.losses || 0);
-    const winRate = totalMatches > 0 ? Math.round(((player.wins || 0) / totalMatches) * 100) : 0;
-
-    let rankClass = "rank";
-    let rankBadge = `${idx + 1}`;
-    if (idx === 0) { rankClass = "rank-1"; rankBadge = "🥇 1"; }
-    else if (idx === 1) { rankClass = "rank-2"; rankBadge = "🥈 2"; }
-    else if (idx === 2) { rankClass = "rank-3"; rankBadge = "🥉 3"; }
-
-    return `
-      <tr class="${isCurrent ? "highlight-row" : ""}">
-        <td class="${rankClass}"><strong>${rankBadge}</strong></td>
-        <td>
-          <strong>${esc(player.name)}</strong>
-          ${isCurrent ? '<span class="confirm-chip done" style="margin-left:6px;">You</span>' : ''}
-        </td>
-        <td><span class="elo-pill">${Math.round(player.elo)}</span></td>
-        <td>${totalMatches}</td>
-        <td><strong>${player.wins || 0}</strong> - ${player.losses || 0}</td>
-        <td>${winRate}%</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function renderPlayersTable() {
-  const searchTerm = (document.getElementById("playersSearch")?.value || "").toLowerCase();
-  const sorted = [...clubState.players].sort((a, b) => b.elo - a.elo);
-  const filtered = sorted.filter(p =>
-    p.name.toLowerCase().includes(searchTerm) ||
-    (p.username && p.username.toLowerCase().includes(searchTerm))
-  );
-
-  const tbody = document.getElementById("playersBody");
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center; padding: 32px 16px;">No registered players yet.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(player => {
-    const total = (player.wins || 0) + (player.losses || 0);
-    const winRate = total > 0 ? Math.round(((player.wins || 0) / total) * 100) : 0;
-    return `
-      <tr>
-        <td><strong>${esc(player.name)}</strong></td>
-        <td class="muted">@${esc(player.username || "user")}</td>
-        <td><span class="elo-pill">${Math.round(player.elo)}</span></td>
-        <td style="color:var(--green); font-weight:700;">${player.wins || 0}</td>
-        <td style="color:var(--red); font-weight:700;">${player.losses || 0}</td>
-        <td>${winRate}%</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function renderDropdowns() {
-  const winnerSelect = document.getElementById("winner");
-  const loserSelect = document.getElementById("loser");
-  const needPlayersNotice = document.getElementById("reportNoticeNeedPlayers");
-
-  const currentWinnerVal = winnerSelect.value;
-  const currentLoserVal = loserSelect.value;
-
-  if (clubState.players.length < 2) {
-    needPlayersNotice.classList.remove("hidden");
-  } else {
-    needPlayersNotice.classList.add("hidden");
-  }
-
-  const buildOptions = (selectedVal, placeholder) => {
-    let html = `<option value="" disabled ${!selectedVal ? "selected" : ""}>${placeholder}</option>`;
-    html += clubState.players.map(p => `
-      <option value="${p.id}" ${String(selectedVal) === String(p.id) ? "selected" : ""}>
-        ${esc(p.name)} (${Math.round(p.elo)} Elo)
-      </option>
-    `).join("");
-    return html;
-  };
-
-  winnerSelect.innerHTML = buildOptions(currentWinnerVal, "Select winner...");
-  loserSelect.innerHTML = buildOptions(currentLoserVal, "Select loser...");
-}
-
-function renderRecentMatches() {
-  const container = document.getElementById("recentMatches");
-  let list = clubState.matches.slice().reverse();
-
-  if (activeMatchFilter === "pending") list = list.filter(m => !m.eloApplied);
-  else if (activeMatchFilter === "official") list = list.filter(m => m.eloApplied);
-
-  if (list.length === 0) {
-    container.innerHTML = `<div class="muted" style="text-align:center; padding:28px 16px;">No matches recorded yet. Report a match to get started!</div>`;
-    return;
-  }
-
-  container.innerHTML = list.map(match => {
-    const winnerConfirmed = !!(match.confirmations && match.confirmations[match.winnerId]);
-    const loserConfirmed = !!(match.confirmations && match.confirmations[match.loserId]);
-
-    const isUserWinner = currentUser && String(currentUser.id) === String(match.winnerId);
-    const isUserLoser = currentUser && String(currentUser.id) === String(match.loserId);
-    const isInvolved = isUserWinner || isUserLoser;
-    const hasUserConfirmed = currentUser && match.confirmations && !!match.confirmations[currentUser.id];
-
-    let actionButtons = "";
-    if (match.eloApplied) {
-      actionButtons = `<span class="badge badge-official">Official • +${Math.round(Number(match.winnerChange))} / -${Math.round(Number(match.loserChange))} Elo</span>`;
-    } else {
-      if (isInvolved && !hasUserConfirmed) {
-        actionButtons = `
-          <button class="small-btn success" onclick="confirmMatch(${match.id})">✓ Confirm</button>
-          <button class="small-btn danger" onclick="rejectOrCancelMatch(${match.id})">✕ Reject</button>
-        `;
-      } else if (isInvolved && hasUserConfirmed) {
-        actionButtons = `
-          <span class="badge badge-pending">Waiting for opponent</span>
-          <button class="small-btn danger" title="Cancel your submission" onclick="rejectOrCancelMatch(${match.id})">Cancel</button>
-        `;
-      } else {
-        actionButtons = `<span class="badge badge-pending">Awaiting confirmation</span>`;
-      }
-    }
-
-    const formattedDate = match.date ? new Date(match.date).toLocaleDateString([], {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
-    }) : "";
-
-    return `
-      <div class="match-item ${match.eloApplied ? 'is-official' : 'is-pending'}">
-        <div class="match-main">
-          <div class="match-headline">
-            <span style="color:var(--green); font-weight:800;">🏆 ${esc(match.winnerName)}</span>
-            <span class="muted" style="font-size:13px; font-weight:normal;">defeated</span>
-            <strong>${esc(match.loserName)}</strong>
-          </div>
-          <div class="match-meta">
-            <span><strong>Score:</strong> ${esc(match.score)}</span>
-            <span>•</span>
-            <span>${formattedDate}</span>
-          </div>
-          <div class="confirm-status">
-            <span class="confirm-chip ${winnerConfirmed ? 'done' : ''}">${winnerConfirmed ? '✓' : '○'} ${esc(match.winnerName)}</span>
-            <span class="confirm-chip ${loserConfirmed ? 'done' : ''}">${loserConfirmed ? '✓' : '○'} ${esc(match.loserName)}</span>
-          </div>
-        </div>
-        <div class="match-actions">${actionButtons}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-// Initial immediate render from cache so data is never lost on refresh/reopen
-syncSessionUI();
-fetchClubData();
+photoTrack.addEventListener("transitionend", resetPhotoLoop);
+setInterval(() => {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.hidden || !document.body.classList.contains("home-view") || photoTrack.parentElement.matches(":hover, :focus-within")) return;
+  photoIndex += 1;
+  photoSlides.forEach((slide, index) => slide.setAttribute("aria-hidden", String(index !== photoIndex)));
+  photoTrack.style.transform = `translateX(-${photoIndex * 100}%)`;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) resetPhotoLoop();
+}, 5000);
+render(); refresh();
+setInterval(refresh, 3000);
+window.addEventListener("focus", refresh);
 </script>
-
 </body>
 </html>

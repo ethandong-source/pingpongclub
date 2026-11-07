@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player profile | Carroll Ping Pong Club</title>
+<link rel="stylesheet" href="/player.css">
+<script src="/ratings.js" defer></script>
+<script src="/player-stats.js" defer></script>
+<script src="/player.js" defer></script>
+</head>
+<body>
+<header class="top"><a class="brand" href="/">🏓 Carroll<span>PingPong</span></a><nav aria-label="Club"><a href="/#homeLeaderboard">Leaderboard</a><a href="/#players">Roster</a></nav></header>
+<main>
+  <p id="status" role="status">Loading player profile…</p>
+  <div id="profile" hidden>
+    <section class="scoreboard" aria-labelledby="playerName">
+      <div><p id="rank"></p><h1 id="playerName"></h1><p id="record"></p></div>
+      <div class="current"><strong id="currentRating"></strong><span>Current rating</span></div>
+    </section>
+    <section class="panel chart-panel" aria-labelledby="chartTitle">
+      <h2 id="chartTitle">Rating over time</h2>
+      <p id="chartEmpty" hidden>No rating history is available for this player yet.</p>
+      <div id="chartContent" hidden>
+        <p class="hint">Each point is a recorded match, in chronological order.</p>
+        <div id="chart"></div>
+        <div class="dates"><span id="startDate"></span><span id="endDate"></span></div>
+        <label class="scrub" for="matchPoint">Explore rating history</label>
+        <input type="range" id="matchPoint" min="0" step="1">
+        <output id="pointDetail" for="matchPoint"></output>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="highlightsTitle">
+      <h2 id="highlightsTitle">Player highlights</h2>
+      <dl id="highlights" class="highlights"></dl>
+      <div id="recentForm" class="form"></div>
+    </section>
+    <section class="panel" aria-labelledby="historyTitle">
+      <h2 id="historyTitle">Match history</h2>
+      <p id="historyEmpty" hidden>No recorded matches yet.</p>
+      <ol id="history" class="history"></ol>
+    </section>
+  </div>
+</main>
+<footer>Carroll High School Ping Pong Club</footer>
+</body>
+</html>
