@@ -1,4 +1,4 @@
-// Glicko-1 shared by both backends, migration tools, and the browser.
+// Legacy Glicko-1 and the club's point-share adaptation, shared with the browser.
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.ClubRatings = factory();
@@ -6,6 +6,7 @@
   const DEFAULTS = Object.freeze({ startingRating: 1000, initialRD: 350, inactivityRDPerDay: Math.sqrt((350 ** 2 - 50 ** 2) / 100) });
   const Q = Math.log(10) / 400;
   const DAY = 86400000;
+  const SCORE_SYSTEM = 'point-share-glicko-1';
   function settings(options = {}) {
     const config = { ...DEFAULTS, ...options };
     if (!Number.isSafeInteger(config.startingRating) || !Number.isFinite(config.initialRD) || config.initialRD <= 0 || config.initialRD > 350 || !Number.isFinite(config.inactivityRDPerDay) || config.inactivityRDPerDay < 0) throw new Error('Invalid Glicko settings; starting rating must be a whole number.');
@@ -23,7 +24,7 @@
     validate(player);
     let information = 0, performance = 0;
     for (const { opponent, score } of results) {
-      if (![0, 0.5, 1].includes(score)) throw new Error('Score must be 0, 0.5, or 1.');
+      if (!Number.isFinite(score) || score < 0 || score > 1) throw new Error('Score must be between 0 and 1.');
       const expected = expectedScore(player, opponent), weight = g(opponent.rd);
       information += Q ** 2 * weight ** 2 * expected * (1 - expected);
       performance += weight * (score - expected);
@@ -43,11 +44,23 @@
     }
     return current;
   }
+  // This is a club adaptation, not the official UTR algorithm. One match is one
+  // observation; its actual performance is points won / total points played.
+  // The usual Glicko opponent adjustment and individual RD still set sensitivity.
+  function performanceScore(options) {
+    if (options.name !== SCORE_SYSTEM) return 1;
+    const {winnerScore:w, loserScore:l} = options;
+    if (!Number.isInteger(w) || !Number.isInteger(l) || l < 0 || w > 99 || w <= l) {
+      throw new Error('Enter valid winner and loser scores to preview the rating.');
+    }
+    return w / (w + l);
+  }
   function preview(winner, loser, date, options = {}) {
     const w = beforeMatch(winner, date, options), l = beforeMatch(loser, date, options);
+    const score = performanceScore(options);
     // Simultaneous updates: both players use the same pre-match ratings and RD.
-    const nextWinner = updateRating(w, [{ opponent: l, score: 1 }]);
-    const nextLoser = updateRating(l, [{ opponent: w, score: 0 }]);
+    const nextWinner = updateRating(w, [{ opponent: l, score }]);
+    const nextLoser = updateRating(l, [{ opponent: w, score: 1-score }]);
     // Round after each match, before these ratings feed the next update.
     nextWinner.elo = Math.round(nextWinner.elo);
     nextLoser.elo = Math.round(nextLoser.elo);
@@ -58,11 +71,12 @@
   function previewDoubles(winners, losers, date, options = {}) {
     if (![winners, losers].every(team => Array.isArray(team) && team.length === 2)) throw new Error('Doubles requires two players per team.');
     const teams = [winners, losers].map(team => team.map(p => beforeMatch(p, date, options)));
+    const score = performanceScore(options);
     const means = teams.map(team => team.reduce((sum,p) => sum+p.elo,0)/2);
     const deviations = teams.map(team => Math.hypot(...team.map(p => p.rd))/2);
     const next = teams.map((team, side) => team.map(p => {
       const opponent = { elo: p.elo + means[1-side] - means[side], rd: deviations[1-side] };
-      const rating = updateRating(p, [{ opponent, score: side === 0 ? 1 : 0 }]);
+      const rating = updateRating(p, [{ opponent, score: side === 0 ? score : 1-score }]);
       rating.elo = Math.round(rating.elo);
       return rating;
     }));
@@ -74,6 +88,7 @@
     return match.type === 'doubles' ? [match.winnerNames, match.loserNames] : [[match.winnerName], [match.loserName]];
   }
   function replay(database, options = database.ratingSystem || {}) {
+    if (options.name === SCORE_SYSTEM || database.ratingSystem?.name === SCORE_SYSTEM) throw new Error('Point-share ratings are forward-only. Do not replay historical matches.');
     const config = settings(options);
     if (!Array.isArray(database.players) || !Array.isArray(database.matches)) throw new Error('Database must contain players and matches arrays.');
     const result = JSON.parse(JSON.stringify(database)), players = new Map();
@@ -126,5 +141,8 @@
     result.ratingSystem = { name: 'glicko-1', version: 2, ratingRounding: 'nearest-integer-per-match', startingRating: config.startingRating, initialRD: config.initialRD, inactivityRDPerDay: config.inactivityRDPerDay };
     return { database: result, appliedMatches: official.length, pendingMatches: result.matches.length - official.length };
   }
-  return { DEFAULTS, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay };
+  function formatChange(delta) {
+    return delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : '0';
+  }
+  return { DEFAULTS, SCORE_SYSTEM, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay, formatChange };
 });

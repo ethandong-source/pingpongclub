@@ -25,7 +25,7 @@ function read(snapshot) {
   if (!snapshot.exists()) throw new Error("Club data hasn’t been imported into the static site yet.");
   const {version, players, matches, ratingSystem, revision} = snapshot.data();
   if (version !== 2 || !Array.isArray(players) || !Array.isArray(matches) ||
-      ratingSystem?.name !== "glicko-1" || !Number.isSafeInteger(revision)) {
+      !["glicko-1", "point-share-glicko-1"].includes(ratingSystem?.name) || !Number.isSafeInteger(revision)) {
     throw new Error("The club data is invalid. Ask a club admin to check the backup.");
   }
   return {version, players, matches, ratingSystem, revision};

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Carroll Ping Pong Club — Glicko & Match Tracker</title>
+  <title>Carroll Ping Pong Club — Ratings & Match Tracker</title>
 
   <style>
 :root{--ink:#19342a;--muted:#607068;--green:#18583c;--gold:#d5a440;--line:#d8e1d9;--paper:#f6f8f5;--accent:var(--green)}
@@ -175,8 +175,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 rating and do not need an account.</p></details>
         <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
         <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
-        <details><summary>How do club ratings work?</summary><p>We use Glicko-1. Everyone starts at 1000, and each recorded match updates both players from their ratings before the game. Beating a stronger opponent earns more than an expected win.</p><p>New players have more uncertain ratings, so their first results can cause large changes. Ratings settle as they play more matches. Inactivity increases uncertainty. Each player’s uncertainty is tracked separately, so gains and losses can differ.</p><p>Glicko uses the win or loss, not the point margin. A 12–10 win and a 12–0 win have the same effect for the same players at the same time. Ratings are saved as whole numbers; this system has no 30-point cap.</p></details>
-        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. The admin selects two players per team, and all four receive an individual rating update plus one win or loss. Our doubles adaptation of Glicko uses each team’s average rating to estimate the result, with each player’s own uncertainty determining how far their rating moves. A stronger partner changes your team’s expected chance of winning. Singles and doubles share the same club rating.</p></details>
+        <details><summary>How do club ratings work?</summary><p>New players start at 1000. For new matches, your rating compares the share of points you won with the performance expected against your opponent. A close loss to a stronger player can earn rating; a narrow win against a much weaker player can lose rating.</p><p>We keep Glicko’s individual rating uncertainty: new or inactive players can move more, and the two players’ changes can differ. Ratings are rounded to whole numbers, with no 30-point cap. This is our club’s score-based adaptation, not the official UTR formula.</p><p>Current ratings and earlier match results were kept as they were. The new calculation applies only to matches recorded after the switch.</p></details>
+        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. Both teams’ average ratings determine the expected performance, and the final score gives each team’s share of points won. Each player receives an individual adjustment based on their own rating uncertainty. Singles and doubles share the same club rating, and wins and losses still reflect who won the match.</p></details>
         <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring every player’s previous rating and record. Matches involving a deleted player cannot be undone.</p></details>
         <details><summary>Additional Questions?</summary><p>Ask the admins! we'll provide the answers for you.</p></details>
       </div>
@@ -210,7 +210,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
               <div class="form-group"><label for="loserScore">Loser score (points)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
             </div>
             <p id="scoreWarning" class="notice danger hidden">The winner's score must be higher than the loser's score.</p>
-            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected rating change:</span><strong id="eloPreviewText"></strong></div>
+            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected rating change (score vs. expectation):</span><strong id="eloPreviewText"></strong></div>
             <button class="btn dark" type="submit">Save match result</button>
           </fieldset>
         </form>
@@ -385,7 +385,7 @@ function renderRecentMatches() {
   $("recentMatches").innerHTML = visible.map(m => {
     const date = m.date && !isNaN(new Date(m.date)) ? new Date(m.date).toLocaleString() : "Date not recorded";
     const teams = matchTeams(m);
-    const changes = m.type === "doubles" ? teams.map((team,side) => team.map((name,i) => `${escapeHtml(name)} ${side === 0 ? "+" : "−"}${(side === 0 ? m.winnerChanges : m.loserChanges)[i]}`).join(" · ")).join(" / ") : `+${Number(m.winnerChange) || 0} / −${Number(m.loserChange) || 0}`;
+    const changes = m.type === "doubles" ? teams.map((team,side) => team.map((name,i) => `${escapeHtml(name)} ${ClubRatings.formatChange((side === 0 ? 1 : -1)*(side === 0 ? m.winnerChanges : m.loserChanges)[i])}`).join(" · ")).join(" / ") : `${ClubRatings.formatChange(Number(m.winnerChange) || 0)} / ${ClubRatings.formatChange(-(Number(m.loserChange) || 0))}`;
     return `<div class="match-item is-official"><div><strong>${escapeHtml(teams[0].join(" & "))}</strong> defeated <strong>${escapeHtml(teams[1].join(" & "))}</strong><p>${escapeHtml(m.score)} · ${escapeHtml(date)}</p><span class="badge badge-official">${m.type === "doubles" ? "Doubles" : "Singles"} · ${changes} rating</span></div>${admin && latest === m && m.before && teams.flat().every(name => clubState.players.some(p => p.name === name)) ? `<button class="small-btn danger" data-undo="latest">Undo latest match</button>` : ""}</div>`;
   }).join("") || '<p class="muted">No completed matches yet.</p>';
   $("recentMatches").querySelectorAll("button").forEach(b => b.disabled = busy);
@@ -506,11 +506,11 @@ function updateEloPreview() {
   if (visible) {
     try {
       if (isDoubles()) {
-        const changes = ClubRatings.previewDoubles(...teams,new Date().toISOString(),clubState.ratingSystem);
-        $("eloPreviewText").textContent = teams.map((team,side) => team.map((p,i) => `${p.name} ${side === 0 ? "+" : "−"}${(side === 0 ? changes.winnerChanges : changes.loserChanges)[i]}`).join(" · ")).join(" / ");
+        const changes = ClubRatings.previewDoubles(...teams,new Date().toISOString(),{...clubState.ratingSystem,winnerScore:ws,loserScore:ls});
+        $("eloPreviewText").textContent = teams.map((team,side) => team.map((p,i) => `${p.name} ${ClubRatings.formatChange((side === 0 ? 1 : -1)*(side === 0 ? changes.winnerChanges : changes.loserChanges)[i])}`).join(" · ")).join(" / ");
       } else {
-        const changes = ClubRatings.preview(teams[0][0],teams[1][0],new Date().toISOString(),clubState.ratingSystem);
-        $("eloPreviewText").textContent = `Winner +${changes.winnerChange} / Loser −${changes.loserChange}`;
+        const changes = ClubRatings.preview(teams[0][0],teams[1][0],new Date().toISOString(),{...clubState.ratingSystem,winnerScore:ws,loserScore:ls});
+        $("eloPreviewText").textContent = `Winner ${ClubRatings.formatChange(changes.winnerChange)} / Loser ${ClubRatings.formatChange(-changes.loserChange)}`;
       }
     } catch { $("eloPreview").classList.add("hidden"); }
   }

@@ -31,7 +31,7 @@
       const wins = games.filter(m => m.won).length;
       return {wins,losses:games.length-wins};
     });
-    const bestWin = history.filter(m => m.won && m.delta !== null).reduce((best,m) => !best || m.delta > best.delta ? m : best,null);
+    const bestWin = history.filter(m => m.delta !== null && m.delta > 0).reduce((best,m) => !best || m.delta > best.delta ? m : best,null);
     return {history,points,streak,bestStreak,records,bestWin,peak:Math.max(player.elo,...points.map(p => p.rating))};
   }
   return {summarize};

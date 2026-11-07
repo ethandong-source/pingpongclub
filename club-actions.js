@@ -63,18 +63,19 @@
     const ws = body.winnerScore, ls = body.loserScore;
     if (!Number.isInteger(ws) || !Number.isInteger(ls) || ls < 0 || ws > 99 || ws <= ls) fail(400, "Scores must be integers from 0–99, with the winner's score higher.");
     const date = new Date().toISOString();
+    const ratingOptions = {...db.ratingSystem, winnerScore:ws, loserScore:ls};
     if (type === "doubles") {
-      const [winners,losers] = teams, changes = previewDoubles(winners,losers,date,db.ratingSystem);
+      const [winners,losers] = teams, changes = previewDoubles(winners,losers,date,ratingOptions);
       const before = { winners:winners.map(snapshot), losers:losers.map(snapshot) };
       teams.forEach((team,side) => team.forEach((p,i) => {
         const counter = side === 0 ? "wins" : "losses";
         Object.assign(p,changes[side === 0 ? "winners" : "losers"][i],{ lastRatedAt:date, [counter]:p[counter]+1 });
       }));
-      const match = { type, winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:"glicko-1", winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
+      const match = { type, winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:db.ratingSystem.name, winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
       db.matches.push(match);
       return { success:true, match };
     }
-    const changes = preview(winner, loser, date, db.ratingSystem);
+    const changes = preview(winner, loser, date, ratingOptions);
     const before = { winner: snapshot(winner), loser: snapshot(loser) };
     Object.assign(winner, changes.winner, { lastRatedAt: date });
     Object.assign(loser, changes.loser, { lastRatedAt: date });
@@ -82,7 +83,7 @@
     loser.losses += 1;
     const match = {
       winnerName: winner.name, loserName: loser.name, score: `${ws}-${ls}`,
-      date, ratingSystem: "glicko-1", winnerChange: changes.winnerChange,
+      date, ratingSystem: db.ratingSystem.name, winnerChange: changes.winnerChange,
       loserChange: before.loser.elo - loser.elo,
       enteredBy: admin.username, before
     };
