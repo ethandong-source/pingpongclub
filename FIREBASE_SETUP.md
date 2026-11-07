@@ -1,4 +1,4 @@
-# Firebase and admin setup for betterLogging
+# Firebase and admin setup
 
 Keep your existing Firestore settings:
 
@@ -12,7 +12,7 @@ The backend also needs `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` from i
 
 No admin environment variables are needed. The Node backend creates the requested initial `admin` record on startup; the Vercel backend does so on its first status/login request. Initialization uses the salted hash in `lib/initial-admin.json` and a newly generated session secret. It never overwrites an existing Firestore admin. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
 
-To change the login, sign in through Matches, open **Change admin login**, and save the new username and password. This updates the same Firestore admin record and keeps you signed in. Old sessions are invalidated. Do not edit the hash, salt or session secret manually in the console. The admin object is excluded from public responses and club backups, so backups can be shared without exposing admin credentials. No player accounts or public signup are added.
+Existing admin credentials are preserved. The admin object is excluded from public responses and club backups, so backups can be shared without exposing admin credentials. No player accounts or public signup are added.
 
 If needed, set `APP_ORIGIN` to the exact public URL, without a trailing slash.
 

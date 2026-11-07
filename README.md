@@ -4,11 +4,11 @@ A public leaderboard and match history with an admin-managed roster. Players hav
 
 ## Admin setup and deployment
 
-Deploy the `betterLogging` branch on Render or Vercel. Keep the existing Firebase environment variables. No admin environment variables are needed. On startup (or the first Vercel status/login request), the backend automatically creates the requested initial admin login in Firestore if there is no admin record. The repository contains only a salted password hash for that initial login. The session secret is generated privately at runtime.
+Deploy `main` on Render or Vercel. The existing `betterLogging` deployment can continue using the same Firebase settings. Keep the existing Firebase environment variables. No admin environment variables are needed. On startup (or the first Vercel status/login request), the backend automatically creates the requested initial admin login in Firestore if there is no admin record. The repository contains only a salted password hash for that initial login. The session secret is generated privately at runtime.
 
-An existing Firestore admin record is never replaced by deployment. Subsequent username/password changes are stored only in Firestore. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
+An existing Firestore admin record is never replaced by deployment. The web interface does not edit admin credentials. The old `ADMIN_USERNAME`, `ADMIN_PASSWORD` and `SESSION_SECRET` environment variables are no longer used.
 
-Under Matches, sign in and open **Change admin login** to set a different username/password. The password is hashed automatically; no extra setup or public signup is needed. Keep Firebase keys in hosting settings, never frontend code or GitHub. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
+Keep Firebase keys in hosting settings, never frontend code or GitHub. In Matches, log in to add player names and save results. In Players, rename, archive or reactivate a player. Names must be unique, ignoring capitalization and repeated spaces; use a distinguishing name when two players share a name. Renaming also updates their historical results. Archived players keep their history.
 
 Admins can download a backup or undo the latest newly entered match. Undo restores the saved prior ratings exactly. Existing legacy results cannot be undone because they lack prior-rating snapshots. Stale submissions are rejected using a document revision, protecting against duplicate clicks and conflicting admins.
 
@@ -33,10 +33,20 @@ Admins can delete a player from the roster. Recorded matches and opponents’ ra
 
 ## Glicko deployment and recovery
 
-The betterLogging Firestore backend preserves RD, lastRatedAt, rating-system configuration, and pre-match undo snapshots in native fields. If rating metadata was stripped by an older deployment, the first read transaction replays the complete dated match history from 1000 and saves the recovered states under a revision check. Missing or invalid historical dates stop recovery instead of silently guessing. Deleted participants are replayed without restoring them to the roster. After migration, normal reads do not replay or change ratings. Undo restores rating, RD, last-rated date and counters. Existing admin credentials and roster names remain unchanged.
+The Firestore backend preserves RD, lastRatedAt, rating-system configuration, and pre-match undo snapshots in native fields. If rating metadata was stripped by an older deployment, the first read transaction replays the complete dated match history from 1000 and saves the recovered states under a revision check. Missing or invalid historical dates stop recovery instead of silently guessing. Deleted participants are replayed without restoring them to the roster. After migration, normal reads do not replay or change ratings. Undo restores rating, RD, last-rated date and counters. Existing admin credentials and roster names remain unchanged.
 
 ## Doubles matches
 
 Admins can choose Singles (1 vs 1) or Doubles (2 vs 2). Doubles requires four distinct active players. One team score is entered, and each participant receives one win/loss and an individual update to their existing club rating. This is a club adaptation of Glicko-1 for teams, not a separate doubles leaderboard: both team means determine expected performance, while each player's own RD controls the size of their adjustment. For a player on team A, the virtual opponent has rating `player rating + mean(B) - mean(A)` and RD `sqrt(RD_B1² + RD_B2²) / 2`. All four updates use pre-match values simultaneously; points remain informational, as in singles.
 
 Doubles records store ordered winner/loser name arrays, corresponding individual rating changes, and all four pre-match snapshots. Firestore normalization, backups, history, replay, renaming, deletion protection, and latest-match undo support both match shapes. Replay reconstructs deleted historical opponents without restoring their roster entries. Undo refuses to change any ratings if a participant has since been deleted. Existing singles records and ratings are preserved without replay when their Glicko metadata is complete.
+
+## Rating replay utility
+
+The optional `scripts/recalibrate.js` utility prepares a rating report and private backup from a local export or Firestore. It uses the same Glicko calculations as the app for singles and doubles. To preview a local export without writing to Firestore:
+
+```sh
+node scripts/recalibrate.js --input backup.json --plan-dir /tmp/club-rating-plan
+```
+
+A live Firestore plan requires credentials authorized for that document. Applying a prepared live plan requires a separate explicit `--apply`; the tool refuses to overwrite a document that changed since the plan was prepared. Normal deployments do not run the utility.
