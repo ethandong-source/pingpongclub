@@ -47,6 +47,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 .club-gallery figure{margin:0}.club-gallery img{display:block;width:100%;height:auto;border-radius:12px}
 .player-link{font-weight:800;color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}.player-link:hover{text-decoration-thickness:2px}.player-link:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media(max-width:600px){.club-gallery{padding:16px}.club-gallery-photos{grid-template-columns:1fr}}
+
+.voice-entry{background:#edf4ee;border:1px solid #d5e4d9;border-radius:16px;padding:18px;margin-bottom:24px}.voice-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.voice-entry .small-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px}.voice-entry svg{width:19px;height:19px;flex-shrink:0}.voice-entry button[aria-pressed="true"]{background:#17583e;color:white}.voice-link{border:0;background:none;color:var(--green);padding:6px 0;font-size:15px;text-decoration:underline;text-underline-offset:4px}.voice-entry p{font-size:15px;line-height:1.55;margin:12px 0 0}.voice-entry textarea{display:block;box-sizing:border-box;width:100%;min-height:84px;padding:12px;border:1px solid #b8c9bc;border-radius:12px;font:inherit;background:white;color:var(--ink);resize:vertical}.voice-entry label{margin-top:16px}.voice-entry [hidden]{display:none!important}.voice-status:empty{display:none}.voice-status{color:var(--green);font-weight:600}.voice-entry select{margin-bottom:8px}.voice-support{color:var(--muted)}
 </style>
 </head>
 
@@ -196,6 +198,21 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <form id="matchForm">
           <div class="form-group"><label for="matchType">Match type</label><select id="matchType" onchange="render()"><option value="singles">Singles · 1 vs 1</option><option value="doubles">Doubles · 2 vs 2</option></select></div>
           <fieldset id="matchFields" disabled style="border:0;padding:0;margin:0;min-width:0;">
+            <div class="voice-entry" id="voiceEntry">
+              <div class="voice-actions">
+                <button id="voiceStart" class="small-btn secondary" type="button" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/></svg><span id="voiceButtonText">Speak result</span></button>
+                <button id="voiceTextToggle" class="voice-link" type="button" aria-controls="voiceTranscriptPanel" aria-expanded="false">Type a result instead</button>
+              </div>
+              <p>Say “Sharan won against Alok, nine to one.” For doubles, join teammates with “and”.</p>
+              <p id="voiceSupport" class="voice-support">Audio may be processed by your browser’s speech service.</p>
+              <div id="voiceTranscriptPanel" hidden>
+                <label for="voiceTranscript">Transcript — you can edit this</label>
+                <textarea id="voiceTranscript" rows="2" placeholder="Sharan won against Alok 9–1" spellcheck="false"></textarea>
+                <button id="voiceFill" class="small-btn secondary" type="button" style="margin-top:12px">Fill fields</button>
+              </div>
+              <p id="voiceStatus" class="voice-status" role="status" aria-live="polite"></p>
+              <div id="voiceChoices" hidden><div id="voicePickers"></div><button id="voiceChoose" class="small-btn secondary" type="button" style="margin-top:12px">Use these names</button></div>
+            </div>
             <div class="form-grid">
               <div class="form-group"><label for="winner" id="winnerLabel">Winner</label><select id="winner" required onchange="updateEloPreview()"></select></div>
               <div class="form-group"><label for="loser" id="loserLabel">Loser</label><select id="loser" required onchange="updateEloPreview()"></select></div>
@@ -299,12 +316,15 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 ========================================= -->
 <script src="/ratings.js"></script>
 <script src="/club-actions.js"></script>
+<script src="/voice-result.js"></script>
+<script src="/voice-entry.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
 let admin = null;
 let busy = false;
 let cloud;
+let voiceEntry = null;
 let showAllMatches = false;
 let statsInitialized = false;
 const statAnimations = new Map();
@@ -330,6 +350,7 @@ function showSection(id) {
   document.querySelector(".hero").classList.toggle("hidden", id !== "home");
   document.querySelectorAll("main .section").forEach(section => section.classList.toggle("active", section.id === id));
   document.querySelectorAll("nav [data-section]").forEach(button => button.classList.toggle("active", button.dataset.section === id));
+  voiceEntry?.sync();
 }
 function sectionFromUrl() {
   const section = location.hash.slice(1);
@@ -462,6 +483,7 @@ function render(animateStats = false) {
   $("logoutBtn").disabled = busy;
   $("backupBtn").disabled = busy || !Number.isSafeInteger(clubState.revision);
   renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
+  voiceEntry?.sync();
 }
 function applyState(data) {
   if (data.revision < clubState.revision) return;
@@ -527,12 +549,13 @@ $("playerForm").onsubmit = event => {
 };
 $("matchForm").onsubmit = event => {
   event.preventDefault();
+  voiceEntry.stop();
   if (!validateScoreInputs()) return;
   const teams = selectedTeams();
   if (teams.flat().some(p => !p) || new Set(teams.flat().map(p => p.name)).size !== teams.flat().length) return message("Choose a different active player for every position.",true);
   const body = { winnerName: $("winner").value, loserName: $("loser").value, winnerScore: Number($("winnerScore").value), loserScore: Number($("loserScore").value) };
   if (isDoubles()) { delete body.winnerName; delete body.loserName; body.type = "doubles"; body.winnerNames = teams[0].map(p => p.name); body.loserNames = teams[1].map(p => p.name); }
-  action(async () => { await saveChange("addMatch", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
+  action(async () => { await saveChange("addMatch", body); $("matchForm").reset(); voiceEntry.reset(); }, "Match saved. Ratings updated.");
 };
 $("playersBody").onclick = event => {
   const button = event.target.closest("button");
@@ -586,6 +609,22 @@ setInterval(() => {
   photoTrack.style.transform = `translateX(-${photoIndex * 100}%)`;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) resetPhotoLoop();
 }, 5000);
+voiceEntry = VoiceEntry.mount({
+  root: $("voiceEntry"), roster: activePlayers,
+  Recognition: window.SpeechRecognition || window.webkitSpeechRecognition,
+  canEdit: () => !!admin && !busy && !$("matchFields").disabled && $("matches").classList.contains("active"),
+  signature: () => ["matchType","winner","loser","winnerPartner","loserPartner","winnerScore","loserScore"].map(id=>$(id).value).join("|"),
+  apply: result => {
+    $("matchType").value = result.type;
+    render();
+    $("winner").value = result.winnerNames[0]; $("loser").value = result.loserNames[0];
+    $("winnerPartner").value = result.winnerNames[1] || ""; $("loserPartner").value = result.loserNames[1] || "";
+    $("winnerScore").value = result.winnerScore; $("loserScore").value = result.loserScore;
+    validateScoreInputs();
+  }
+});
+window.addEventListener("pagehide", () => voiceEntry.stop());
+document.addEventListener("visibilitychange", () => { if(document.hidden) voiceEntry.stop(); });
 render(); connectClub();
 </script>
 </body>
