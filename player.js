@@ -9,7 +9,11 @@ function element(tag,text,classes) {
   if (classes) el.className = classes;
   return el;
 }
+let chartObserver;
 function renderChart(points,matchCount) {
+  chartObserver?.disconnect();
+  $("chart").replaceChildren();
+  $("chartContent").hidden = true;
   $("chartEmpty").hidden = points.length > 0;
   if (!points.length) return;
   $("chartContent").hidden = false;
@@ -63,9 +67,10 @@ function renderChart(points,matchCount) {
     });
     chart.replaceChildren(svg); select();
   }
-  range.addEventListener("input",select);
+  range.oninput = select;
   draw();
-  new ResizeObserver(entries => { if (Math.round(entries[0].contentRect.width) !== width) draw(); }).observe(chart);
+  chartObserver = new ResizeObserver(entries => { if (Math.round(entries[0].contentRect.width) !== width) draw(); });
+  chartObserver.observe(chart);
 }
 function render(data,player) {
   document.title = `${player.name} | Carroll Ping Pong Club`;
@@ -76,6 +81,7 @@ function render(data,player) {
   $("playerName").textContent = player.name;
   $("record").textContent = `${player.wins} wins, ${player.losses} losses${total ? ` · ${Math.round(player.wins/total*100)}% win rate` : ""}`;
   $("currentRating").textContent = player.elo;
+  for (const id of ["highlights","recentForm","history"]) $(id).replaceChildren();
   const stats = [
     ["Peak recorded rating",peak],["Current streak",streak ? `${Math.abs(streak)} ${streak>0?"W":"L"}` : "—"],
     ["Longest win streak",bestStreak ? `${bestStreak} W` : "—"],
@@ -107,15 +113,17 @@ function render(data,player) {
 async function load() {
   const name = new URLSearchParams(location.search).get("name");
   if (!name) { $("status").textContent = "Choose a player from the leaderboard or roster."; return; }
-  try {
-    const res = await fetch("/api/data",{cache:"no-store"});
-    if (!res.ok) throw new Error("Data unavailable");
-    const data = await res.json(), player = data.players.find(p => p.name === name);
-    if (!player) { $("status").textContent = "Player not found. Check the roster for their current name."; return; }
-    render(data,player);
-  } catch {
+  const showError = text => {
     $("status").hidden = false; $("profile").hidden = true;
-    $("status").textContent = "Could not load this profile. Refresh to try again.";
-  }
+    $("status").textContent = text;
+  };
+  try {
+    const {subscribe} = await import("/static-club.mjs");
+    subscribe(data => {
+      const player = data.players.find(p => p.name === name);
+      if (player) render(data,player);
+      else showError("Player not found. Check the roster for their current name.");
+    }, () => showError("Could not load club data. Refresh to try again."));
+  } catch { showError("Could not connect to the club data. Refresh to try again."); }
 }
 load();

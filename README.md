@@ -1,5 +1,7 @@
 # Carroll Ping Pong Club
 
+This is the static deployment branch. Follow [the Render static deployment guide](STATIC_DEPLOY.md). The remaining backend notes describe the legacy Node deployment on `main` and its migration tools.
+
 A public leaderboard and match history with an admin-managed roster. Players have names, ratings and records; they never create accounts or log in. An admin selects the winner and loser by name and enters a score. Elo and win/loss records update immediately. Ratings use Glicko-1 from the shared ratings.js module for the backend and browser preview. Each match is one rating period; new players start at 1000 with RD 350. Inactivity raises RD using c = sqrt((350² − 50²) / 100). Both participants update from their pre-match states, with whole-number ratings and unrounded RD. Changes may differ and are not capped at 30; point margin does not affect Glicko. There is no participant confirmation step.
 
 ## Admin setup and deployment

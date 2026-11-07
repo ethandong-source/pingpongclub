@@ -1,12 +1,14 @@
 {
   "name": "carroll-pingpong-club",
   "version": "1.0.0",
-  "description": "Carroll Ping Pong Club \u2014 admin-managed players and matches with Firestore",
+  "description": "Carroll Ping Pong Club — admin-managed players and matches with Firestore",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "node --test test/*.test.js",
-    "import:firestore": "node scripts/import-firestore.js"
+    "import:firestore": "node scripts/import-firestore.js",
+    "build:static": "node scripts/build-static.js",
+    "import:static": "node scripts/import-static.js"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0"

@@ -190,7 +190,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
     <div class="grid-2">
       <div class="card">
         <h2>Record match result</h2>
-        <p id="reportNoticeLoggedOut" class="notice">The club admin can log in to record a result. Anyone can view match history below.</p>
+        <p id="reportNoticeLoggedOut" class="notice">Unlock the club editor to record a result. Anyone can view match history below.</p>
         <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save.</p>
         <p id="reportNoticeNeedPlayers" class="notice warning hidden">Add at least two active players before recording a match.</p>
         <form id="matchForm">
@@ -218,22 +218,21 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
       <div class="card">
         <h2>Club admin</h2>
         <div id="adminLoggedOut">
-          <p class="muted">Players do not need accounts. The admin manages names and match results.</p>
+          <p class="muted">Use the club’s editor password to manage players and matches. This only unlocks the controls on this device.</p>
           <form id="loginForm">
-            <div class="form-group"><label for="loginUsername">Admin username</label><input id="loginUsername" required autocomplete="username"></div>
-            <div class="form-group"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div>
-            <button class="btn dark" type="submit">Log in as admin</button>
+            <div class="form-group"><label for="loginPassword">Editor password</label><input id="loginPassword" type="password" required autocomplete="off"></div>
+            <button class="btn dark" type="submit">Unlock editor</button>
           </form>
         </div>
         <div id="adminLoggedIn" class="hidden">
-          <p>Signed in as <strong id="adminName"></strong>.</p>
+          <p>Editing as <strong id="adminName"></strong>.</p>
           <form id="playerForm">
             <div class="form-group"><label for="playerName">New player name</label><input id="playerName" maxlength="80" required autocomplete="off"></div>
             <button class="btn primary" type="submit">Add player</button>
           </form>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
             <button id="backupBtn" type="button" class="small-btn secondary">Download data backup</button>
-            <button id="logoutBtn" type="button" class="small-btn secondary">Log out</button>
+            <button id="logoutBtn" type="button" class="small-btn secondary">Lock editor</button>
           </div>
         </div>
       </div>
@@ -299,12 +298,13 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
      JAVASCRIPT CLIENT & SYNC
 ========================================= -->
 <script src="/ratings.js"></script>
+<script src="/club-actions.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
 let admin = null;
 let busy = false;
-let refreshing = false;
+let cloud;
 let showAllMatches = false;
 let statsInitialized = false;
 const statAnimations = new Map();
@@ -320,17 +320,10 @@ function message(text, error = false) {
   $("appMessage").textContent = text;
   $("appMessage").className = `notice${error ? " danger" : ""}${text ? "" : " hidden"}`;
 }
-async function api(route, method = "GET", body) {
-  const res = await fetch(route, {
-    method, credentials: "same-origin", cache: "no-store",
-    ...(method !== "GET" ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) } : {})
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    if (res.status === 401 && route !== "/api/admin/login") { admin = null; render(); }
-    throw new Error(data.error || "Request failed. Please try again.");
-  }
-  return data;
+async function saveChange(operation,payload) {
+  const revision = clubState.revision;
+  if (!Number.isSafeInteger(revision)) throw new Error("Wait for the club data to load.");
+  applyState(await cloud.change(operation,payload,revision));
 }
 function showSection(id) {
   document.body.classList.toggle("home-view", id === "home");
@@ -464,30 +457,32 @@ function render(animateStats = false) {
   $("reportNoticeNeedPlayers").textContent = `Add at least ${requiredPlayers} active players before recording ${isDoubles() ? "doubles" : "a match"}.`;
   $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= requiredPlayers);
   $("matchFields").disabled = !admin || busy || players.length < requiredPlayers;
-  $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
-  $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy);
+  $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy || !Number.isSafeInteger(clubState.revision));
+  $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy || !cloud);
   $("logoutBtn").disabled = busy;
-  $("backupBtn").disabled = busy;
+  $("backupBtn").disabled = busy || !Number.isSafeInteger(clubState.revision);
   renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
 }
-async function refresh() {
-  if (refreshing || busy) return;
-  refreshing = true;
+function applyState(data) {
+  if (data.revision < clubState.revision) return;
+  clubState = data;
+  render(!statsInitialized);
+  statsInitialized = true;
+}
+async function connectClub() {
   try {
-    const [data, session] = await Promise.all([api("/api/data"), api("/api/admin/session")]);
-    clubState = { players: data.players, matches: data.matches, revision: data.revision, ratingSystem: data.ratingSystem };
-    admin = session.admin;
-    render(!statsInitialized);
-    statsInitialized = true;
-  } catch (err) { message(err.message, true); }
-  finally { refreshing = false; }
+    cloud = await import("/static-club.mjs");
+    admin = cloud.editorOpen() ? {username:"Club editor"} : null;
+    render();
+    cloud.subscribe(applyState, error => message(error.code === "permission-denied" ? "The club data isn’t available. Check the static site’s Firestore rules." : error.message,true));
+  } catch { message("Could not connect to the club data. Refresh to try again.",true); }
 }
 async function action(callback, success) {
   if (busy) return;
   busy = true; render(); message("");
   try { await callback(); message(success); }
   catch (err) { message(err.message, true); }
-  finally { busy = false; render(); await refresh(); }
+  finally { busy = false; render(); }
 }
 function validateScoreInputs() {
   const w = $("winnerScore").value, l = $("loserScore").value;
@@ -522,14 +517,13 @@ function updateEloPreview() {
 }
 $("loginForm").onsubmit = event => {
   event.preventDefault();
-  const body = { username: $("loginUsername").value.trim(), password: $("loginPassword").value };
-  action(async () => { const result = await api("/api/admin/login", "POST", body); admin = result.admin; $("loginPassword").value = ""; }, "Logged in as admin.");
+  action(() => { cloud.unlock($("loginPassword").value); admin = {username:"Club editor"}; $("loginForm").reset(); }, "Editor unlocked.");
 };
-$("logoutBtn").onclick = () => action(async () => { await api("/api/admin/logout", "POST"); admin = null; $("loginForm").reset(); }, "");
+$("logoutBtn").onclick = () => action(() => { cloud.lock(); admin = null; $("loginForm").reset(); }, "");
 $("playerForm").onsubmit = event => {
   event.preventDefault();
   const name = $("playerName").value.trim();
-  action(async () => { await api("/api/players", "POST", { name }); $("playerForm").reset(); }, "Player added at 1000 rating.");
+  action(async () => { await saveChange("addPlayer", { name }); $("playerForm").reset(); }, "Player added at 1000 rating.");
 };
 $("matchForm").onsubmit = event => {
   event.preventDefault();
@@ -538,8 +532,7 @@ $("matchForm").onsubmit = event => {
   if (teams.flat().some(p => !p) || new Set(teams.flat().map(p => p.name)).size !== teams.flat().length) return message("Choose a different active player for every position.",true);
   const body = { winnerName: $("winner").value, loserName: $("loser").value, winnerScore: Number($("winnerScore").value), loserScore: Number($("loserScore").value) };
   if (isDoubles()) { delete body.winnerName; delete body.loserName; body.type = "doubles"; body.winnerNames = teams[0].map(p => p.name); body.loserNames = teams[1].map(p => p.name); }
-  body.revision = clubState.revision;
-  action(async () => { await api("/api/matches", "POST", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
+  action(async () => { await saveChange("addMatch", body); $("matchForm").reset(); }, "Match saved. Ratings updated.");
 };
 $("playersBody").onclick = event => {
   const button = event.target.closest("button");
@@ -549,22 +542,22 @@ $("playersBody").onclick = event => {
   if (!player) return;
   if (button.dataset.delete) {
     if (!confirm(`Delete ${player.name} from the roster? Their recorded matches and opponents’ ratings will stay unchanged. This cannot be undone from the website.`)) return;
-    action(() => api("/api/players", "DELETE", { name: player.name, revision: clubState.revision }), "Player deleted. Match history preserved.");
+    action(() => saveChange("deletePlayer", { name: player.name }), "Player deleted. Match history preserved.");
   } else if (button.dataset.rename) {
     const name = prompt("Player name:", player.name);
     if (name === null) return;
-    action(() => api("/api/players", "PATCH", { currentName: player.name, name }), "Player renamed. Match history updated.");
+    action(() => saveChange("updatePlayer", { currentName: player.name, name }), "Player renamed. Match history updated.");
   } else {
-    action(() => api("/api/players", "PATCH", { currentName: player.name, archived: !player.archived }), player.archived ? "Player reactivated." : "Player archived. Match history is preserved.");
+    action(() => saveChange("updatePlayer", { currentName: player.name, archived: !player.archived }), player.archived ? "Player reactivated." : "Player archived. Match history is preserved.");
   }
 };
 $("recentMatches").onclick = event => {
   const button = event.target.closest("[data-undo]");
   if (!button || busy || !admin || !confirm("Undo the latest match and restore both players' previous ratings and records?")) return;
-  action(() => api("/api/matches/latest", "DELETE", { revision: clubState.revision }), "Latest match undone.");
+  action(() => saveChange("undoMatch"), "Latest match undone.");
 };
 $("backupBtn").onclick = () => action(async () => {
-  const backup = await api("/api/backup");
+  const backup = {success:true,timestamp:new Date().toISOString(),data:clubState};
   const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
   const link = document.createElement("a"); link.href = url;
   link.download = `pingpong-backup-${new Date().toISOString().slice(0,10)}.json`;
@@ -593,9 +586,7 @@ setInterval(() => {
   photoTrack.style.transform = `translateX(-${photoIndex * 100}%)`;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) resetPhotoLoop();
 }, 5000);
-render(); refresh();
-setInterval(refresh, 3000);
-window.addEventListener("focus", refresh);
+render(); connectClub();
 </script>
 </body>
 </html>

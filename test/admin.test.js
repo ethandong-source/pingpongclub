@@ -147,5 +147,5 @@ test("frontend script parses, uses names and removes player signup and confirmat
   const html = await fs.readFile(path.join(__dirname, "..", "index.html"), "utf8");
   new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[1]);
   assert.doesNotMatch(html, /signupForm|winnerId|loserId|requestId|p\.id|confirmMatch|setReporterRole|adminSettingsForm|Change admin login/);
-  assert.match(html, /winnerName:/); assert.match(html, /\/api\/admin\/login/);
+  assert.match(html, /winnerName:/); assert.match(html, /cloud\.unlock/); assert.doesNotMatch(html, /\/api\//);
 });

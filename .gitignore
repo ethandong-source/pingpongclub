@@ -9,3 +9,5 @@ backups/
 *.backup.json
 .DS_Store
 data/
+
+dist/

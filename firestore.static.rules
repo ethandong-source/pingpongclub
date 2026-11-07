@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This exact document is intentionally public. The browser editor code is not authorization.
+    match /clubPublic/carroll-pingpong {
+      allow get: if true;
+      allow update: if request.resource.data.keys().hasOnly(['version','players','matches','ratingSystem','revision'])
+        && request.resource.data.keys().hasAll(['version','players','matches','ratingSystem','revision'])
+        && request.resource.data.version == 2
+        && request.resource.data.players is list
+        && request.resource.data.matches is list
+        && request.resource.data.ratingSystem == resource.data.ratingSystem
+        && request.resource.data.revision is int
+        && request.resource.data.revision == resource.data.revision + 1;
+    }
+    // Create the public document once with an admin SDK import. No public collection lists or deletes.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
