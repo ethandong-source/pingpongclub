@@ -9,12 +9,17 @@ const config = {name:r.SCORE_SYSTEM,version:3,...r.DEFAULTS,ratingRounding:'near
 const player = (name,elo=1000,rd=350) => ({name,elo,rd,wins:0,losses:0,lastRatedAt:null,archived:false});
 const options = (winnerScore,loserScore) => ({...config,winnerScore,loserScore});
 
-test('close losses above expectation can gain rating, while underperforming winners can lose',()=>{
+test('close losses above expectation can gain rating, while winners cannot lose rating',()=>{
   const winner=player('Favorite',1400,80),loser=player('Underdog',1000,260);
   const close=r.preview(winner,loser,date,options(12,10));
-  assert.ok(close.winnerChange<0);
+  assert.equal(close.winnerChange,0);
+  assert.equal(close.winner.elo,winner.elo);
   assert.ok(close.loserChange<0);
-  assert.ok(-close.loserChange>Math.abs(close.winnerChange));
+  const rawWinner=r.updateRating(winner,[{opponent:loser,score:12/22}]);
+  const rawLoser=r.updateRating(loser,[{opponent:winner,score:10/22}]);
+  assert.ok(rawWinner.elo<winner.elo);
+  assert.equal(close.winner.rd,rawWinner.rd);
+  assert.equal(close.loser.elo,Math.round(rawLoser.elo));
   const decisive=r.preview(winner,loser,date,options(12,0));
   assert.ok(decisive.winnerChange>0);
   assert.ok(decisive.loserChange>0);
@@ -45,9 +50,10 @@ test('doubles uses both team means, individual uncertainty, and signed changes i
   const w=[player('A',1400,60),player('B',1400,260)];
   const l=[player('C',1000,80),player('D',1000,300)];
   const result=r.previewDoubles(w,l,date,options(11,9));
-  assert.ok(result.winnerChanges.every(n=>n<0));
+  assert.deepEqual(result.winnerChanges,[0,0]);
+  assert.deepEqual(result.winners.map(p=>p.elo),w.map(p=>p.elo));
   assert.ok(result.loserChanges.every(n=>n<0));
-  assert.ok(Math.abs(result.winnerChanges[1])>Math.abs(result.winnerChanges[0]));
+  assert.ok(Math.abs(result.loserChanges[1])>Math.abs(result.loserChanges[0]));
   const swapped=r.previewDoubles([...w].reverse(),[...l].reverse(),date,options(11,9));
   assert.deepEqual(swapped.winners,[...result.winners].reverse());
   assert.deepEqual(swapped.losers,[...result.losers].reverse());
@@ -71,6 +77,7 @@ test('forward-only cutover preserves existing ratings and history through saves,
     addMatch(db,body,{username:'Club editor'});
     const match=db.matches.at(-1);
     assert.equal(match.ratingSystem,r.SCORE_SYSTEM);
+    assert.ok(match.type==='doubles'?match.winnerChanges.every(n=>n>=0):match.winnerChange>=0);
     assert.deepEqual(db.matches.slice(0,-1),existing.matches);
     const restored=migrateDatabase(db);
     assert.deepEqual(restored,db);

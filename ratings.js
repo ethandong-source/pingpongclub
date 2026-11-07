@@ -63,6 +63,9 @@
     const nextLoser = updateRating(l, [{ opponent: w, score: 1-score }]);
     // Round after each match, before these ratings feed the next update.
     nextWinner.elo = Math.round(nextWinner.elo);
+    // Protect a winner from a negative performance adjustment. The opponent's
+    // update still uses the original pre-match ratings and can be positive.
+    if (options.name === SCORE_SYSTEM) nextWinner.elo = Math.max(w.elo, nextWinner.elo);
     nextLoser.elo = Math.round(nextLoser.elo);
     return { winner: nextWinner, loser: nextLoser, winnerChange: nextWinner.elo - w.elo, loserChange: l.elo - nextLoser.elo };
   }
@@ -78,6 +81,7 @@
       const opponent = { elo: p.elo + means[1-side] - means[side], rd: deviations[1-side] };
       const rating = updateRating(p, [{ opponent, score: side === 0 ? score : 1-score }]);
       rating.elo = Math.round(rating.elo);
+      if (side === 0 && options.name === SCORE_SYSTEM) rating.elo = Math.max(p.elo, rating.elo);
       return rating;
     }));
     return { winners: next[0], losers: next[1],

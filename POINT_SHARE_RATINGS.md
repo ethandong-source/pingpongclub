@@ -13,7 +13,12 @@ match. There is no 30-point cap. A shutout has the same effect as a binary win;
 a close game has less extreme performance evidence. One match remains one
 observation for RD, regardless of its number of points.
 
-A player can gain rating in a loss or lose rating in a win. The win/loss record
+A player can gain rating in a loss. A winning player's change is floored at zero,
+so a win can increase the rating or leave it unchanged, but never reduce it.
+This protection applies individually to both doubles winners as well. Only the
+winner's saved rating is clamped; RD and all opponents' performance updates still
+use the original pre-match values. Past ratings and match snapshots are not
+recalculated when this rule changes. The win/loss record
 continues to reflect the actual result. Deltas are signed independently of the
 result throughout the preview, history and profile chart. For compatibility,
 stored `loserChange`/`loserChanges` still mean the amount subtracted: negative
