@@ -10,7 +10,7 @@
   const ACTIVE_SYSTEM = 'active-score-glicko-1';
   // Permanent uncertainty floor and extra responsiveness are club policy,
   // not standard Glicko parameters. Never replay this policy over past results.
-  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 5, minimumRD: 250, responsiveness: 1.5 });
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 6, minimumRD: 250, responsiveness: 1 });
   function forNewMatch(options = {}) {
     return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
   }

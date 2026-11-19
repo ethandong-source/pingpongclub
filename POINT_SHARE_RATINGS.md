@@ -1,6 +1,6 @@
 # Future-match point-share ratings
 
-The first section documents the legacy policy. The current version-5 policy
+The first section documents the legacy policy. The current version-6 policy
 below prohibits rating gains for losing players.
 
 The club uses a custom score-based adaptation of Glicko-1, inspired by UTR's
@@ -48,7 +48,7 @@ accidental recalculation. Undo uses saved pre-match snapshots with either system
 This is a forward update from existing ratings, not UTR's rolling 30-match
 average. Do not run a historical recalibration as part of this switch.
 
-## Active score-aware Glicko policy (version 5)
+## Active score-aware Glicko policy (version 6)
 
 Future matches now use `active-score-glicko-1`. This is a custom Glicko-1
 adaptation, not standard Glicko or Glicko-2. The point fraction remains the
@@ -57,8 +57,9 @@ still accounts for opponent rating and uncertainty. Each match is one observatio
 longer games with the same point ratio do not get extra weight.
 
 Before every new match, each player's RD is at least **250** (maximum 350).
-After the normal Glicko calculation, multiply the rating difference by **1.5**,
-round to a whole number, and floor the saved RD at 250. Winning players gain
+Use the normal Glicko rating difference without an extra multiplier, round
+to a whole number, and floor the saved RD at 250. This reduces swings by
+approximately one third compared with version 5. Winning players gain
 at least **1** point. Losing players can stay level or lose points; any
 positive performance adjustment for a losing player is capped at zero. No 30-point cap. Doubles uses team means and
 each participant's individual uncertainty with the same protections.
@@ -72,15 +73,15 @@ Examples with both pre-match RDs at the floor:
 
 | Winner rating | Loser rating | Score | Winner change | Loser change |
 | --- | --- | --- | --- | --- |
-| 1000 | 1000 | 11–9 | +16 | −16 |
-| 1000 | 1000 | 11–7 | +36 | −36 |
-| 1000 | 1000 | 11–0 | +160 | −160 |
+| 1000 | 1000 | 11–9 | +11 | −11 |
+| 1000 | 1000 | 11–7 | +24 | −24 |
+| 1000 | 1000 | 11–0 | +107 | −107 |
 | 1400 | 1000 | 11–9 | +1 | 0 |
-| 1400 | 1000 | 11–0 | +52 | −52 |
+| 1400 | 1000 | 11–0 | +35 | −35 |
 
 Deployment does not rewrite live ratings, uncertainty or match history. The
 stored document's existing ratingSystem map remains compatible with Firestore
-rules. `forNewMatch` resolves that configuration to the version-5 active policy
+rules. `forNewMatch` resolves that configuration to the version-6 active policy
 in both the form preview and transaction calculation; each newly recorded match
 stores the active policy identifier. Legacy preview/replay formulas remain
 for historical compatibility, but forward-only data cannot be replayed. Undo

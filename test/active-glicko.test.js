@@ -25,7 +25,7 @@ test('active policy rewards score above expectation, gives winners at least one,
 
 test('scores drive movement; responsiveness persists after hundreds of matches',()=>{
   const changes=[[11,9],[11,7],[11,0]].map(([w,l])=>r.preview(player('A'),player('B'),date,opts(w,l)).winnerChange);
-  assert.deepEqual(changes,[16,36,160]);
+  assert.deepEqual(changes,[11,24,107]);
   let a=player('A'),b=player('B');
   for(let i=0;i<500;i++) {
     const x=r.preview(a,b,date,opts(11,7));
@@ -35,7 +35,7 @@ test('scores drive movement; responsiveness persists after hundreds of matches',
   }
   // Experienced players at equal strength still get a substantial adjustment.
   b.elo=a.elo;
-  assert.ok(r.preview(a,b,date,opts(11,7)).winnerChange>=36);
+  assert.ok(r.preview(a,b,date,opts(11,7)).winnerChange>=24);
 });
 
 test('all valid score margins have finite rounded changes and protect each winning doubles player',()=>{
