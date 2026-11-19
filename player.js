@@ -75,7 +75,8 @@ function renderChart(points,matchCount) {
 function render(data,player) {
   document.title = `${player.name} | Carroll Ping Pong Club`;
   const {history,points,streak,bestStreak,records,bestWin,peak} = PlayerStats.summarize(player,data.matches);
-  const leaders = data.players.filter(p => !p.archived).sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
+  const dates = PlayerActivity.lastMatches(data.matches);
+  const leaders = data.players.filter(p => !PlayerActivity.isArchived(p, dates)).sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
   const rank = leaders.indexOf(player)+1, total = player.wins+player.losses;
   $("rank").textContent = rank ? `#${rank} on the club leaderboard` : "Archived player";
   $("playerName").textContent = player.name;
@@ -119,11 +120,15 @@ async function load() {
   };
   try {
     const {subscribe} = await import("/static-club.mjs");
-    subscribe(data => {
+    let latestData;
+    const update = data => {
+      latestData = data;
       const player = data.players.find(p => p.name === name);
       if (player) render(data,player);
       else showError("Player not found. Check the roster for their current name.");
-    }, () => showError("Could not load club data. Refresh to try again."));
+    };
+    subscribe(update, () => showError("Could not load club data. Refresh to try again."));
+    setInterval(() => { if (latestData && !document.hidden) update(latestData); }, 60000);
   } catch { showError("Could not connect to the club data. Refresh to try again."); }
 }
 load();

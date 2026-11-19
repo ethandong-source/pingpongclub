@@ -17,7 +17,7 @@
   function addPlayer(db, name) {
     if (db.players.some(p => p.name.toLowerCase() === name.toLowerCase())) fail(409, "A player with that name already exists.");
     if (db.matches.some(m => matchTeams(m).flat().some(n => n.toLowerCase() === name.toLowerCase()))) fail(409, "That name belongs to a player in recorded match history. Use a distinct name.");
-    const player = { name, elo: db.ratingSystem.startingRating, rd: db.ratingSystem.initialRD, lastRatedAt: null, wins: 0, losses: 0, archived: false };
+    const player = { name, elo: db.ratingSystem.startingRating, rd: db.ratingSystem.initialRD, lastRatedAt: null, createdAt: new Date().toISOString(), wins: 0, losses: 0, archived: false };
     db.players.push(player);
     return { success: true, player };
   }

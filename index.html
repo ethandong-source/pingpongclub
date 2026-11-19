@@ -207,7 +207,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
       <div class="card">
         <h2>Record match result</h2>
         <p id="reportNoticeLoggedOut" class="notice">Unlock the club editor to record a result. Anyone can view match history below.</p>
-        <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save.</p>
+        <p id="reportNoticeLoggedIn" class="notice hidden">Select the players and enter the score. Ratings update when you save. Players archived for inactivity return automatically when they play.</p>
         <p id="reportNoticeNeedPlayers" class="notice warning hidden">Add at least two active players before recording a match.</p>
         <form id="matchForm">
           <div class="form-group"><label for="matchType">Match type</label><select id="matchType" onchange="render()"><option value="singles">Singles · 1 vs 1</option><option value="doubles">Doubles · 2 vs 2</option></select></div>
@@ -267,7 +267,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <div>
           <h2>Club roster</h2>
           <div class="muted" style="font-size:15px; margin-top:3px;">
-            Select a player to see their rating chart and match history.
+            Select a player to see their rating chart and match history. Players are automatically archived after more than 30 days without a match and return when they play. Players with no known activity date stay active.
           </div>
         </div>
         <input
@@ -317,6 +317,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 <script src="/club-actions.js"></script>
 <script src="/player-picker.js"></script>
 <script src="/rating-tracker.js"></script>
+<script src="/player-activity.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
@@ -334,7 +335,10 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":
 const profileLink = name => `<a class="player-link" href="/player.html?name=${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
 const matchTeams = match => ClubRatings.matchTeams(match);
 const isDoubles = () => $("matchType").value === "doubles";
-const activePlayers = () => clubState.players.filter(p => !p.archived);
+const activityDates = () => PlayerActivity.lastMatches(clubState.matches);
+const activePlayers = () => { const dates = activityDates(); return clubState.players.filter(p => !PlayerActivity.isArchived(p, dates)); };
+// Automatically archived players remain selectable so a new match can reactivate them.
+const matchPlayers = () => clubState.players.filter(p => !p.archived);
 const sortedPlayers = () => [...activePlayers()].sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
 function message(text, error = false) {
   $("appMessage").textContent = text;
@@ -393,16 +397,19 @@ function renderLeaderboard() {
 }
 $("viewAllPlayers").onclick = () => {showAllLeaderboard = !showAllLeaderboard; renderLeaderboard();};
 function renderRatingTracker() {
-  const tracker = RatingTracker.summarize(clubState.players, clubState.matches);
+  const tracker = RatingTracker.summarize(activePlayers(), clubState.matches);
   $("ratingTrackerAverage").textContent = tracker.average === null ? "Current active-player average: not available yet." : `Current active-player average: ${tracker.average.toFixed(1)} (${tracker.players} players).`;
   $("ratingTrackerBody").innerHTML = tracker.months.map(row => `<tr><td>${row.month}</td><td>${row.matches}</td><td>${row.change > 0 ? "+" : ""}${row.change}</td></tr>`).join("") || '<tr><td colspan="3">No recorded matches with usable rating changes yet.</td></tr>';
   $("ratingTrackerNote").textContent = `The average is a current snapshot; players joining, leaving, or being archived can change it. Monthly totals use available match records, including singles and doubles.${tracker.excluded ? ` ${tracker.excluded} match${tracker.excluded === 1 ? " was" : "es were"} excluded due to missing dates or rating changes.` : ""}`;
 }
 function renderPlayersTable() {
   const search = $("playersSearch").value.toLowerCase();
+  const dates = activityDates();
   $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
     const total = p.wins+p.losses;
-    return `<tr class="${p.archived ? "archived" : ""}"><td>${profileLink(p.name)}</td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? "Reactivate" : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
+    const inactive = PlayerActivity.isInactive(p, dates), archived = p.archived || inactive;
+    const status = p.archived ? "Archived manually" : inactive ? "Archived: inactive" : "Active";
+    return `<tr class="${archived ? "archived" : ""}"><td>${profileLink(p.name)}<br><small>${status}</small></td><td>${p.elo}</td><td>${p.wins}</td><td>${p.losses}</td><td>${total ? Math.round(p.wins/total*100) : 0}%</td>${admin ? `<td><button class="small-btn secondary" data-rename="${escapeHtml(p.name)}">Rename</button> <button class="small-btn secondary" data-archive="${escapeHtml(p.name)}">${p.archived ? (inactive ? "Allow matches" : "Reactivate") : "Archive"}</button> <button class="small-btn danger" data-delete="${escapeHtml(p.name)}">Delete</button></td>` : ""}</tr>`;
   }).join("") || `<tr><td colspan="${admin ? 6 : 5}">No players found.</td></tr>`;
   document.querySelectorAll(".admin-column").forEach(el => el.classList.toggle("hidden", !admin));
   $("playersBody").querySelectorAll("button").forEach(b => b.disabled = busy);
@@ -427,7 +434,7 @@ function renderRecentMatches() {
 }
 $("viewAllMatches").onclick = () => { showAllMatches = !showAllMatches; renderRecentMatches(); };
 function renderSelectors() {
-  playerPickers.forEach(picker => picker.setRoster(activePlayers()));
+  playerPickers.forEach(picker => picker.setRoster(matchPlayers()));
   updateEloPreview();
 }
 
@@ -482,13 +489,14 @@ function render(animateStats = false) {
   $("reportNoticeLoggedOut").classList.toggle("hidden", !!admin);
   $("reportNoticeLoggedIn").classList.toggle("hidden", !admin);
   const requiredPlayers = isDoubles() ? 4 : 2;
+  const eligiblePlayers = matchPlayers();
   $("doublesPartners").classList.toggle("hidden", !isDoubles());
   for (const id of ["winnerPartner","loserPartner"]) { $(id).required = isDoubles(); $(id).disabled = !isDoubles(); }
   $("winnerLabel").textContent = isDoubles() ? "Winning team · player 1" : "Winner";
   $("loserLabel").textContent = isDoubles() ? "Losing team · player 1" : "Loser";
   $("reportNoticeNeedPlayers").textContent = `Add at least ${requiredPlayers} active players before recording ${isDoubles() ? "doubles" : "a match"}.`;
-  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || players.length >= requiredPlayers);
-  $("matchFields").disabled = !admin || busy || players.length < requiredPlayers;
+  $("reportNoticeNeedPlayers").classList.toggle("hidden", !admin || eligiblePlayers.length >= requiredPlayers);
+  $("matchFields").disabled = !admin || busy || eligiblePlayers.length < requiredPlayers;
   $("playerForm").querySelectorAll("input,button").forEach(el => el.disabled = busy || !Number.isSafeInteger(clubState.revision));
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy || !cloud);
   $("logoutBtn").disabled = busy;
@@ -580,7 +588,7 @@ $("playersBody").onclick = event => {
     if (name === null) return;
     action(() => saveChange("updatePlayer", { currentName: player.name, name }), "Player renamed. Match history updated.");
   } else {
-    action(() => saveChange("updatePlayer", { currentName: player.name, archived: !player.archived }), player.archived ? "Player reactivated." : "Player archived. Match history is preserved.");
+    action(() => saveChange("updatePlayer", { currentName: player.name, archived: !player.archived }), player.archived ? "Manual archive removed. Inactive players return to the leaderboard after their next match." : "Player archived. Match history is preserved.");
   }
 };
 $("recentMatches").onclick = event => {
@@ -622,6 +630,7 @@ for (const id of ["winner","loser","winnerPartner","loserPartner"]) {
   playerPickers.set(id, PlayerPicker.mount($(id), {onChange:updateEloPreview}));
 }
 render(); connectClub();
+setInterval(() => { if (!document.hidden && !busy) render(); }, 60000);
 </script>
 </body>
 </html>
