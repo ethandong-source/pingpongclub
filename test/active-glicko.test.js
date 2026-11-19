@@ -26,7 +26,7 @@ test('active policy rewards score above expectation, gives winners at least thre
 
 test('scores drive movement; responsiveness persists after hundreds of matches',()=>{
   const changes=[[11,9],[11,7],[11,0]].map(([w,l])=>r.preview(player('A'),player('B'),date,opts(w,l)).winnerChange);
-  assert.deepEqual(changes,[59,65,107]);
+  assert.deepEqual(changes,[29,33,53]);
   let a=player('A'),b=player('B');
   for(let i=0;i<500;i++) {
     const x=r.preview(a,b,date,opts(11,7));
@@ -36,7 +36,7 @@ test('scores drive movement; responsiveness persists after hundreds of matches',
   }
   // Experienced players at equal strength still get a substantial adjustment.
   b.elo=a.elo;
-  assert.ok(r.preview(a,b,date,opts(11,7)).winnerChange>=65);
+  assert.ok(r.preview(a,b,date,opts(11,7)).winnerChange>=33);
 });
 
 test('all valid score margins have finite rounded changes and protect each winning doubles player',()=>{
@@ -105,6 +105,16 @@ test('score influence is reduced by 50% while still rewarding a stronger winning
   const a=player('A'),b=player('B');
   const active=[[11,9],[11,7],[11,0]].map(([w,l])=>r.preview(a,b,date,opts(w,l)).winnerChange);
   assert.ok(active[0]<active[1] && active[1]<active[2]);
-  const legacyDifference=107-11;
+  const legacyDifference=(107-11)*0.5;
   assert.ok(Math.abs((active[2]-active[0])/legacyDifference-0.5)<0.02);
+});
+
+
+test('rating movements use half the raw adjustment before rounding and winner/loser protections',()=>{
+  for(const rd of [250,300,350]) for(const [w,l] of [[11,9],[11,7],[11,0]]) {
+    const a=player('A',1000,rd),b=player('B',1000,rd),options=opts(w,l);
+    const raw=r.updateRating(a,[{opponent:b,score:0.5*w/(w+l)+0.5}]);
+    const next=r.preview(a,b,date,options);
+    assert.equal(next.winnerChange,Math.max(3,Math.round((raw.elo-a.elo)*0.5)));
+  }
 });
