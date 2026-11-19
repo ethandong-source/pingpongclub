@@ -10,7 +10,7 @@
   const ACTIVE_SYSTEM = 'active-score-glicko-1';
   // Permanent uncertainty floor and extra responsiveness are club policy,
   // not standard Glicko parameters. Never replay this policy over past results.
-  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 6, minimumRD: 250, responsiveness: 1 });
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 7, minimumRD: 250, responsiveness: 1, scoreWeight: 0.8, mismatchGap: 200 });
   function forNewMatch(options = {}) {
     return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
   }
@@ -66,7 +66,7 @@
     return current;
   }
   // This is a club adaptation, not the official UTR algorithm. One match is one
-  // observation; its actual performance is points won / total points played.
+  // observation; the active policy blends 80% point share with 20% win/loss.
   // The usual Glicko opponent adjustment and individual RD still set sensitivity.
   function performanceScore(options) {
     if (!isScoreSystem(options)) return 1;
@@ -74,7 +74,8 @@
     if (!Number.isInteger(w) || !Number.isInteger(l) || l < 0 || w > 99 || w <= l) {
       throw new Error('Enter valid winner and loser scores to preview the rating.');
     }
-    return w / (w + l);
+    const share = w / (w + l);
+    return options.name === ACTIVE_SYSTEM ? ACTIVE_POLICY.scoreWeight * share + (1 - ACTIVE_POLICY.scoreWeight) : share;
   }
   function preview(winner, loser, date, options = {}) {
     const w = beforeMatch(winner, date, options), l = beforeMatch(loser, date, options);
@@ -84,6 +85,10 @@
     const nextLoser = updateRating(l, [{ opponent: w, score: 1-score }]);
     finishRating(nextWinner, w, true, options);
     finishRating(nextLoser, l, false, options);
+    if (options.name === ACTIVE_SYSTEM && w.elo - l.elo > ACTIVE_POLICY.mismatchGap) {
+      nextWinner.elo = w.elo + 1;
+      nextLoser.elo = l.elo;
+    }
     return { winner: nextWinner, loser: nextLoser, winnerChange: nextWinner.elo - w.elo, loserChange: l.elo - nextLoser.elo };
   }
   // Club doubles adaptation: team means determine the expected outcome, while
@@ -97,7 +102,12 @@
     const next = teams.map((team, side) => team.map(p => {
       const opponent = { elo: p.elo + means[1-side] - means[side], rd: deviations[1-side] };
       const rating = updateRating(p, [{ opponent, score: side === 0 ? score : 1-score }]);
-      return finishRating(rating, p, side === 0, options);
+      finishRating(rating, p, side === 0, options);
+      // For doubles, compare pre-match team averages, not individual pairings.
+      if (options.name === ACTIVE_SYSTEM && means[0] - means[1] > ACTIVE_POLICY.mismatchGap) {
+        rating.elo = p.elo + (side === 0 ? 1 : 0);
+      }
+      return rating;
     }));
     return { winners: next[0], losers: next[1],
       winnerChanges: next[0].map((p,i) => p.elo-teams[0][i].elo),
