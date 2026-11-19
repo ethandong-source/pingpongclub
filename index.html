@@ -167,6 +167,16 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
       </div>
       <div class="leaderboard-footer"><p id="leaderboardCount" role="status"></p><button id="viewAllPlayers" class="small-btn secondary" type="button" aria-expanded="false" aria-controls="leaderboardBody">View all players</button></div>
     </div>
+    <details class="card" style="margin-top:20px;">
+      <summary><strong>Rating inflation tracker</strong></summary>
+      <p class="muted">Tracks the net rating points added or removed by recorded matches. A positive number means matches added more points than they removed; it does not automatically mean the ratings need changing.</p>
+      <p id="ratingTrackerAverage"></p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Month (UTC)</th><th>Matches</th><th>Net rating points</th></tr></thead>
+        <tbody id="ratingTrackerBody"></tbody>
+      </table></div>
+      <p id="ratingTrackerNote" class="muted"></p>
+    </details>
     <section class="club-gallery" aria-labelledby="clubGalleryTitle">
       <h2 id="clubGalleryTitle">Meet the club</h2>
       <p class="muted">Carroll Ping Pong Club, together at the courtyard table.</p>
@@ -306,6 +316,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
 <script src="/ratings.js"></script>
 <script src="/club-actions.js"></script>
 <script src="/player-picker.js"></script>
+<script src="/rating-tracker.js"></script>
 <script>
 "use strict";
 let clubState = { players: [], matches: [] };
@@ -381,6 +392,12 @@ function renderLeaderboard() {
   }).join("") || '<tr><td colspan="6">No players found. The admin can add names to the roster.</td></tr>';
 }
 $("viewAllPlayers").onclick = () => {showAllLeaderboard = !showAllLeaderboard; renderLeaderboard();};
+function renderRatingTracker() {
+  const tracker = RatingTracker.summarize(clubState.players, clubState.matches);
+  $("ratingTrackerAverage").textContent = tracker.average === null ? "Current active-player average: not available yet." : `Current active-player average: ${tracker.average.toFixed(1)} (${tracker.players} players).`;
+  $("ratingTrackerBody").innerHTML = tracker.months.map(row => `<tr><td>${row.month}</td><td>${row.matches}</td><td>${row.change > 0 ? "+" : ""}${row.change}</td></tr>`).join("") || '<tr><td colspan="3">No recorded matches with usable rating changes yet.</td></tr>';
+  $("ratingTrackerNote").textContent = `The average is a current snapshot; players joining, leaving, or being archived can change it. Monthly totals use available match records, including singles and doubles.${tracker.excluded ? ` ${tracker.excluded} match${tracker.excluded === 1 ? " was" : "es were"} excluded due to missing dates or rating changes.` : ""}`;
+}
 function renderPlayersTable() {
   const search = $("playersSearch").value.toLowerCase();
   $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
@@ -476,7 +493,7 @@ function render(animateStats = false) {
   $("loginForm").querySelectorAll("input,button").forEach(el => el.disabled = busy || !cloud);
   $("logoutBtn").disabled = busy;
   $("backupBtn").disabled = busy || !Number.isSafeInteger(clubState.revision);
-  renderPodium(); renderLeaderboard(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
+  renderPodium(); renderLeaderboard(); renderRatingTracker(); renderPlayersTable(); renderRecentMatches(); renderSelectors();
 }
 function applyState(data) {
   if (data.revision < clubState.revision) return;
