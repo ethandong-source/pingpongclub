@@ -76,7 +76,7 @@ test('forward-only cutover preserves existing ratings and history through saves,
     const before=structuredClone(db);
     addMatch(db,body,{username:'Club editor'});
     const match=db.matches.at(-1);
-    assert.equal(match.ratingSystem,r.SCORE_SYSTEM);
+    assert.equal(match.ratingSystem,r.ACTIVE_SYSTEM);
     assert.ok(match.type==='doubles'?match.winnerChanges.every(n=>n>=0):match.winnerChange>=0);
     assert.deepEqual(db.matches.slice(0,-1),existing.matches);
     const restored=migrateDatabase(db);

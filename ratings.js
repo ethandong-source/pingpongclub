@@ -7,6 +7,25 @@
   const Q = Math.log(10) / 400;
   const DAY = 86400000;
   const SCORE_SYSTEM = 'point-share-glicko-1';
+  const ACTIVE_SYSTEM = 'active-score-glicko-1';
+  // Permanent uncertainty floor and extra responsiveness are club policy,
+  // not standard Glicko parameters. Never replay this policy over past results.
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 4, minimumRD: 250, responsiveness: 1.5 });
+  function forNewMatch(options = {}) {
+    return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
+  }
+  function isScoreSystem(options) { return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name); }
+  function finishRating(next, previous, winner, options) {
+    if (options.name === ACTIVE_SYSTEM) {
+      next.elo = previous.elo + Math.round((next.elo - previous.elo) * ACTIVE_POLICY.responsiveness);
+      next.rd = Math.max(ACTIVE_POLICY.minimumRD, next.rd);
+      if (winner) next.elo = Math.max(previous.elo + 1, next.elo);
+    } else {
+      next.elo = Math.round(next.elo);
+      if (winner && options.name === SCORE_SYSTEM) next.elo = Math.max(previous.elo, next.elo);
+    }
+    return next;
+  }
   function settings(options = {}) {
     const config = { ...DEFAULTS, ...options };
     if (!Number.isSafeInteger(config.startingRating) || !Number.isFinite(config.initialRD) || config.initialRD <= 0 || config.initialRD > 350 || !Number.isFinite(config.inactivityRDPerDay) || config.inactivityRDPerDay < 0) throw new Error('Invalid Glicko settings; starting rating must be a whole number.');
@@ -42,13 +61,14 @@
       if (!Number.isFinite(previous) || previous > time) throw new Error('Match precedes the last rated match. Replay history first.');
       current.rd = Math.min(350, Math.sqrt(current.rd ** 2 + config.inactivityRDPerDay ** 2 * ((time - previous) / DAY)));
     }
+    if (options.name === ACTIVE_SYSTEM) current.rd = Math.max(ACTIVE_POLICY.minimumRD, current.rd);
     return current;
   }
   // This is a club adaptation, not the official UTR algorithm. One match is one
   // observation; its actual performance is points won / total points played.
   // The usual Glicko opponent adjustment and individual RD still set sensitivity.
   function performanceScore(options) {
-    if (options.name !== SCORE_SYSTEM) return 1;
+    if (!isScoreSystem(options)) return 1;
     const {winnerScore:w, loserScore:l} = options;
     if (!Number.isInteger(w) || !Number.isInteger(l) || l < 0 || w > 99 || w <= l) {
       throw new Error('Enter valid winner and loser scores to preview the rating.');
@@ -61,12 +81,8 @@
     // Simultaneous updates: both players use the same pre-match ratings and RD.
     const nextWinner = updateRating(w, [{ opponent: l, score }]);
     const nextLoser = updateRating(l, [{ opponent: w, score: 1-score }]);
-    // Round after each match, before these ratings feed the next update.
-    nextWinner.elo = Math.round(nextWinner.elo);
-    // Protect a winner from a negative performance adjustment. The opponent's
-    // update still uses the original pre-match ratings and can be positive.
-    if (options.name === SCORE_SYSTEM) nextWinner.elo = Math.max(w.elo, nextWinner.elo);
-    nextLoser.elo = Math.round(nextLoser.elo);
+    finishRating(nextWinner, w, true, options);
+    finishRating(nextLoser, l, false, options);
     return { winner: nextWinner, loser: nextLoser, winnerChange: nextWinner.elo - w.elo, loserChange: l.elo - nextLoser.elo };
   }
   // Club doubles adaptation: team means determine the expected outcome, while
@@ -80,9 +96,7 @@
     const next = teams.map((team, side) => team.map(p => {
       const opponent = { elo: p.elo + means[1-side] - means[side], rd: deviations[1-side] };
       const rating = updateRating(p, [{ opponent, score: side === 0 ? score : 1-score }]);
-      rating.elo = Math.round(rating.elo);
-      if (side === 0 && options.name === SCORE_SYSTEM) rating.elo = Math.max(p.elo, rating.elo);
-      return rating;
+      return finishRating(rating, p, side === 0, options);
     }));
     return { winners: next[0], losers: next[1],
       winnerChanges: next[0].map((p,i) => p.elo-teams[0][i].elo),
@@ -92,7 +106,7 @@
     return match.type === 'doubles' ? [match.winnerNames, match.loserNames] : [[match.winnerName], [match.loserName]];
   }
   function replay(database, options = database.ratingSystem || {}) {
-    if (options.name === SCORE_SYSTEM || database.ratingSystem?.name === SCORE_SYSTEM) throw new Error('Point-share ratings are forward-only. Do not replay historical matches.');
+    if (isScoreSystem(options) || isScoreSystem(database.ratingSystem || {}) || database.matches?.some(m => m.ratingSystem === ACTIVE_SYSTEM)) throw new Error('Point-share ratings are forward-only. Do not replay historical matches.');
     const config = settings(options);
     if (!Array.isArray(database.players) || !Array.isArray(database.matches)) throw new Error('Database must contain players and matches arrays.');
     const result = JSON.parse(JSON.stringify(database)), players = new Map();
@@ -148,5 +162,5 @@
   function formatChange(delta) {
     return delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : '0';
   }
-  return { DEFAULTS, SCORE_SYSTEM, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay, formatChange };
+  return { DEFAULTS, SCORE_SYSTEM, ACTIVE_SYSTEM, ACTIVE_POLICY, forNewMatch, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay, formatChange };
 });

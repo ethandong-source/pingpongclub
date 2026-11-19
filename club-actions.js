@@ -63,7 +63,7 @@
     const ws = body.winnerScore, ls = body.loserScore;
     if (!Number.isInteger(ws) || !Number.isInteger(ls) || ls < 0 || ws > 99 || ws <= ls) fail(400, "Scores must be integers from 0–99, with the winner's score higher.");
     const date = new Date().toISOString();
-    const ratingOptions = {...db.ratingSystem, winnerScore:ws, loserScore:ls};
+    const ratingOptions = ratings.forNewMatch({...db.ratingSystem, winnerScore:ws, loserScore:ls});
     if (type === "doubles") {
       const [winners,losers] = teams, changes = previewDoubles(winners,losers,date,ratingOptions);
       const before = { winners:winners.map(snapshot), losers:losers.map(snapshot) };
@@ -71,7 +71,7 @@
         const counter = side === 0 ? "wins" : "losses";
         Object.assign(p,changes[side === 0 ? "winners" : "losers"][i],{ lastRatedAt:date, [counter]:p[counter]+1 });
       }));
-      const match = { type, winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:db.ratingSystem.name, winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
+      const match = { type, winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:ratingOptions.name, winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
       db.matches.push(match);
       return { success:true, match };
     }
@@ -83,7 +83,7 @@
     loser.losses += 1;
     const match = {
       winnerName: winner.name, loserName: loser.name, score: `${ws}-${ls}`,
-      date, ratingSystem: db.ratingSystem.name, winnerChange: changes.winnerChange,
+      date, ratingSystem: ratingOptions.name, winnerChange: changes.winnerChange,
       loserChange: before.loser.elo - loser.elo,
       enteredBy: admin.username, before
     };

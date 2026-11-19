@@ -44,3 +44,43 @@ accidental recalculation. Undo uses saved pre-match snapshots with either system
 
 This is a forward update from existing ratings, not UTR's rolling 30-match
 average. Do not run a historical recalibration as part of this switch.
+
+## Active score-aware Glicko policy (version 4)
+
+Future matches now use `active-score-glicko-1`. This is a custom Glicko-1
+adaptation, not standard Glicko or Glicko-2. The point fraction remains the
+performance observation: `S = pointsWon / totalPoints`. Expected performance
+still accounts for opponent rating and uncertainty. Each match is one observation;
+longer games with the same point ratio do not get extra weight.
+
+Before every new match, each player's RD is at least **250** (maximum 350).
+After the normal Glicko calculation, multiply the rating difference by **1.5**,
+round to a whole number, and floor the saved RD at 250. Winning players gain
+at least **1** point. Losing players use the signed performance adjustment:
+they can gain, stay level or lose. No 30-point cap. Doubles uses team means and
+each participant's individual uncertainty with the same protections.
+
+The uncertainty floor prevents repeated play from making the ladder insensitive.
+It does not guarantee every result causes a large change: expected results may
+still move very little. Winner protection permits rating inflation; updates are
+not zero-sum.
+
+Examples with both pre-match RDs at the floor:
+
+| Winner rating | Loser rating | Score | Winner change | Loser change |
+| --- | --- | --- | --- | --- |
+| 1000 | 1000 | 11–9 | +16 | −16 |
+| 1000 | 1000 | 11–7 | +36 | −36 |
+| 1000 | 1000 | 11–0 | +160 | −160 |
+| 1400 | 1000 | 11–9 | +1 | +113 |
+| 1400 | 1000 | 11–0 | +52 | −52 |
+
+Deployment does not rewrite live ratings, uncertainty or match history. The
+stored document's existing ratingSystem map remains compatible with Firestore
+rules. `forNewMatch` resolves that configuration to the version-4 active policy
+in both the form preview and transaction calculation; each newly recorded match
+stores the exact new policy identifier. Legacy preview/replay formulas remain
+for historical compatibility, but forward-only data cannot be replayed. Undo
+restores the exact saved pre-match state, including the old RD.
+
+Reference: https://www.glicko.net/glicko/glicko.pdf
