@@ -13,7 +13,8 @@ test('active policy rewards score above expectation, gives winners at least one,
   const close=r.preview(favorite,underdog,date,opts(11,9));
   const decisive=r.preview(favorite,underdog,date,opts(11,0));
   assert.equal(close.winnerChange,1);
-  assert.ok(close.loserChange<0);
+  assert.equal(close.loserChange,0);
+  assert.equal(close.loser.elo,underdog.elo);
   assert.ok(decisive.loserChange>0);
   const equal=r.preview(underdog,player('C'),date,opts(11,0));
   assert.ok(decisive.winnerChange<equal.winnerChange);
@@ -41,14 +42,18 @@ test('all valid score margins have finite rounded changes and protect each winni
   for(const elo of [400,1000,1600]) for(const rd of [30,250,350]) for(let l=0;l<11;l++) {
     const result=r.preview(player('A',elo,rd),player('B',1000,rd),date,opts(11,l));
     assert.ok(Number.isInteger(result.winnerChange) && result.winnerChange>=1);
-    assert.ok(Number.isInteger(result.loserChange));
+    assert.ok(Number.isInteger(result.loserChange) && result.loserChange>=0);
+    assert.ok(result.loser.elo<=1000);
   }
   const winners=[player('A',1400,50),player('B',1400,300)];
   const losers=[player('C',1000,50),player('D',1000,350)];
   const next=r.previewDoubles(winners,losers,date,opts(11,9));
   assert.deepEqual(next.winnerChanges,[1,1]);
-  assert.ok(next.loserChanges.every(n=>n<0));
-  assert.ok(next.loserChanges[0]!==next.loserChanges[1]);
+  assert.deepEqual(next.loserChanges,[0,0]);
+  assert.deepEqual(next.losers.map(p=>p.elo),losers.map(p=>p.elo));
+  const decisive=r.previewDoubles(winners,losers,date,opts(11,0));
+  assert.ok(decisive.loserChanges.every(n=>n>0));
+  assert.ok(decisive.loserChanges[0]!==decisive.loserChanges[1]);
   const reverse=r.previewDoubles([...winners].reverse(),[...losers].reverse(),date,opts(11,9));
   assert.deepEqual(reverse.winners,[...next.winners].reverse());
   assert.deepEqual(reverse.losers,[...next.losers].reverse());

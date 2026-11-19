@@ -10,7 +10,7 @@
   const ACTIVE_SYSTEM = 'active-score-glicko-1';
   // Permanent uncertainty floor and extra responsiveness are club policy,
   // not standard Glicko parameters. Never replay this policy over past results.
-  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 4, minimumRD: 250, responsiveness: 1.5 });
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 5, minimumRD: 250, responsiveness: 1.5 });
   function forNewMatch(options = {}) {
     return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
   }
@@ -20,6 +20,7 @@
       next.elo = previous.elo + Math.round((next.elo - previous.elo) * ACTIVE_POLICY.responsiveness);
       next.rd = Math.max(ACTIVE_POLICY.minimumRD, next.rd);
       if (winner) next.elo = Math.max(previous.elo + 1, next.elo);
+      else next.elo = Math.min(previous.elo, next.elo);
     } else {
       next.elo = Math.round(next.elo);
       if (winner && options.name === SCORE_SYSTEM) next.elo = Math.max(previous.elo, next.elo);

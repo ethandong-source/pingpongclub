@@ -87,8 +87,7 @@ test('forward-only cutover preserves existing ratings and history through saves,
     }
     const b=db.players.find(p=>p.name==='B'),profile=summarize(b,db.matches);
     assert.equal(profile.history.at(-1).won,false);
-    assert.ok(profile.history.at(-1).delta>0);
-    assert.ok(profile.bestWin.delta>0);
+    assert.ok(profile.history.at(-1).delta === 0);
     undoMatch(db);
     assert.deepEqual(db,before);
   }
