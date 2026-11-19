@@ -12,6 +12,7 @@ const staticFiles = {
   "/player.js": ["player.js", "text/javascript; charset=utf-8"],
   "/player-stats.js": ["player-stats.js", "text/javascript; charset=utf-8"],
   "/rating-tracker.js": ["rating-tracker.js", "text/javascript; charset=utf-8"],
+  "/player-activity.js": ["player-activity.js", "text/javascript; charset=utf-8"],
   "/assets/club-group-01.webp": ["assets/club-group-01.webp", "image/webp"],
   "/assets/club-group-02.webp": ["assets/club-group-02.webp", "image/webp"],
   "/ratings.js": ["ratings.js", "text/javascript; charset=utf-8"],
