@@ -1,6 +1,6 @@
 # Future-match point-share ratings
 
-The first section documents the legacy policy. The current version-8 policy
+The first section documents the legacy policy. The current version-9 policy
 below prohibits rating gains for losing players.
 
 The club uses a custom score-based adaptation of Glicko-1, inspired by UTR's
@@ -48,7 +48,7 @@ accidental recalculation. Undo uses saved pre-match snapshots with either system
 This is a forward update from existing ratings, not UTR's rolling 30-match
 average. Do not run a historical recalibration as part of this switch.
 
-## Active score-aware Glicko policy (version 8)
+## Active score-aware Glicko policy (version 9)
 
 Future matches now use `active-score-glicko-1`. This is a custom Glicko-1
 adaptation, not standard Glicko or Glicko-2. The performance observation blends point share with the result:
@@ -62,15 +62,15 @@ Before every new match, each player's RD is at least **250** (maximum 350).
 Use the normal Glicko rating difference without an extra multiplier, round
 to a whole number, and floor the saved RD at 250. This reduces swings by
 approximately one third compared with version 5. Winning players gain
-at least **1** point. Losing players can stay level or lose points; any
+at least **3** points. Losing players can stay level or lose points; any
 positive performance adjustment for a losing player is capped at zero. No 30-point cap. Doubles uses team means and
 each participant's individual uncertainty with the same protections.
 
 Hard mismatch rule: when the winning side’s pre-match rating exceeds the
-losing side’s by strictly more than 200, every winner gets exactly +1 and every
+losing side’s by strictly more than 200, every winner gets exactly +3 and every
 loser gets 0, regardless of score or RD. Exactly 200 uses the normal formula.
 An underdog victory uses the normal formula. Doubles compares team average
-ratings and applies +1/0 to each participant. RD still updates normally.
+ratings and applies +3/0 to each participant. RD still updates normally.
 
 The uncertainty floor prevents repeated play from making the ladder insensitive.
 It does not guarantee every result causes a large change: expected results may
@@ -84,12 +84,12 @@ Examples with both pre-match RDs at the floor:
 | 1000 | 1000 | 11–9 | +59 | −59 |
 | 1000 | 1000 | 11–7 | +65 | −65 |
 | 1000 | 1000 | 11–0 | +107 | −107 |
-| 1400 | 1000 | 11–9 | +1 | 0 |
-| 1400 | 1000 | 11–0 | +1 | 0 |
+| 1400 | 1000 | 11–9 | +3 | 0 |
+| 1400 | 1000 | 11–0 | +3 | 0 |
 
 Deployment does not rewrite live ratings, uncertainty or match history. The
 stored document's existing ratingSystem map remains compatible with Firestore
-rules. `forNewMatch` resolves that configuration to the version-8 active policy
+rules. `forNewMatch` resolves that configuration to the version-9 active policy
 in both the form preview and transaction calculation; each newly recorded match
 stores the active policy identifier. Legacy preview/replay formulas remain
 for historical compatibility, but forward-only data cannot be replayed. Undo

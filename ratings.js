@@ -10,7 +10,7 @@
   const ACTIVE_SYSTEM = 'active-score-glicko-1';
   // Permanent uncertainty floor and extra responsiveness are club policy,
   // not standard Glicko parameters. Never replay this policy over past results.
-  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 8, minimumRD: 250, responsiveness: 1, scoreWeight: 0.5, mismatchGap: 200 });
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 9, minimumRD: 250, responsiveness: 1, scoreWeight: 0.5, mismatchGap: 200, minimumWin: 3 });
   function forNewMatch(options = {}) {
     return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
   }
@@ -19,7 +19,7 @@
     if (options.name === ACTIVE_SYSTEM) {
       next.elo = previous.elo + Math.round((next.elo - previous.elo) * ACTIVE_POLICY.responsiveness);
       next.rd = Math.max(ACTIVE_POLICY.minimumRD, next.rd);
-      if (winner) next.elo = Math.max(previous.elo + 1, next.elo);
+      if (winner) next.elo = Math.max(previous.elo + ACTIVE_POLICY.minimumWin, next.elo);
       else next.elo = Math.min(previous.elo, next.elo);
     } else {
       next.elo = Math.round(next.elo);
@@ -86,7 +86,7 @@
     finishRating(nextWinner, w, true, options);
     finishRating(nextLoser, l, false, options);
     if (options.name === ACTIVE_SYSTEM && w.elo - l.elo > ACTIVE_POLICY.mismatchGap) {
-      nextWinner.elo = w.elo + 1;
+      nextWinner.elo = w.elo + ACTIVE_POLICY.minimumWin;
       nextLoser.elo = l.elo;
     }
     return { winner: nextWinner, loser: nextLoser, winnerChange: nextWinner.elo - w.elo, loserChange: l.elo - nextLoser.elo };
@@ -105,7 +105,7 @@
       finishRating(rating, p, side === 0, options);
       // For doubles, compare pre-match team averages, not individual pairings.
       if (options.name === ACTIVE_SYSTEM && means[0] - means[1] > ACTIVE_POLICY.mismatchGap) {
-        rating.elo = p.elo + (side === 0 ? 1 : 0);
+        rating.elo = p.elo + (side === 0 ? ACTIVE_POLICY.minimumWin : 0);
       }
       return rating;
     }));
