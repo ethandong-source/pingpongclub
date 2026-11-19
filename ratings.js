@@ -10,7 +10,7 @@
   const ACTIVE_SYSTEM = 'active-score-glicko-1';
   // Permanent uncertainty floor and extra responsiveness are club policy,
   // not standard Glicko parameters. Never replay this policy over past results.
-  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 7, minimumRD: 250, responsiveness: 1, scoreWeight: 0.8, mismatchGap: 200 });
+  const ACTIVE_POLICY = Object.freeze({ name: ACTIVE_SYSTEM, version: 8, minimumRD: 250, responsiveness: 1, scoreWeight: 0.5, mismatchGap: 200 });
   function forNewMatch(options = {}) {
     return [SCORE_SYSTEM, ACTIVE_SYSTEM].includes(options.name) ? { ...options, ...ACTIVE_POLICY } : options;
   }
@@ -66,7 +66,7 @@
     return current;
   }
   // This is a club adaptation, not the official UTR algorithm. One match is one
-  // observation; the active policy blends 80% point share with 20% win/loss.
+  // observation; the active policy blends 50% point share with 50% win/loss.
   // The usual Glicko opponent adjustment and individual RD still set sensitivity.
   function performanceScore(options) {
     if (!isScoreSystem(options)) return 1;

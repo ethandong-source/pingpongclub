@@ -1,6 +1,6 @@
 # Future-match point-share ratings
 
-The first section documents the legacy policy. The current version-7 policy
+The first section documents the legacy policy. The current version-8 policy
 below prohibits rating gains for losing players.
 
 The club uses a custom score-based adaptation of Glicko-1, inspired by UTR's
@@ -48,12 +48,12 @@ accidental recalculation. Undo uses saved pre-match snapshots with either system
 This is a forward update from existing ratings, not UTR's rolling 30-match
 average. Do not run a historical recalibration as part of this switch.
 
-## Active score-aware Glicko policy (version 7)
+## Active score-aware Glicko policy (version 8)
 
 Future matches now use `active-score-glicko-1`. This is a custom Glicko-1
 adaptation, not standard Glicko or Glicko-2. The performance observation blends point share with the result:
-`S_winner = 0.8 * winnerPoints / totalPoints + 0.2`, and
-`S_loser = 1 - S_winner`. This reduces the influence of score margins by 20%
+`S_winner = 0.5 * winnerPoints / totalPoints + 0.5`, and
+`S_loser = 1 - S_winner`. This reduces the influence of score margins by 50%
 relative to the previous pure-point-share policy. Expected performance
 still accounts for opponent rating and uncertainty. Each match is one observation;
 longer games with the same point ratio do not get extra weight.
@@ -81,15 +81,15 @@ Examples with both pre-match RDs at the floor:
 
 | Winner rating | Loser rating | Score | Winner change | Loser change |
 | --- | --- | --- | --- | --- |
-| 1000 | 1000 | 11–9 | +30 | −30 |
-| 1000 | 1000 | 11–7 | +40 | −40 |
+| 1000 | 1000 | 11–9 | +59 | −59 |
+| 1000 | 1000 | 11–7 | +65 | −65 |
 | 1000 | 1000 | 11–0 | +107 | −107 |
 | 1400 | 1000 | 11–9 | +1 | 0 |
 | 1400 | 1000 | 11–0 | +1 | 0 |
 
 Deployment does not rewrite live ratings, uncertainty or match history. The
 stored document's existing ratingSystem map remains compatible with Firestore
-rules. `forNewMatch` resolves that configuration to the version-7 active policy
+rules. `forNewMatch` resolves that configuration to the version-8 active policy
 in both the form preview and transaction calculation; each newly recorded match
 stores the active policy identifier. Legacy preview/replay formulas remain
 for historical compatibility, but forward-only data cannot be replayed. Undo
