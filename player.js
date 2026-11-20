@@ -82,7 +82,7 @@ function render(data,player) {
   const rank = leaders.indexOf(player)+1, total = pool.wins+pool.losses;
   $("rank").textContent = rank ? `#${rank} on the ${type} leaderboard` : PlayerActivity.isArchived(player,dates) ? "Archived player" : "Not ranked yet · no doubles matches";
   $("playerName").textContent = player.name;
-  $("record").textContent = `${pool.wins} wins, ${pool.losses} losses${total ? ` · ${Math.round(player.wins/total*100)}% win rate` : ""}`;
+  $("record").textContent = `${pool.wins} wins, ${pool.losses} losses${total ? ` · ${Math.round(pool.wins/total*100)}% win rate` : ""}`;
   $("currentRating").textContent = pool.elo;
   for (const id of ["highlights","recentForm","history"]) $(id).replaceChildren();
   const stats = [
