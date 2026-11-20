@@ -1,6 +1,6 @@
 # Future-match point-share ratings
 
-The first section documents the legacy policy. The current version-10 policy
+The first section documents the legacy policy. The current version-11 policy
 below prohibits rating gains for losing players.
 
 The club uses a custom score-based adaptation of Glicko-1, inspired by UTR's
@@ -48,7 +48,7 @@ accidental recalculation. Undo uses saved pre-match snapshots with either system
 This is a forward update from existing ratings, not UTR's rolling 30-match
 average. Do not run a historical recalibration as part of this switch.
 
-## Active score-aware Glicko policy (version 10)
+## Active score-aware Glicko policy (version 11)
 
 Future matches now use `active-score-glicko-1`. This is a custom Glicko-1
 adaptation, not standard Glicko or Glicko-2. The performance observation blends point share with the result:
@@ -59,9 +59,9 @@ still accounts for opponent rating and uncertainty. Each match is one observatio
 longer games with the same point ratio do not get extra weight.
 
 Before every new match, each player's RD is at least **250** (maximum 350).
-Multiply the raw Glicko rating difference by **0.5**, then round
-to a whole number and floor the saved RD at 250. This halves ordinary rating
-movements relative to version 9, before winner/loser protections. The +3
+Multiply the raw Glicko rating difference by **1/3**, then round
+to a whole number and floor the saved RD at 250. This is two-thirds of version 10’s half-size adjustment (one-third less movement),
+before winner/loser protections. The +3
 minimum win and the fixed +3/0 mismatch rule still take precedence. Winning players gain
 at least **3** points. Losing players can stay level or lose points; any
 positive performance adjustment for a losing player is capped at zero. No 30-point cap. Doubles uses team means and
@@ -82,15 +82,15 @@ Examples with both pre-match RDs at the floor:
 
 | Winner rating | Loser rating | Score | Winner change | Loser change |
 | --- | --- | --- | --- | --- |
-| 1000 | 1000 | 11–9 | +29 | −29 |
-| 1000 | 1000 | 11–7 | +33 | −33 |
-| 1000 | 1000 | 11–0 | +53 | −53 |
+| 1000 | 1000 | 11–9 | +20 | −20 |
+| 1000 | 1000 | 11–7 | +22 | −22 |
+| 1000 | 1000 | 11–0 | +36 | −36 |
 | 1400 | 1000 | 11–9 | +3 | 0 |
 | 1400 | 1000 | 11–0 | +3 | 0 |
 
 Deployment does not rewrite live ratings, uncertainty or match history. The
 stored document's existing ratingSystem map remains compatible with Firestore
-rules. `forNewMatch` resolves that configuration to the version-10 active policy
+rules. `forNewMatch` resolves that configuration to the version-11 active policy
 in both the form preview and transaction calculation; each newly recorded match
 stores the active policy identifier. Legacy preview/replay formulas remain
 for historical compatibility, but forward-only data cannot be replayed. Undo
@@ -123,3 +123,20 @@ precondition, preserving the ratingSystem map and all unrelated Firestore fields
 If another result arrives, take a fresh backup and rerun instead of overwriting it.
 Deploy the pool-aware UI/actions before applying the rebuild. Old open tabs
 should be refreshed. Keep the original backup for recovery.
+
+
+## November 19 sensitivity adjustment
+
+Version 11 uses two-thirds of the previous sensitivity: 0.5 × 2/3 = 1/3 of
+raw Glicko movement. It is the ongoing policy for future results. The +3 win
+minimum, non-positive losing adjustments, fixed +3/0 mismatch rule, 50/50
+weighting and independent rating pools remain.
+
+Only November 19 matches (America/Chicago, including matches after midnight
+UTC) are recalculated at this cutover. Their saved snapshots are rolled back in
+reverse chronological order, then replayed forward under version 11. Earlier
+match records and the starting state for the day are retained. Later dependent
+matches cause the day-only operation to refuse rather than leaving inconsistent
+ratings. Run the migration CLI with the optional final day argument:
+`BACKUP.json OUTPUT.json --apply 2026-11-19`. Keep a fresh typed backup and the
+optimistic update-time/revision checks, as for the independent-pool migration.

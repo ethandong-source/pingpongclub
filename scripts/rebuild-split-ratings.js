@@ -1,13 +1,13 @@
-// Usage: node scripts/rebuild-split-ratings.js BACKUP.json OUTPUT.json [--apply]
+// Usage: node scripts/rebuild-split-ratings.js BACKUP.json OUTPUT.json [--apply|--dry-run] [YYYY-MM-DD]
 // Always save the original typed Firestore document before running this command.
 'use strict';
 const fs=require('node:fs');
 const {isDeepStrictEqual:equal}=require('node:util');
 const {decode,encode,documentURL,request}=require('./firestore');
 const {rebuild}=require('../split-ratings');
-function plan(original) {
+function plan(original, day) {
   if(!original.updateTime || !original.fields?.revision) throw new Error('Need a full document backup with updateTime and revision.');
-  const db=decode({mapValue:{fields:original.fields}}),next=rebuild(db);
+  const db=decode({mapValue:{fields:original.fields}}),next=rebuild(db,day?{day}:{});
   if(!Number.isSafeInteger(db.revision))throw new Error('Invalid revision.');
   // Keep unrelated Firestore fields and their exact serialized types.
   const players=original.fields.players.arrayValue.values.map((entry,i)=>{
@@ -18,6 +18,7 @@ function plan(original) {
   const ordered=db.matches.map((m,i)=>({m,i})).sort((a,b)=>Date.parse(a.m.date)-Date.parse(b.m.date)||a.i-b.i);
   const matches=ordered.map(({i},index)=>{
     const copy=structuredClone(original.fields.matches.arrayValue.values[i]),m=next.matches[index];
+    if (equal(db.matches[i],m)) return copy;
     const keys=['before','ratingSystem','ratingPool','ratingPolicyVersion',...(m.type==='doubles'?['winnerChanges','loserChanges']:['winnerChange','loserChange'])];
     for(const k of keys)copy.mapValue.fields[k]=encode(m[k]);
     return copy;
@@ -28,11 +29,11 @@ function plan(original) {
   return {patch,next,revision:db.revision+1};
 }
 async function main(){
-  const [backup,output,apply]=process.argv.slice(2);
-  if(!backup||!output)throw new Error('Usage: BACKUP.json OUTPUT.json [--apply]');
-  const raw=JSON.parse(fs.readFileSync(backup)),result=plan(raw);
+  const [backup,output,apply,day]=process.argv.slice(2);
+  if(!backup||!output)throw new Error('Usage: BACKUP.json OUTPUT.json [--apply|--dry-run] [YYYY-MM-DD]');
+  const raw=JSON.parse(fs.readFileSync(backup)),result=plan(raw,day);
   fs.writeFileSync(output,JSON.stringify(result.next,null,2));
-  const summary={players:result.next.players.length,singles:result.next.matches.filter(m=>m.type!=='doubles').length,doubles:result.next.matches.filter(m=>m.type==='doubles').length,revision:result.revision};
+  const summary={players:result.next.players.length,singles:result.next.matches.filter(m=>m.type!=='doubles').length,doubles:result.next.matches.filter(m=>m.type==='doubles').length,revision:result.revision,...(day?{day,recalculated:result.next.matches.filter(m=>new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date(m.date))===day).length}:{})};
   if(apply==='--apply'){
     const query=new URLSearchParams({'currentDocument.updateTime':raw.updateTime});
     for(const k of ['players','matches','revision'])query.append('updateMask.fieldPaths',k);
