@@ -3,7 +3,7 @@
   else root.ClubActions = factory(root.ClubRatings);
 })(globalThis, function(ratings) {
   "use strict";
-  const {preview, previewDoubles, matchTeams} = ratings;
+  const {preview, previewDoubles, matchTeams, ratingFor} = ratings;
   function fail(status, message) { throw Object.assign(new Error(message), {status}); }
   function normalizeName(value) {
     return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
@@ -18,6 +18,7 @@
     if (db.players.some(p => p.name.toLowerCase() === name.toLowerCase())) fail(409, "A player with that name already exists.");
     if (db.matches.some(m => matchTeams(m).flat().some(n => n.toLowerCase() === name.toLowerCase()))) fail(409, "That name belongs to a player in recorded match history. Use a distinct name.");
     const player = { name, elo: db.ratingSystem.startingRating, rd: db.ratingSystem.initialRD, lastRatedAt: null, createdAt: new Date().toISOString(), wins: 0, losses: 0, archived: false };
+    if ([ratings.SCORE_SYSTEM,ratings.ACTIVE_SYSTEM].includes(db.ratingSystem.name) && db.players.every(p => p.doubles)) player.doubles = { elo:db.ratingSystem.startingRating, rd:db.ratingSystem.initialRD, lastRatedAt:null, wins:0, losses:0 };
     db.players.push(player);
     return { success: true, player };
   }
@@ -65,13 +66,13 @@
     const date = new Date().toISOString();
     const ratingOptions = ratings.forNewMatch({...db.ratingSystem, winnerScore:ws, loserScore:ls});
     if (type === "doubles") {
-      const [winners,losers] = teams, changes = previewDoubles(winners,losers,date,ratingOptions);
+      const [winners,losers] = teams.map(team => team.map(p => ratingFor(p,'doubles'))), changes = previewDoubles(winners,losers,date,ratingOptions);
       const before = { winners:winners.map(snapshot), losers:losers.map(snapshot) };
-      teams.forEach((team,side) => team.forEach((p,i) => {
+      [winners,losers].forEach((team,side) => team.forEach((p,i) => {
         const counter = side === 0 ? "wins" : "losses";
         Object.assign(p,changes[side === 0 ? "winners" : "losers"][i],{ lastRatedAt:date, [counter]:p[counter]+1 });
       }));
-      const match = { type, winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:ratingOptions.name, winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
+      const match = { type, ...(teams.flat().every(p => p.doubles) ? {ratingPool:"doubles",ratingPolicyVersion:ratings.ACTIVE_POLICY.version} : {}), winnerNames:names[0], loserNames:names[1], score:`${ws}-${ls}`, date, ratingSystem:ratingOptions.name, winnerChanges:changes.winnerChanges, loserChanges:changes.loserChanges, enteredBy:admin.username, before };
       db.matches.push(match);
       return { success:true, match };
     }
@@ -82,6 +83,7 @@
     winner.wins += 1;
     loser.losses += 1;
     const match = {
+      ...(winner.doubles && loser.doubles ? {ratingPool:"singles",ratingPolicyVersion:ratings.ACTIVE_POLICY.version} : {}),
       winnerName: winner.name, loserName: loser.name, score: `${ws}-${ls}`,
       date, ratingSystem: ratingOptions.name, winnerChange: changes.winnerChange,
       loserChange: before.loser.elo - loser.elo,
@@ -96,7 +98,7 @@
     const teams = matchTeams(match).map(team => team.map(name => db.players.find(p => p.name === name)));
     if (teams.flat().some(p => !p)) fail(409,"Match players are missing.");
     const snapshots = match.type === "doubles" ? [match.before.winners,match.before.losers] : [[match.before.winner],[match.before.loser]];
-    teams.forEach((team,side) => team.forEach((p,i) => Object.assign(p,snapshots[side][i])));
+    teams.forEach((team,side) => team.forEach((p,i) => Object.assign(match.ratingPool === "doubles" ? ratingFor(p,"doubles") : p,snapshots[side][i])));
     db.matches.pop();
     return { success: true };
   }

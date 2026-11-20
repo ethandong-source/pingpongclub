@@ -4,8 +4,8 @@
 })(globalThis, function(ratings){
   "use strict";
   const {matchTeams} = ratings;
-  function summarize(player, matches) {
-    const history = matches.flatMap((match,index) => {
+  function summarize(player, matches, type) {
+    const allHistory = matches.flatMap((match,index) => {
       const teams = matchTeams(match);
       const side = teams.findIndex(team => team.includes(player.name));
       if (side < 0) return [];
@@ -18,6 +18,7 @@
         score:!won && parts.length === 2 ? parts.reverse().join("–") : parts.join("–"), before,
         rating:Number.isFinite(before) && delta !== null ? before+delta : null, delta}];
     }).sort((a,b) => (Date.parse(a.date)||0)-(Date.parse(b.date)||0) || a.index-b.index);
+    const history = type ? allHistory.filter(m=>m.doubles === (type === "doubles")) : allHistory;
     const points = history.flatMap((m,i) => m.rating === null ? [] : [{...m, number:i+1}]);
     if (Number.isFinite(history[0]?.before)) points.unshift({number:0,date:history[0].date,rating:history[0].before});
     let streak = 0, bestStreak = 0, run = 0;
@@ -27,12 +28,12 @@
       streak = m.won ? Math.max(0,streak)+1 : Math.min(0,streak)-1;
     }
     const records = [false,true].map(doubles => {
-      const games = history.filter(m => m.doubles === doubles);
+      const games = allHistory.filter(m => m.doubles === doubles);
       const wins = games.filter(m => m.won).length;
       return {wins,losses:games.length-wins};
     });
     const bestWin = history.filter(m => m.delta !== null && m.delta > 0).reduce((best,m) => !best || m.delta > best.delta ? m : best,null);
-    return {history,points,streak,bestStreak,records,bestWin,peak:Math.max(player.elo,...points.map(p => p.rating))};
+    return {history,points,streak,bestStreak,records,bestWin,peak:Math.max(ratings.ratingFor(player,type).elo,...points.map(p => p.rating))};
   }
   return {summarize};
 });

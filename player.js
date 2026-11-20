@@ -74,14 +74,16 @@ function renderChart(points,matchCount) {
 }
 function render(data,player) {
   document.title = `${player.name} | Carroll Ping Pong Club`;
-  const {history,points,streak,bestStreak,records,bestWin,peak} = PlayerStats.summarize(player,data.matches);
+  const {history,points,streak,bestStreak,records,bestWin,peak} = PlayerStats.summarize(player,data.matches,$("profileMode").value);
+  const type = $("profileMode").value, pool = ClubRatings.ratingFor(player,type);
+  $("chartTitle").textContent = `${type === "doubles" ? "Doubles" : "Singles"} rating over time`;
   const dates = PlayerActivity.lastMatches(data.matches);
-  const leaders = data.players.filter(p => !PlayerActivity.isArchived(p, dates)).sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
-  const rank = leaders.indexOf(player)+1, total = player.wins+player.losses;
-  $("rank").textContent = rank ? `#${rank} on the club leaderboard` : "Archived player";
+  const leaders = data.players.filter(p => !PlayerActivity.isArchived(p, dates) && (type !== "doubles" || ClubRatings.ratingFor(p,type).wins+ClubRatings.ratingFor(p,type).losses > 0)).sort((a,b) => ClubRatings.ratingFor(b,type).elo-ClubRatings.ratingFor(a,type).elo || a.name.localeCompare(b.name));
+  const rank = leaders.indexOf(player)+1, total = pool.wins+pool.losses;
+  $("rank").textContent = rank ? `#${rank} on the ${type} leaderboard` : PlayerActivity.isArchived(player,dates) ? "Archived player" : "Not ranked yet · no doubles matches";
   $("playerName").textContent = player.name;
-  $("record").textContent = `${player.wins} wins, ${player.losses} losses${total ? ` · ${Math.round(player.wins/total*100)}% win rate` : ""}`;
-  $("currentRating").textContent = player.elo;
+  $("record").textContent = `${pool.wins} wins, ${pool.losses} losses${total ? ` · ${Math.round(player.wins/total*100)}% win rate` : ""}`;
+  $("currentRating").textContent = pool.elo;
   for (const id of ["highlights","recentForm","history"]) $(id).replaceChildren();
   const stats = [
     ["Peak recorded rating",peak],["Current streak",streak ? `${Math.abs(streak)} ${streak>0?"W":"L"}` : "—"],
@@ -112,7 +114,9 @@ function render(data,player) {
   renderChart(points,history.length);
 }
 async function load() {
-  const name = new URLSearchParams(location.search).get("name");
+  const params = new URLSearchParams(location.search);
+  const name = params.get("name");
+  $("profileMode").value = params.get("type") === "doubles" ? "doubles" : "singles";
   if (!name) { $("status").textContent = "Choose a player from the leaderboard or roster."; return; }
   const showError = text => {
     $("status").hidden = false; $("profile").hidden = true;
@@ -127,6 +131,7 @@ async function load() {
       if (player) render(data,player);
       else showError("Player not found. Check the roster for their current name.");
     };
+    $("profileMode").onchange = () => { if (latestData) update(latestData); };
     subscribe(update, () => showError("Could not load club data. Refresh to try again."));
     setInterval(() => { if (latestData && !document.hidden) update(latestData); }, 60000);
   } catch { showError("Could not connect to the club data. Refresh to try again."); }

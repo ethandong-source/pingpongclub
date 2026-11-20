@@ -97,3 +97,29 @@ for historical compatibility, but forward-only data cannot be replayed. Undo
 restores the exact saved pre-match state, including the old RD.
 
 Reference: https://www.glicko.net/glicko/glicko.pdf
+
+## Independent singles and doubles ladders (November 19, 2026)
+
+An explicitly requested full rebuild replaces the earlier forward-only policy
+for this one migration. All recorded matches are replayed chronologically,
+starting both pools at 1000 / RD 350, using the current version-10 active policy
+for every match. The root `elo`, `rd`, `lastRatedAt`, `wins`, `losses` fields now
+refer only to singles. `player.doubles` holds the same five fields for doubles.
+Uncertainty, inactivity and records are independent; account archiving still
+considers the most recent activity in either match type.
+
+Every match keeps its original participants, score, date and attribution.
+Rating changes and undo snapshots are rebuilt for the corresponding ladder.
+`ratingPool` and `ratingPolicyVersion` record the pool and formula used. Deleted
+members are simulated as opponents without restoring their accounts. New
+players start at 1000 in each pool. Players without doubles games are shown in
+the roster at 1000 but are not ranked in the doubles ladder.
+
+`split-ratings.js` is an explicit offline operation, never an automatic read-time
+migration. `scripts/rebuild-split-ratings.js BACKUP.json OUTPUT.json` prepares
+a dry run from a full typed Firestore backup. Add `--apply` only for the intended
+cutover; it patches players, matches and revision with an update-time
+precondition, preserving the ratingSystem map and all unrelated Firestore fields.
+If another result arrives, take a fresh backup and rerun instead of overwriting it.
+Deploy the pool-aware UI/actions before applying the rebuild. Old open tabs
+should be refreshed. Keep the original backup for recovery.

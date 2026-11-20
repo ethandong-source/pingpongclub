@@ -15,6 +15,8 @@
 <main>
   <p id="status" role="status">Loading player profile…</p>
   <div id="profile" hidden>
+    <label for="profileMode">Rating and match history</label>
+    <select id="profileMode" aria-label="Profile rating type"><option value="singles">Singles</option><option value="doubles">Doubles</option></select>
     <section class="scoreboard" aria-labelledby="playerName">
       <div><p id="rank"></p><h1 id="playerName"></h1><p id="record"></p></div>
       <div class="current"><strong id="currentRating"></strong><span>Current rating</span></div>

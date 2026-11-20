@@ -170,8 +170,13 @@
     result.ratingSystem = { name: 'glicko-1', version: 2, ratingRounding: 'nearest-integer-per-match', startingRating: config.startingRating, initialRD: config.initialRD, inactivityRDPerDay: config.inactivityRDPerDay };
     return { database: result, appliedMatches: official.length, pendingMatches: result.matches.length - official.length };
   }
+  // Migrated players keep singles at the root and a fully independent doubles pool.
+  // Legacy documents retain their shared pool until the explicit replay is applied.
+  function ratingFor(player, type = 'singles') {
+    return type === 'doubles' && player.doubles ? player.doubles : player;
+  }
   function formatChange(delta) {
     return delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : '0';
   }
-  return { DEFAULTS, SCORE_SYSTEM, ACTIVE_SYSTEM, ACTIVE_POLICY, forNewMatch, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay, formatChange };
+  return { ratingFor, DEFAULTS, SCORE_SYSTEM, ACTIVE_SYSTEM, ACTIVE_POLICY, forNewMatch, settings, expectedScore, updateRating, beforeMatch, preview, previewDoubles, matchTeams, replay, formatChange };
 });

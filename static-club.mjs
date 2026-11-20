@@ -28,6 +28,11 @@ function read(snapshot) {
       !["glicko-1", "point-share-glicko-1", "active-score-glicko-1"].includes(ratingSystem?.name) || !Number.isSafeInteger(revision)) {
     throw new Error("The club data is invalid. Ask a club admin to check the backup.");
   }
+  if (players.some(p=>p.doubles) && !players.every(p=>p.doubles &&
+      Number.isFinite(p.doubles.elo) && Number.isFinite(p.doubles.rd) && p.doubles.rd > 0 && p.doubles.rd <= 350 &&
+      Number.isInteger(p.doubles.wins) && p.doubles.wins >= 0 && Number.isInteger(p.doubles.losses) && p.doubles.losses >= 0)) {
+    throw new Error("The doubles ratings are incomplete. Ask a club admin to check the backup.");
+  }
   return {version, players, matches, ratingSystem, revision};
 }
 export function subscribe(onData,onError) {

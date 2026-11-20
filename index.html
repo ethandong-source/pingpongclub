@@ -150,6 +150,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         >
       </div>
 
+      <label for="leaderboardMode">Rating ladder</label>
+      <select id="leaderboardMode" aria-label="Leaderboard rating type" style="max-width:240px;margin:0 0 16px" onchange="setRatingMode(this.value)"><option value="singles">Singles</option><option value="doubles">Doubles</option></select>
       <div class="table-wrap">
         <table>
           <thead>
@@ -191,8 +193,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         <details><summary>How do I join the roster?</summary><p>Ask the club admin to add your name. You start at 1000 rating and do not need an account.</p></details>
         <details><summary>How long is a match?</summary><p>Play to 11 points and win by at least two. Give the admin the final point score so close games count fairly.</p></details>
         <details><summary>How are results recorded?</summary><p>Tell the admin the winner, opponent, and final score. Ratings and records update when the result is saved.</p></details>
-        <details><summary>How do club ratings work?</summary><p>New players start at 1000. Our active Glicko rating blends 50% point share with 50% win/loss, then compares that performance with what your opponent’s rating predicts. An 11–9 loss to a much stronger player can cost no points; losing by more than expected can cost points. Losing players can never gain rating. Every winner gains at least 3 points, and beating a weaker opponent earns less than the same score against a stronger one.</p><p>Scores matter: a close win moves ratings less than a convincing win against the same opponent. To keep the ladder responsive, we keep rating uncertainty at 250 or higher and apply half the calculated Glicko adjustment before rounding and enforcing the win minimum. Changes can exceed 30 points, even for regular players. If the higher-rated side wins with a pre-match rating gap over 200, each winner gains exactly 3 points and each loser loses 0, regardless of score. Exactly 200 does not trigger this rule, and upsets use the normal calculation. For doubles, the gap uses team average ratings.</p><p>This is a custom score-aware Glicko adaptation. The new rules apply to future matches only; existing ratings and recorded results stay as they were.</p></details>
-        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. Both teams’ average ratings determine the expected performance, and the final score gives each team’s share of points won. Each player receives an individual adjustment based on their own rating uncertainty. Singles and doubles share the same club rating, and wins and losses still reflect who won the match.</p></details>
+        <details><summary>How do club ratings work?</summary><p>New players start at 1000. Our active Glicko rating blends 50% point share with 50% win/loss, then compares that performance with what your opponent’s rating predicts. An 11–9 loss to a much stronger player can cost no points; losing by more than expected can cost points. Losing players can never gain rating. Every winner gains at least 3 points, and beating a weaker opponent earns less than the same score against a stronger one.</p><p>Scores matter: a close win moves ratings less than a convincing win against the same opponent. To keep the ladder responsive, we keep rating uncertainty at 250 or higher and apply half the calculated Glicko adjustment before rounding and enforcing the win minimum. Changes can exceed 30 points, even for regular players. If the higher-rated side wins with a pre-match rating gap over 200, each winner gains exactly 3 points and each loser loses 0, regardless of score. Exactly 200 does not trigger this rule, and upsets use the normal calculation. For doubles, the gap uses team average ratings.</p><p>This is a custom score-aware Glicko adaptation. Singles and doubles have independent ratings, uncertainty and records. The full recorded history has been recalculated from 1000 for each ladder using these rules.</p></details>
+        <details><summary>Do doubles matches affect ratings?</summary><p>Yes. Both teams’ average ratings determine the expected performance, and the final score gives each team’s share of points won. Each player receives an individual adjustment based on their own rating uncertainty. Doubles affects only your doubles rating and record; singles affects only your singles rating and record. Both start at 1000. Use the Singles/Doubles selector on the leaderboard, roster or player profile to switch ladders.</p></details>
         <details><summary>Can a result be corrected?</summary><p>Ask the admin. Newly entered matches can be undone in reverse order, restoring every player’s previous rating and record. Matches involving a deleted player cannot be undone.</p></details>
         <details><summary>Additional Questions?</summary><p>Ask the admins! we'll provide the answers for you.</p></details>
       </div>
@@ -226,7 +228,7 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
               <div class="form-group"><label for="loserScore">Loser score (points)</label><input id="loserScore" type="number" min="0" max="98" step="1" required oninput="validateScoreInputs()"></div>
             </div>
             <p id="scoreWarning" class="notice danger hidden">The winner's score must be higher than the loser's score.</p>
-            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected rating change (score vs. expectation):</span><strong id="eloPreviewText"></strong></div>
+            <div id="eloPreview" class="elo-preview-box hidden"><span>Projected singles/doubles rating change:</span><strong id="eloPreviewText"></strong></div>
             <button class="btn dark" type="submit">Save match result</button>
           </fieldset>
         </form>
@@ -279,6 +281,8 @@ main{position:relative;z-index:1;max-width:none;background:var(--paper);padding:
         >
       </div>
 
+      <label for="rosterMode">Rating and record</label>
+      <select id="rosterMode" aria-label="Roster rating type" style="max-width:240px;margin:0 0 16px" onchange="setRatingMode(this.value)"><option value="singles">Singles</option><option value="doubles">Doubles</option></select>
       <div class="table-wrap">
         <table>
           <thead>
@@ -332,14 +336,21 @@ const statAnimations = new Map();
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-const profileLink = name => `<a class="player-link" href="/player.html?name=${encodeURIComponent(name)}">${escapeHtml(name)}</a>`;
+const profileLink = name => `<a class="player-link" href="/player.html?name=${encodeURIComponent(name)}&type=${ratingMode}">${escapeHtml(name)}</a>`;
 const matchTeams = match => ClubRatings.matchTeams(match);
 const isDoubles = () => $("matchType").value === "doubles";
 const activityDates = () => PlayerActivity.lastMatches(clubState.matches);
 const activePlayers = () => { const dates = activityDates(); return clubState.players.filter(p => !PlayerActivity.isArchived(p, dates)); };
 // Automatically archived players remain selectable so a new match can reactivate them.
 const matchPlayers = () => clubState.players.filter(p => !p.archived);
-const sortedPlayers = () => [...activePlayers()].sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
+let ratingMode = "singles";
+const ratedPlayer = (p,type=ratingMode) => ({...p,...ClubRatings.ratingFor(p,type)});
+function setRatingMode(type) {
+  ratingMode = type === "doubles" ? "doubles" : "singles";
+  $("leaderboardMode").value = ratingMode; $("rosterMode").value = ratingMode;
+  renderPodium(); renderLeaderboard(); renderRatingTracker(); renderPlayersTable();
+}
+const sortedPlayers = () => activePlayers().map(p=>ratedPlayer(p)).filter(p=>ratingMode !== "doubles" || p.wins+p.losses > 0).sort((a,b) => b.elo-a.elo || a.name.localeCompare(b.name));
 function message(text, error = false) {
   $("appMessage").textContent = text;
   $("appMessage").className = `notice${error ? " danger" : ""}${text ? "" : " hidden"}`;
@@ -397,15 +408,15 @@ function renderLeaderboard() {
 }
 $("viewAllPlayers").onclick = () => {showAllLeaderboard = !showAllLeaderboard; renderLeaderboard();};
 function renderRatingTracker() {
-  const tracker = RatingTracker.summarize(activePlayers(), clubState.matches);
-  $("ratingTrackerAverage").textContent = tracker.average === null ? "Current active-player average: not available yet." : `Current active-player average: ${tracker.average.toFixed(1)} (${tracker.players} players).`;
+  const tracker = RatingTracker.summarize(activePlayers().map(p=>ratedPlayer(p)), clubState.matches.filter(m=>(m.type === "doubles" ? "doubles" : "singles") === ratingMode));
+  $("ratingTrackerAverage").textContent = tracker.average === null ? "Current active-player average: not available yet." : `${ratingMode === "doubles" ? "Doubles" : "Singles"} active-player average: ${tracker.average.toFixed(1)} (${tracker.players} players).`;
   $("ratingTrackerBody").innerHTML = tracker.months.map(row => `<tr><td>${row.month}</td><td>${row.matches}</td><td>${row.change > 0 ? "+" : ""}${row.change}</td></tr>`).join("") || '<tr><td colspan="3">No recorded matches with usable rating changes yet.</td></tr>';
-  $("ratingTrackerNote").textContent = `The average is a current snapshot; players joining, leaving, or being archived can change it. Monthly totals use available match records, including singles and doubles.${tracker.excluded ? ` ${tracker.excluded} match${tracker.excluded === 1 ? " was" : "es were"} excluded due to missing dates or rating changes.` : ""}`;
+  $("ratingTrackerNote").textContent = `The average is a current snapshot; players joining, leaving, or being archived can change it. Monthly totals use available match records, for the selected ${ratingMode} ladder.${tracker.excluded ? ` ${tracker.excluded} match${tracker.excluded === 1 ? " was" : "es were"} excluded due to missing dates or rating changes.` : ""}`;
 }
 function renderPlayersTable() {
   const search = $("playersSearch").value.toLowerCase();
   const dates = activityDates();
-  $("playersBody").innerHTML = [...clubState.players].sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
+  $("playersBody").innerHTML = [...clubState.players].map(p=>ratedPlayer(p)).sort((a,b) => a.name.localeCompare(b.name)).filter(p => p.name.toLowerCase().includes(search)).map(p => {
     const total = p.wins+p.losses;
     const inactive = PlayerActivity.isInactive(p, dates), archived = p.archived || inactive;
     const status = p.archived ? "Archived manually" : inactive ? "Archived: inactive" : "Active";
@@ -434,7 +445,7 @@ function renderRecentMatches() {
 }
 $("viewAllMatches").onclick = () => { showAllMatches = !showAllMatches; renderRecentMatches(); };
 function renderSelectors() {
-  playerPickers.forEach(picker => picker.setRoster(matchPlayers()));
+  playerPickers.forEach(picker => picker.setRoster(matchPlayers().map(p=>ratedPlayer(p,isDoubles()?"doubles":"singles"))));
   updateEloPreview();
 }
 
@@ -546,7 +557,7 @@ function updateEloPreview() {
   if (visible) {
     try {
       if (isDoubles()) {
-        const changes = ClubRatings.previewDoubles(...teams,new Date().toISOString(),ClubRatings.forNewMatch({...clubState.ratingSystem,winnerScore:ws,loserScore:ls}));
+        const changes = ClubRatings.previewDoubles(...teams.map(team=>team.map(p=>ClubRatings.ratingFor(p,"doubles"))),new Date().toISOString(),ClubRatings.forNewMatch({...clubState.ratingSystem,winnerScore:ws,loserScore:ls}));
         $("eloPreviewText").textContent = teams.map((team,side) => team.map((p,i) => `${p.name} ${ClubRatings.formatChange((side === 0 ? 1 : -1)*(side === 0 ? changes.winnerChanges : changes.loserChanges)[i])}`).join(" · ")).join(" / ");
       } else {
         const changes = ClubRatings.preview(teams[0][0],teams[1][0],new Date().toISOString(),ClubRatings.forNewMatch({...clubState.ratingSystem,winnerScore:ws,loserScore:ls}));
